@@ -1,0 +1,2 @@
+class sm-clusters:
+    pass
