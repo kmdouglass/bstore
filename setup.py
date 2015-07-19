@@ -6,8 +6,8 @@ except ImportError:
 config = {
     'description'     : 'Single molecule clustering analysis',
     'author'          : 'Kyle M. Douglass',
-    'url'             : 'URL to get it at.',
-    'download_url'    : 'Where to download it.',
+    'url'             : 'https://github.com/kmdouglass/sm-clusters',
+    'download_url'    : 'https://github.com/kmdouglass/sm-clusters',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1',
     'install_requires': ['nose'],
