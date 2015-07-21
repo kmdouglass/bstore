@@ -11,9 +11,9 @@ config = {
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1',
     'install_requires': ['nose'],
-    'packages'        : ['NAME'],
+    'packages'        : [],
     'scripts'         : [],
-    'name'            : 'sm-clusters'
+    'name'            : 'smclusters'
 }
 
 setup(**config)
