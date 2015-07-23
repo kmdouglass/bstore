@@ -77,7 +77,7 @@ class smclusters:
         
         return locResultFiles
 
-    def doClustering(self):
+    def fit(self):
         """Run the clustering algorithm on the localization data
         
         doClustering runs the specified clustering algorithm on all
@@ -88,10 +88,10 @@ class smclusters:
         #[print(x.resolve()) for x in self._locResultFiles]
         
         for currFile in self._locResultFiles:
-            filePath = currFile.resolve()
+            filePath = str(currFile.resolve())
             
             # Import the localization data into a NumPy array
-            currData = np.loadtxt(filePath, skiprows = 1, usecols = self._usecols)
+            currData = np.loadtxt(filePath, delimiter = ',', skiprows = 1, usecols = self._usecols)
             
             # Perform clustering on the localization data
             db = DBSCAN().fit(currData)
