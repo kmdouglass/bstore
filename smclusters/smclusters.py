@@ -1,11 +1,15 @@
 import numpy as np
 from pathlib import Path
+import os.path
 from sklearn.cluster import DBSCAN
 
-"""TODOS
-1. Routine to detect and generate the cluster data folder
-2. Save cluster labels to separate folder
-3. Compute cluster statistics and save to folder
+"""NOTES
+You can choose to either just create the cluster labels, or make the labels and
+compute the cluster statistics (in case labels were already generated).
+
+
+TODO Compute cluster statistics and save to folder
+TODO Overlay clusters on widefield images
 """
 
 class smclusters:
@@ -32,7 +36,7 @@ class smclusters:
                  algorithm = 'DBSCAN',
                  options = {'min_samples': 50, 'eps': 20},
                  usecols = (0,1)):
-        """Find the localization data and perform the clustering algorithm.
+        """Find the localization data contained in the supplied directory tree.
         
         Parameters
         ----------
@@ -41,7 +45,7 @@ class smclusters:
             to the current Python interpretor working directory.
         algorithm : str  (optional, default: 'DBSCAN')
             The clustering algorithm run on the data
-        options   : dict (optional, default: {min_samples: 8, eps: 65})
+        options   : dict (optional, default: {min_samples: 50, eps: 20})
             The input parameters used by the clustering algorithm. If the
             values of the dict are lists of values, then the clustering routine
             is run for each set of values in corresponding positions in the
@@ -79,27 +83,35 @@ class smclusters:
         
         return locResultFiles
 
-    def fit(self):
+    def fit(self, computeStats = True):
         """Run the clustering algorithm on the localization data
         
         fit runs the specified clustering algorithm on all localization
         datasets in the given directory tree. Statistics for each cluster are
         then computed after each clustering.
+        
+        Parameters
+        ----------
+        computeStats : bool (optional, default: True)
+            Determines whether the statistics for each cluster should be
+            caluclated after clustering.
         """
         
         # Unpack the clustering algorithm parameters
         if self._algorithm is 'DBSCAN':
-            cluster     = DBSCAN().fit
-            min_samples = self._options['min_samples']
-            eps         = self._options['eps']
+            cluster     = DBSCAN(min_samples = self._options['min_samples'],
+                                 eps         = self._options['eps']).fit
         
         for currFile in self._locResultFiles:
-            print('Currently processing {:s}...'.format(currFile.parts[-2]))            
+            print('Currently processing {:s}/{:s}...'.format(currFile.parts[-2], currFile.parts[-1]))            
             
             filePath = str(currFile.resolve())
             
             # Import the localization data into a NumPy array
-            currData = np.loadtxt(filePath, delimiter = ',', skiprows = 1, usecols = self._usecols)
+            currData = np.loadtxt(filePath,
+                                  delimiter = ',',
+                                  skiprows  = 1,
+                                  usecols   = self._usecols)          
             
             # Perform clustering on the localization data
             db = cluster(currData)
@@ -108,13 +120,52 @@ class smclusters:
             clusterLabels = db.labels_
             
             # Save the labels to a csv file
-            savePath = str(currFile.parent) + '/clusterLabels.csv'
-            np.savetxt(savePath, clusterLabels, delimiter = ',', fmt = '%i')
+            savePath = os.path.join(str(currFile.parent),
+                                    str(currFile.stem) + '_clusterLabels.csv')
+            np.savetxt(savePath,
+                       clusterLabels,
+                       delimiter = ',',
+                       fmt = '%i')
+                       
+            # Compute the statistics for each cluster
+            if computeStats: self._computeClusterStats(currData,
+                                                       clusterLabels,
+                                                       currFile)
             
-    def computeClusterStats(self):
+    def _computeClusterStats(self, data, labels, p):
         """Computes the statistics of each cluster.
+        
+        computeClusterStats accepts an array containing localization data and
+        another single-column array with the same number of rows containing
+        the cluster labels. The statistics for every cluster are calculated and
+        saved to the disk.
+        
+        Parameters
+        ----------
+        currData      : array of float
+            [numLocalizations numProperties] sized array, where properties
+            usually refers to the localizations' x- and y- (and possibly z-)
+            positions.
+        clusterLabels : array of int
+            Cluster labels for each localization 
+        currFile      : Path
+            pathlib Path object to the file containing the localization data
         """
-        pass
+        # Noise is given its own label of -1, so remove it.
+        uniqueLabels = np.unique(labels)
+        uniqueLabels = uniqueLabels[uniqueLabels != -1]
+        numLabels    = uniqueLabels.size
+        
+        currFolder = str(p.parent)
+        currFile   = str(p.stem)
+        
+        for ctr, labelCtr in enumerate(uniqueLabels):
+            # Slice the data for localizations belonging to current cluster
+            cluster = data[labels == labelCtr, :]
+            
+            currM1     = np.mean(cluster, axis = 0)
+            currM2     = np.var(cluster, axis = 0)
+            currNumLoc = cluster.shape[0]
         
     def saveData(self):
         """Saves the cluster- and meta-data to the disk.
