@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 import os.path
 from sklearn.cluster import DBSCAN
+import pandas as pd
 
 """NOTES
 You can choose to either just create the cluster labels, or make the labels and
@@ -54,6 +55,20 @@ class smclusters:
             The columns in the localization data files to use for clustering.
             Typically, these are the x-, y-, and possibly z-coordinates.
         """
+        assert (len(usecols) == 2 or len(usecols) == 3), \
+        'usecols must be a tuple with a length of 2 (2D data) or 3 (3D data).'
+        
+        
+        
+        if len(usecols) == 2:
+            print('''Two columns detected for input data. 
+                     Assuming data is two dimensional.''')
+            self._numColsIs3 = False
+        elif len(self._usecols) == 3:
+            print('''Three columns detected for input data.
+                     Assuming data is three dimensional.''')
+            self._numColsIs3 = True        
+        
         self._usecols   = usecols
         self._folder    = Path(folder)
         self._algorithm = algorithm
@@ -151,7 +166,8 @@ class smclusters:
         currFile      : Path
             pathlib Path object to the file containing the localization data
         """
-        # Noise is given its own label of -1, so remove it.
+        
+        # Noise is given its own label of -1, so remove it
         uniqueLabels = np.unique(labels)
         uniqueLabels = uniqueLabels[uniqueLabels != -1]
         numLabels    = uniqueLabels.size
@@ -159,13 +175,44 @@ class smclusters:
         currFolder = str(p.parent)
         currFile   = str(p.stem)
         
+        # Pre-allocate arrays
+        # M1 and M2 are the first and second moments; Rg is the radius of gyration
+        stats = {'M1x': np.zeros(numLabels),     'M1y': np.zeros(numLabels),
+                 'M2x': np.zeros(numLabels),     'M2y': np.zeros(numLabels),
+                 'numLocs': np.zeros(numLabels), 'Rg2D': np.zeros(numLabels)}
+        
+        if self._numColsIs3:
+            stats['M1z']  = np.zeros(numLabels)
+            stats['M2z']  = np.zeros(numLabels)
+            stats['Rg3D'] = np.zeros(numLabels)
+        
+        # Compute stats for this cluster
         for ctr, labelCtr in enumerate(uniqueLabels):
             # Slice the data for localizations belonging to current cluster
             cluster = data[labels == labelCtr, :]
             
-            currM1     = np.mean(cluster, axis = 0)
-            currM2     = np.var(cluster, axis = 0)
-            currNumLoc = cluster.shape[0]
+            # Compute statistics
+            currM1 = np.mean(cluster, axis = 0)
+            currM2 = np.var(cluster,  axis = 0)
+
+            # Assign values to the temporary holding arrays                        
+            stats['M1x'][ctr]     = currM1[0]; stats['M1y'][ctr] = currM1[1]
+            stats['M2x'][ctr]     = currM2[0]; stats['M2y'][ctr] = currM2[1]
+            stats['numLocs'][ctr] = cluster.shape[0]
+            stats['Rg2D'][ctr]    =  np.sqrt(currM2[0] + currM2[1])          
+
+            if self._numColsIs3:
+                stats['M1z'][ctr] = currM1[2]; stats['M2z'][ctr] = currM2[2]
+                stats['Rg3D']     = np.sqrt(currM2[0] + currM2[1] + currM2[3])
+        
+        stats['Folder'] = [currFolder] * numLabels
+        stats['File']   = [currFile]   * numLabels     
+        
+        # Write data to a Pandas dataframe
+        if self.cData is None:
+            self.cData = pd.DataFrame(stats)
+        else:
+            self.cData = pd.concat([self.cData, pd.DataFrame(stats)])
         
     def saveData(self):
         """Saves the cluster- and meta-data to the disk.
