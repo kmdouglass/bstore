@@ -9,7 +9,7 @@ You can choose to either just create the cluster labels, or make the labels and
 compute the cluster statistics (in case labels were already generated).
 
 
-TODO Compute cluster statistics and save to folder
+TODO Save cluster statistics to folder
 TODO Overlay clusters on widefield images
 """
 
@@ -34,6 +34,8 @@ class smclusters:
     """
     def __init__(self,
                  folder = '.',
+                 fileSuffix = '.dat',
+                 delimiter  = ',',
                  algorithm = 'DBSCAN',
                  options = {'min_samples': 50, 'eps': 20},
                  usecols = (0,1)):
@@ -41,17 +43,21 @@ class smclusters:
         
         Parameters
         ----------
-        folder    : str  (optional, default: '.')
+        folder     : str  (optional, default: '.')
             The folder containing the localization data directories. Defaults
             to the current Python interpretor working directory.
-        algorithm : str  (optional, default: 'DBSCAN')
+        fileSuffix : str  (optional, default: '.dat')
+            The file type of the files containing the localization data.
+        delimiter  : str  (optional, default: ',')
+            The delimiter used in the localization files.
+        algorithm  : str  (optional, default: 'DBSCAN')
             The clustering algorithm run on the data
-        options   : dict (optional, default: {min_samples: 50, eps: 20})
+        options    : dict (optional, default: {min_samples: 50, eps: 20})
             The input parameters used by the clustering algorithm. If the
             values of the dict are lists of values, then the clustering routine
             is run for each set of values in corresponding positions in the
             lists.
-        usecols   : tuple of int (options, default: (0,1))
+        usecols    : tuple of int (options, default: (0,1))
             The columns in the localization data files to use for clustering.
             Typically, these are the x-, y-, and possibly z-coordinates.
         """
@@ -69,11 +75,13 @@ class smclusters:
                      Assuming data is three dimensional.''')
             self._numColsIs3 = True        
         
-        self._usecols   = usecols
-        self._folder    = Path(folder)
-        self._algorithm = algorithm
-        self._options   = options
-        self._locResultFiles = self._parseFolder()
+        self._fileSuffix = fileSuffix
+        self._delimiter  = delimiter
+        self._usecols    = usecols
+        self._folder     = Path(folder)
+        self._algorithm  = algorithm
+        self._options    = options
+        self._locResultFiles = self._parseFolder(fileSuffix = self._fileSuffix)
         
         self.cData = None
         self.mData = None
@@ -124,7 +132,7 @@ class smclusters:
             
             # Import the localization data into a NumPy array
             currData = np.loadtxt(filePath,
-                                  delimiter = ',',
+                                  delimiter = self._delimiter,
                                   skiprows  = 1,
                                   usecols   = self._usecols)          
             
