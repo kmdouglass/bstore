@@ -1,4 +1,4 @@
-x [nm], y [nm], z [nm], frame, sigma [nm], intensity [photon], bkgstd [photon], loglikelihood [no units]
+x [nm],y [nm],z [nm],frame,uncertainty [nm],intensity [photon],offset [photon],loglikelihood
 14933,7191.7,0,300,3.4349,5384.2,114.82,121.59
 16346,7883,0,300,6.9464,2163.4,112.3,76.701
 9159.3,8876.6,0,300,6.9623,2354.1,141.18,108.67

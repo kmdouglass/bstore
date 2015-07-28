@@ -46,13 +46,14 @@ class ConvertHeader:
         """Convert the files to the new header format.
         
         """
-        
-        
         for file in self._fileList:
-            locData = pd.read_csv(str(file),
-                                  sep     = self.fileFormat.delimiter,
-                                  comment = self.fileFormat.comment)
-        
+            locData = pd.read_csv(str(file))          
+            
+            colNames = [self.fileFormat.ts2leb[oldName] for oldName in locData.columns]
+            locData.columns = colNames
+            
+            # Save the new format
+            
     def _parseFolder(self, suffix = '.dat'):
         """Finds all localization data files in a directory tree.
         
@@ -103,6 +104,9 @@ class FormatThunderSTORM(FormatSTORM):
     """
     delimiter = ','
     comment   = None
+    
+    def __init__(self):
+        FormatSTORM.__init__(self)
 
 class FormatLEB(FormatSTORM):
     """Definition for the ThunderSTORM localization file format.
@@ -110,6 +114,9 @@ class FormatLEB(FormatSTORM):
     """
     delimiter = '\t'
     comment   = '#'
+    
+    def __init__(self):
+        FormatSTORM.__init__(self)
         
 class FormatMap(dict):
     """Two-way map for mapping one localization file format to another.
