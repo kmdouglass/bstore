@@ -1,5 +1,0 @@
-smclusters.egg-info/PKG-INFO
-smclusters.egg-info/SOURCES.txt
-smclusters.egg-info/dependency_links.txt
-smclusters.egg-info/requires.txt
-smclusters.egg-info/top_level.txt

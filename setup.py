@@ -4,16 +4,16 @@ except ImportError:
     from distutils.core import setup
 
 config = {
-    'description'     : 'Single molecule clustering analysis',
+    'description'     : 'Data management and analysis for single molecule microscopy',
     'author'          : 'Kyle M. Douglass',
-    'url'             : 'https://github.com/kmdouglass/sm-clusters',
-    'download_url'    : 'https://github.com/kmdouglass/sm-clusters',
+    'url'             : 'https://github.com/kmdouglass/dataSTORM',
+    'download_url'    : 'https://github.com/kmdouglass/dataSTORM',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1',
     'install_requires': ['nose'],
     'packages'        : [],
     'scripts'         : [],
-    'name'            : 'smclusters'
+    'name'            : 'dataSTORM'
 }
 
 setup(**config)
