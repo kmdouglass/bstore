@@ -11,7 +11,7 @@ class ConvertHeader:
         or the headers will be simply overwritten.
     
     """
-    def __init__(self, file, fileFormat, overwrite = False, suffix = '.dat'):
+    def __init__(self, file, inputFormat, outputFormat, overwrite = False, suffix = '.dat'):
         """Determines whether the file is a single file or a directory tree.
         
         Parameters
@@ -30,8 +30,9 @@ class ConvertHeader:
             directory tree is input for the file parameter.
         """        
         self.overwrite  = overwrite        
-        self.fileFormat = fileFormat
+        self.outputFormat = outputFormat
         self.file       = Path(file)
+        self.mapping    = self._parseMapping(inputFormat, outputFormat)
         
         if self.file.is_dir():
             print('Input file is a directory tree. Will search for files.')
@@ -41,6 +42,7 @@ class ConvertHeader:
         else:
             err = 'Input file is neither a localization file nor a directory.'
             raise ValueError(err)
+            
         
     def convert(self):
         """Convert the files to the new header format.
@@ -49,10 +51,11 @@ class ConvertHeader:
         for file in self._fileList:
             locData = pd.read_csv(str(file))          
             
-            colNames = [self.fileFormat.ts2leb[oldName] for oldName in locData.columns]
+            colNames = [self.mapping[oldName] for oldName in locData.columns]
             locData.columns = colNames
             
-            # Save the new format
+            # Save the data to the new format
+            
             
     def _parseFolder(self, suffix = '.dat'):
         """Finds all localization data files in a directory tree.
@@ -72,6 +75,36 @@ class ConvertHeader:
         locResultFiles    = sorted(locResultFilesGen)
         
         return locResultFiles
+        
+    def _parseMapping(self, inputFormat, outputFormat):
+        """Determine which mapping between files to use.
+        
+        Parameters
+        ----------
+        inputFormat  : FormatSTORM
+        outputFormat : FormatSTORM
+        
+        Returns
+        -------
+        mapping : FormatMap
+            The mapping between column names.
+        
+        """
+        ids = [inputFormat.identifier, outputFormat.identifier]
+        
+        # Search fields of outputFormat until the correct identifier is found
+        fields = outputFormat.__dict__
+        
+        for checkForID in fields:
+            try:
+                currentID = getattr(outputFormat, checkForID)
+                if (ids[0] + ids[1] == currentID['identifier']) \
+                or (ids[1] + ids[0] == currentID['identifier']):
+                    mapping = currentID
+            except TypeError:
+                pass
+            
+        return mapping
 
 class FormatSTORM:
     """A datatype representing localization file formatting.
@@ -95,15 +128,16 @@ class FormatSTORM:
         ts2leb['intensity [photon]'] = 'photons'
         ts2leb['offset [photon]']    = 'bg'
         ts2leb['loglikelihood']      = 'loglikelihood'
-        ts2leb[',']                  = '\t'
+        ts2leb['identifier']         = 'TSLEB'
         self.ts2leb                  = ts2leb
 
 class FormatThunderSTORM(FormatSTORM):
     """Definition for the ThunderSTORM localization file format.
     
     """
-    delimiter = ','
-    comment   = None
+    delimiter  = ','
+    comment    = None
+    identifier = 'TS'
     
     def __init__(self):
         FormatSTORM.__init__(self)
@@ -112,8 +146,9 @@ class FormatLEB(FormatSTORM):
     """Definition for the ThunderSTORM localization file format.
     
     """
-    delimiter = '\t'
-    comment   = '#'
+    delimiter  = '\t'
+    comment    = '#'
+    identifier = 'LEB'
     
     def __init__(self):
         FormatSTORM.__init__(self)
@@ -147,7 +182,8 @@ if __name__ == '__main__':
     
     p = Path('../test-data')    
 
+    inputFormat  = FormatThunderSTORM()
     outputFormat = FormatLEB()
-    converter    = ConvertHeader(p, outputFormat)
+    converter    = ConvertHeader(p, inputFormat, outputFormat)
     
     converter.convert()
