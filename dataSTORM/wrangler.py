@@ -29,10 +29,20 @@ class ConvertHeader:
             The suffix for identifying the input localization files when a
             directory tree is input for the file parameter.
         """        
-        self.overwrite  = overwrite        
         self.outputFormat = outputFormat
-        self.file       = Path(file)
-        self.mapping    = self._parseMapping(inputFormat, outputFormat)
+        self.file         = Path(file)
+        self.mapping      = self._parseMapping(inputFormat, outputFormat)
+        self.suffix       = suffix
+        
+        self.overwrite    = overwrite 
+        if self.overwrite:
+            # Open the existing file and overwrite all data
+            self._fileMode    = 'w'
+            self._newFormatID = ''
+        else:
+            # Safeguard to ensure creation of a new file
+            self._fileMode    = 'x'
+            self._newFormatID = self.outputFormat.identifier
         
         if self.file.is_dir():
             print('Input file is a directory tree. Will search for files.')
@@ -47,15 +57,27 @@ class ConvertHeader:
     def convert(self):
         """Convert the files to the new header format.
         
+        convert() reads the data into a Pandas DataFrame, maps the column names
+        using the input and output formats, then saves a (possibly new) csv
+        file in the new format and the same directory.
+        
         """
+        delimiter = self.outputFormat.delimiter        
+        
         for file in self._fileList:
+            # Read the localization file into memory
             locData = pd.read_csv(str(file))          
             
+            # Change the column names
             colNames = [self.mapping[oldName] for oldName in locData.columns]
             locData.columns = colNames
             
             # Save the data to the new format
+            fileName = str(file.parent.resolve() / file.stem) + \
+                       self._newFormatID + self.suffix
             
+            with open(fileName, self._fileMode) as saveFile:
+                locData.to_csv(saveFile, sep = delimiter, header = True)
             
     def _parseFolder(self, suffix = '.dat'):
         """Finds all localization data files in a directory tree.
@@ -79,6 +101,10 @@ class ConvertHeader:
     def _parseMapping(self, inputFormat, outputFormat):
         """Determine which mapping between files to use.
         
+        _parseMapping will use the identifier field of each FormatSTORM data 
+        type to search which mapping between formats to use when changing the
+        header names.
+        
         Parameters
         ----------
         inputFormat  : FormatSTORM
@@ -98,6 +124,8 @@ class ConvertHeader:
         for checkForID in fields:
             try:
                 currentID = getattr(outputFormat, checkForID)
+                
+                # Correct identifier is any permutation of the two format ID's
                 if (ids[0] + ids[1] == currentID['identifier']) \
                 or (ids[1] + ids[0] == currentID['identifier']):
                     mapping = currentID
