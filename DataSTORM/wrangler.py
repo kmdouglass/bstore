@@ -1,6 +1,62 @@
 import pandas as pd
 from pathlib import Path
 
+class Wrangler:
+    """Base class for loading and saving single-molecule microscopy data.
+    
+    Attributes
+    ----------
+    df       : DataFrame    (default: None)
+        Pandas DataFrame object currently in memory.
+    fileList : list of Path (default: None)
+        List of Path objects pointing to all the identified localization files
+        in a directory or a directory tree.    
+    
+    """
+    
+    def __init__(self, inputDirectory = None, suffix = '.dat'):
+        """Parse the input data.
+        
+        The Wrangler constructor parses the input directory and creates a list
+        of Path objects all pointing to data files.
+        
+        Parameters
+        ----------
+        inputDirectory : str or Path
+            A string to a directory containg SMLM data files, or a pathlib Path
+            instance to a directory.
+        suffix         : str (default: '.dat')
+            The suffix identifying SMLM data files.
+        
+        """
+        # inputDirectory is not None, add check that there MUST be localization files in the directory        
+        
+        if inputDirectory is not None:
+            self.fileList = self._parseDirectory(str(inputDirectory), suffix)
+            # Load first file into DataFrame here       
+    
+    def _parseDirectory(self, inputDirectory, suffix = '.dat'):
+        """Finds all localization data files in a directory or directory tree.
+        
+        Parameters
+        ----------
+        inputDirectory : str
+            String of the directory tree containing SMLM data files.
+        suffix         : str (optional, default: '.dat')
+            Suffix for localization result files. This must be unique to
+            files containing localization data.
+        
+        Returns
+        -------
+        locResultFiles : list of Path
+            A list of all the localization data files in a directory tree.
+        """
+        inputDirectory = Path(inputDirectory)
+        locResultFilesGen = inputDirectory.glob('**/*{:s}'.format(suffix))
+        locResultFiles    = sorted(locResultFilesGen)
+        
+        return locResultFiles
+
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
     

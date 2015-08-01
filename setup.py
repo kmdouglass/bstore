@@ -6,14 +6,14 @@ except ImportError:
 config = {
     'description'     : 'Data management and analysis for single molecule microscopy',
     'author'          : 'Kyle M. Douglass',
-    'url'             : 'https://github.com/kmdouglass/dataSTORM',
-    'download_url'    : 'https://github.com/kmdouglass/dataSTORM',
+    'url'             : 'https://github.com/kmdouglass/DataSTORM',
+    'download_url'    : 'https://github.com/kmdouglass/DataSTORM',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1',
     'install_requires': ['nose'],
     'packages'        : [],
     'scripts'         : [],
-    'name'            : 'dataSTORM'
+    'name'            : 'DataSTORM'
 }
 
 setup(**config)
