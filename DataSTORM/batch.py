@@ -53,34 +53,44 @@ class BatchProcessor:
                 raise ValueError('Error: No files ending in {:s} were found.'.format(suffix))
         except UserWarning:
             print('Warning: Pipeline contains no Processors.')
-            
+        
+        self._useSameFolder   = useSameFolder
         self._outputDirectory = Path(outputDirectory)
+        self._suffix          = suffix
         self._delimiter       = delimiter
             
     def go(self):
         """Initiate batch processing on all the files.
         
         """
-        if not self._outputDirectory.exists():
+        if (not self._outputDirectory.exists()) and (not _self.useSameFolder):
             print('Output directory does not exist. Creating it...')
             self._outputDirectory.mkdir()
             print('Created folder {:s}'.format(str(self._outputDirectory.resolve())))
         
         # Perform batch processing on all files
         for file in self.fileList:
-            file = str(file.resolve())
+            inputFile = str(file.resolve())
             
             # In future versions, allow user to set the import command
-            df   = pd.read_csv(file, sep = self._delimiter)
+            df   = pd.read_csv(inputFile, sep = self._delimiter)
             
             '''
             for proc in self.pipeline:
                 df = proc(df)
+            '''
             
             # Save the final DataFrame
+            if self._useSameFolder:
+                fileStem = file.resolve().parent / file.stem
+            else:
+                fileStem = self._outputDirectory / file.stem
+                
+            outputFile = str(fileStem) + '_processed' + str(self._suffix)
+            
             # In future versions, allow user to set the export command
-            df.to_csv()
-            '''
+            df.to_csv(outputFile, sep = self._delimiter)
+            
             
     def _parseDirectory(self, inputDirectory, suffix = '.dat'):
         """Finds all localization data files in a directory or directory tree.
