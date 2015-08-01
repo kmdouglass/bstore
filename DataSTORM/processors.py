@@ -1,4 +1,3 @@
-import pandas as pd
 from pathlib import Path
 
 class ConvertHeader:
@@ -6,97 +5,50 @@ class ConvertHeader:
     
     Attributes
     ----------
-    overwrite : bool (default: False)
-        Flag for whether a separate file with the new headers will be created
-        or the headers will be simply overwritten.
+    inputFormat  : FormatSTORM
+    outputFormat : FormatSTORM
+    mapping      : FormatMap
     
     """
-    def __init__(self, file, inputFormat, outputFormat, overwrite = False, suffix = '.dat'):
+    def __init__(self, inputFormat, outputFormat):
         """Determines whether the file is a single file or a directory tree.
         
         Parameters
         ----------
-        file       : Path or str
-            A str (or pathlib Path object) to the (relative) path of either a
-            single localization file or a directory tree containing
-            localization files.
-        fileFormat : FormatSTORM  (default: 'FormatLEB')
-            Identifier for the new header format.
-        overwrite  : bool (default: False)
-            Flag for whether a separate file with the new headers will be
-            created or the headers will be simply overwritten.
-        suffix     : str (default: '.dat')
-            The suffix for identifying the input localization files when a
-            directory tree is input for the file parameter.
+        inputFormat  : FormatSTORM  (default: 'FormatThunderSTORM')
+            Identifier for the input header format.
+        outputFormat : FormatSTORM  (default: 'FormatLEB')
+            Identifier for the output header format.
+       
         """        
         self.outputFormat = outputFormat
-        self.file         = Path(file)
         self.mapping      = self._parseMapping(inputFormat, outputFormat)
-        self.suffix       = suffix
         
-        self.overwrite    = overwrite 
-        if self.overwrite:
-            # Open the existing file and overwrite all data
-            self._fileMode    = 'w'
-            self._newFormatID = ''
-        else:
-            # Safeguard to ensure creation of a new file
-            self._fileMode    = 'x'
-            self._newFormatID = self.outputFormat.identifier
-        
-        if self.file.is_dir():
-            print('Input file is a directory tree. Will search for files.')
-            self._fileList = self._parseFolder(suffix)
-        elif self.file.is_file():
-            print('Input file is a single file. No search will be performed.')
-        else:
-            err = 'Input file is neither a localization file nor a directory.'
-            raise ValueError(err)
-            
-        
-    def convert(self):
+    def __call__(self, df):
         """Convert the files to the new header format.
         
-        convert() reads the data into a Pandas DataFrame, maps the column names
-        using the input and output formats, then saves a (possibly new) csv
-        file in the new format and the same directory.
-        
-        """
-        delimiter = self.outputFormat.delimiter        
-        
-        for file in self._fileList:
-            # Read the localization file into memory
-            locData = pd.read_csv(str(file))          
-            
-            # Change the column names
-            colNames = [self.mapping[oldName] for oldName in locData.columns]
-            locData.columns = colNames
-            
-            # Save the data to the new format
-            fileName = str(file.parent.resolve() / file.stem) + \
-                       self._newFormatID + self.suffix
-            
-            with open(fileName, self._fileMode) as saveFile:
-                locData.to_csv(saveFile, sep = delimiter, header = True)
-            
-    def _parseFolder(self, suffix = '.dat'):
-        """Finds all localization data files in a directory tree.
+        When this class is called, it maps the column names from the input
+        format to the output format. Formats are defined independently of this
+        class.
         
         Parameters
         ----------
-        suffix         : str (optional, default: '.dat')
-            Suffix for localization result files. This must be unique to
-            files containing localization data.
-        
+        df : DataFrame
+            A Pandas DataFrame object.
+            
         Returns
         -------
-        locResultFiles : list of Path
-            A list of all the localization data files in a directory tree
-        """
-        locResultFilesGen = self.file.glob('**/*{:s}'.format(suffix))
-        locResultFiles    = sorted(locResultFilesGen)
+        procdf : DataFrame
+            A DataFrame object with the same information but new column names.
         
-        return locResultFiles
+        """
+        procdf = df        
+        
+        # Change the column names
+        colNames = [self.mapping[oldName] for oldName in df.columns]
+        procdf.columns = colNames
+            
+        return procdf
         
     def _parseMapping(self, inputFormat, outputFormat):
         """Determine which mapping between files to use.
@@ -144,6 +96,13 @@ class FormatSTORM:
     """
     def __init__(self):
         """Initialize mappings from one header format to another.
+        
+        Notes
+        -----
+        Any new mapping defined here must have a string identifier comprised of
+        either permutation of the identifiers for the two Formats that form the
+        mapping. For example, FormatThunderSTORM has the identifier 'TS' and
+        FormatLEB has 'LEB'. The identifier for their mapping is 'TSLEB'.
         
         """
         # ThunderSTORM to the LEB format
@@ -206,12 +165,16 @@ class FormatMap(dict):
         return dict.__len__(self) // 2
         
 if __name__ == '__main__':
-    from pathlib import Path
+    example = 'convert'    
     
-    p = Path('../test-data')    
-
-    inputFormat  = FormatThunderSTORM()
-    outputFormat = FormatLEB()
-    converter    = ConvertHeader(p, inputFormat, outputFormat)
+    if example == 'convert':
+        from pathlib import Path
+        
+        p = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
+        df = pd.read_csv(str(p))
     
-    converter.convert()
+        inputFormat  = FormatThunderSTORM()
+        outputFormat = FormatLEB()
+        converter    = ConvertHeader(inputFormat, outputFormat)
+        
+        convertedDF = converter(df)

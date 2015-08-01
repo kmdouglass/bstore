@@ -63,7 +63,7 @@ class BatchProcessor:
         """Initiate batch processing on all the files.
         
         """
-        if (not self._outputDirectory.exists()) and (not _self.useSameFolder):
+        if (not self._outputDirectory.exists()) and (not self._useSameFolder):
             print('Output directory does not exist. Creating it...')
             self._outputDirectory.mkdir()
             print('Created folder {:s}'.format(str(self._outputDirectory.resolve())))
@@ -75,10 +75,9 @@ class BatchProcessor:
             # In future versions, allow user to set the import command
             df   = pd.read_csv(inputFile, sep = self._delimiter)
             
-            '''
+            # Run each processor on the DataFrame
             for proc in self.pipeline:
                 df = proc(df)
-            '''
             
             # Save the final DataFrame
             if self._useSameFolder:
@@ -115,4 +114,13 @@ class BatchProcessor:
         return locResultFiles
 
 if __name__ == '__main__':
-    pass
+    from pathlib import Path
+    import processors
+    
+    p               = Path('../test-data/')
+    outputDirectory = Path('../processed_data')
+    proc1           = processors.ConvertHeader(FormatThunderSTORM(), FormatLEB())
+    pipeline        = [proc1]
+    
+    bp = BatchProcessor(p, pipeline, outputDirectory = outputDirectory)
+    bp.go()
