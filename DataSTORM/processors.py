@@ -1,4 +1,59 @@
 from pathlib import Path
+from sklearn.cluster import DBSCAN
+import pandas as pd
+
+class Cluster:
+    """Clusters the localizations into spatial clusters.
+    
+    """
+    def __init__(self, minSamples = 50, eps = 20, coordCols = ['x', 'y', 'z']):
+        """Set the DBSCAN parameters and list the columns in the data denotig
+        the localizations' spatial coordinates.
+        
+        Parameters
+        ----------
+        minSamples : int
+            Minimum number of samples within one neighborhood radius.
+        eps        : float
+            The neighborhood radius defining a cluster.
+        coordCols  : list of str
+            The columns of the data to be clustered.
+        """
+        self._minSamples = minSamples
+        self._eps        = eps
+        self._coordCols  = coordCols
+    
+    def __call__(self, df):
+        """Group the localizations into spatial clusters.
+        
+        When this class is called, it performs density-based spatial clustering
+        on the positional coordinates of each localization. Cluster labels are
+        added as an additional column to the DataFrame.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with the same information but new column names.
+        
+        """
+        columnsToCluster = self._coordCols
+        
+        # Setup and perform the clustering
+        db = DBSCAN(min_samples = self._minSamples, eps = self._eps)
+        db.fit(df[columnsToCluster])
+        
+        # Get the cluster labels and make it a Pandas Series
+        clusterLabels = pd.Series(db.labels_, name = 'cluster id')
+        
+        # Append the labels to the DataFrame
+        procdf = pd.concat([df, clusterLabels], axis = 1)
+        
+        return procdf
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
@@ -165,16 +220,30 @@ class FormatMap(dict):
         return dict.__len__(self) // 2
         
 if __name__ == '__main__':
-    example = 'convert'    
+    example = 'cluster'    
     
     if example == 'convert':
         from pathlib import Path
         
-        p = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
+        p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
         df = pd.read_csv(str(p))
     
         inputFormat  = FormatThunderSTORM()
         outputFormat = FormatLEB()
         converter    = ConvertHeader(inputFormat, outputFormat)
         
-        convertedDF = converter(df)
+        convertedDF  = converter(df)
+    
+    elif example == 'cluster':
+        from pathlib import Path
+        
+        p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
+        df = pd.read_csv(str(p))
+    
+        minSamples = 50
+        eps        = 20
+        coordCols  = ['x [nm]', 'y [nm]']
+        
+        clusterMaker = Cluster(minSamples, eps, coordCols)
+        
+        clusteredDF  = clusterMaker(df)
