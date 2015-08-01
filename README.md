@@ -1,2 +1,2 @@
-# sm-clusters
-Analysis code for clustered single-molecule microscopy data
+# DataSTORM
+Analysis routines for single-molecule microscopy data
