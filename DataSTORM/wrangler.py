@@ -1,13 +1,11 @@
 import pandas as pd
 from pathlib import Path
 
-class Wrangler:
-    """Base class for loading and saving single-molecule microscopy data.
+class BatchProcessor:
+    """Base class for processing and saving single-molecule microscopy data.
     
     Attributes
     ----------
-    df       : DataFrame    (default: None)
-        Pandas DataFrame object currently in memory.
     fileList : list of Path (default: None)
         List of Path objects pointing to all the identified localization files
         in a directory or a directory tree.    
@@ -15,10 +13,10 @@ class Wrangler:
     """
     
     def __init__(self, inputDirectory = None, suffix = '.dat'):
-        """Parse the input data.
+        """Parse the input directory by finding SMLM data files.
         
-        The Wrangler constructor parses the input directory and creates a list
-        of Path objects all pointing to data files.
+        The constructor parses the input directory and creates a list of Path
+        objects all pointing to data files.
         
         Parameters
         ----------
