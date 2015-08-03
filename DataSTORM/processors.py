@@ -1,6 +1,8 @@
 from pathlib import Path
 from sklearn.cluster import DBSCAN
 import pandas as pd
+import trackpy as tp
+import numpy as np
 
 class Cluster:
     """Clusters the localizations into spatial clusters.
@@ -223,10 +225,35 @@ class Merge:
     """Merges nearby localizations in subsequent frames into one localization.
     
     """
-    def __init__():
-        pass
+    def __init__(self, autoFindMergeRadius = True, tOff = 1, mergeRadius = 50, precisionColumn = 'precision'):
+        """Set or calculate the merge radius and set the off time.
+        
+        The merge radius is the distance around a localization that another
+        localization must be in space for the two to become merged. The off
+        time is the maximum number of frames that a localization can be absent
+        from before the its track in time is terminated.
+        
+        Parameters
+        ----------
+        autoFindMergeRadius : bool (default: True)
+            If True, this will set the merge radius to three times the mean
+            localization precision in the dataset.
+        tOff                : int
+            The off time for grouping molecules into one. Units are frames.
+        mergeRadius         : float (default: 50)
+            The maximum distance between localizations in space for them to be
+            considered as one. Units are the same as x, y, and z. This is
+            ignored if autoFindMergeRadius is True.
+        precisionColumn     : str (default: 'precision')
+            The name of the column containing the localization precision. This
+            is ignored if autoFindMergeRadius is False.
+        """
+        self._autoFindMergeRadius = autoFindMergeRadius
+        self._tOff                = tOff
+        self._mergeRadius         = mergeRadius
+        self._precisionColumn      = precisionColumn
     
-    def __call__():
+    def __call__(self, df):
         """Merge nearby localizations into one.
         
         When this class is called, it searches for localizations that are close
@@ -244,18 +271,80 @@ class Merge:
             A DataFrame object with the merged localizations.
         
         """
-        pass
+        if self._autoFindMergeRadius:
+            mergeRadius = 3 * df[self._precisionColumn].mean()
+        else:
+            mergeRadius = self._mergeRadius
+        
+        # Track individual localization trajectories
+        dfTracked = tp.link_df(df, mergeRadius, self._tOff)
+        
+        # Group the localizations by particle track ID
+        particleGroups = dfTracked.groupby('particle')
+        
+        # Compute the statistics for each group of localizations
+        tempResultsX           = particleGroups.apply(self._wAvg, 'x')
+        tempResultsY           = particleGroups.apply(self._wAvg, 'y')
+        tempResultsZ           = particleGroups.apply(self._wAvg, 'z')
+        tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
+                                                     'frame'         : 'min',
+                                                     'photons'       : 'sum',
+                                                     'bg'            : 'sum'})
+        tempResultsLength      = pd.Series(particleGroups.size())
+
+        # Rename the series
+        tempResultsX.name      = 'x'
+        tempResultsY.name      = 'y'
+        tempResultsZ.name      = 'z'
+        tempResultsLength.name = 'length'
+        
+        # Create the merged DataFrame
+        dataToJoin = (tempResultsX,
+                      tempResultsY,
+                      tempResultsZ,
+                      tempResultsMisc,
+                      tempResultsLength)
+        procdf = pd.concat(dataToJoin, axis = 1)
+        
+        return procdf
+        
+    def _wAvg(self, group, coordinate):
+        """Perform a photon-weighted average over positions.
+        
+        This helper function computes the average of all numbers in the
+        'coordinate' column when applied to a Pandas GroupBy object.
+        
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations.
+        coordinate : str
+            Column label for the coordinate over which to compute the weighted
+            average for a particular group.
+        
+        Returns
+        -------
+        wAvg : float
+            The weighted average over the grouped data in 'coordinate',
+            weighted by the square root of values in the 'photons' column.
+        """
+        positions = group[coordinate]
+        photons   = group['photons']
+        
+        wAvg = (positions * photons.apply(np.sqrt)).sum() \
+               / photons.apply(np.sqrt).sum()
+               
+        return wAvg
         
 if __name__ == '__main__':
-    example = 'cluster'    
+    example = 'merge'
+
+    # Set the directory to the data file and load it into a DataFrame
+    from pathlib import Path
+    p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
+    df = pd.read_csv(str(p))    
     
     if example == 'convert':
-        from pathlib import Path
-        
-        # Set the directory to the data file and load it into a DataFrame
-        p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
-        df = pd.read_csv(str(p))
-        
         # Define the input and output formats for the localization file
         inputFormat  = FormatThunderSTORM()
         outputFormat = FormatLEB()
@@ -264,13 +353,7 @@ if __name__ == '__main__':
         # Convert the file into a new format
         convertedDF  = converter(df)
     
-    elif example == 'cluster':
-        from pathlib import Path
-        
-        # Set the directory to the data file and load it into a DataFrame
-        p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
-        df = pd.read_csv(str(p))
-        
+    elif example == 'cluster':        
         # Set the DBSCAN parameters and the columns for clustering
         minSamples = 50
         eps        = 20
@@ -281,3 +364,26 @@ if __name__ == '__main__':
         
         # Perform the clustering and return a DataFrame as a result
         clusteredDF  = clusterMaker(df)
+        
+    elif example == 'merge':
+        # Convert test-data headers
+        # (this is not neccessary if data is already in the LEB format)       
+        inputFormat  = FormatThunderSTORM()
+        outputFormat = FormatLEB()
+        converter    = ConvertHeader(inputFormat, outputFormat)
+        cdf          = converter(df)       
+        
+        # Intial filtering on the data
+        cdf = cdf[cdf['loglikelihood'] <= 250]
+        cdf = cdf[cdf['loglikelihood'] >= 0]
+        cdf = cdf[(cdf['x'] >= 0) & (df['y'] >= 0)]
+        
+        # Set the off time for the data merging in units of frames
+        tOff = 1
+        
+        # Initialize the processor
+        merger = Merge(tOff = tOff)
+        
+        # Perform the merging
+        mergedDF = merger(cdf)
+        

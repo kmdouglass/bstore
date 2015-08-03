@@ -121,7 +121,7 @@ if __name__ == '__main__':
     outputDirectory = Path('../processed_data')
     proc1           = processors.ConvertHeader(FormatThunderSTORM(), FormatLEB())
     proc2           = processors.Cluster(minSamples = 50, eps = 20, coordCols = ['x','y'])
-    pipeline        = [proc1, proc2]
+    pipeline        = [proc1]
     
     bp = BatchProcessor(p, pipeline, outputDirectory = outputDirectory)
     bp.go()
