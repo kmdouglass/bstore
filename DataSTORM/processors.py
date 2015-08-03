@@ -219,31 +219,65 @@ class FormatMap(dict):
     def __len__(self):
         return dict.__len__(self) // 2
         
+class Merge:
+    """Merges nearby localizations in subsequent frames into one localization.
+    
+    """
+    def __init__():
+        pass
+    
+    def __call__():
+        """Merge nearby localizations into one.
+        
+        When this class is called, it searches for localizations that are close
+        to one another in space and in time. These localizations are merged
+        into one and new information about their columns is updated.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with the merged localizations.
+        
+        """
+        pass
+        
 if __name__ == '__main__':
     example = 'cluster'    
     
     if example == 'convert':
         from pathlib import Path
         
+        # Set the directory to the data file and load it into a DataFrame
         p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
         df = pd.read_csv(str(p))
-    
+        
+        # Define the input and output formats for the localization file
         inputFormat  = FormatThunderSTORM()
         outputFormat = FormatLEB()
         converter    = ConvertHeader(inputFormat, outputFormat)
         
+        # Convert the file into a new format
         convertedDF  = converter(df)
     
     elif example == 'cluster':
         from pathlib import Path
         
+        # Set the directory to the data file and load it into a DataFrame
         p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
         df = pd.read_csv(str(p))
-    
+        
+        # Set the DBSCAN parameters and the columns for clustering
         minSamples = 50
         eps        = 20
         coordCols  = ['x [nm]', 'y [nm]']
         
+        # Initialize the processor
         clusterMaker = Cluster(minSamples, eps, coordCols)
         
+        # Perform the clustering and return a DataFrame as a result
         clusteredDF  = clusterMaker(df)
