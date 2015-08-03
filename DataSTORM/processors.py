@@ -3,6 +3,7 @@ from sklearn.cluster import DBSCAN
 import pandas as pd
 import trackpy as tp
 import numpy as np
+from operator import *
 
 class Cluster:
     """Clusters the localizations into spatial clusters.
@@ -142,6 +143,67 @@ class ConvertHeader:
                 pass
             
         return mapping
+        
+class Filter:
+    """Processor for filtering DataFrames containing localizations.
+    
+    A filter processor works by selecting a dolumn of the input DataFrame and
+    creating a logical mask by applying the operator and parameter to each
+    value in the column. Rows that correspond to a value for 'False' in the
+    mask are removed from the DataFrame.
+    
+    """   
+    
+    _operatorMap = {'<'  : lt,
+                    '<=' : le,
+                    '==' : eq,
+                    '!=' : ne,
+                    '>=' : ge,
+                    '>'  : gt}    
+    
+    def __init__(self, columnName, operator, filterParameter):
+        """Define the data column and filter operation to perform.
+        
+        Parameters
+        ----------
+        columnName      : str
+        operator        : str
+            A string matching an operator defined in the _operatorMap dict.
+            Examples include '+', '<=' and '>'.
+        filterParameter : float
+        
+        """
+        try:
+            self._operator    = self._operatorMap[operator]
+        except KeyError:
+            print('Error: {:s} is not a recognized operator.'.format(operator))
+            raise KeyError
+        
+        self._columnName      = columnName
+        self._filterParameter = filterParameter
+    
+    def __call__(self, df):
+        """Filter out rows of the DataFrame.
+        
+        When this class is called, it filters out rows from the DataFrame by
+        removing rows containing values in 'columnName' that do not satisfy the
+        filter predicate.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A filtered DataFrame.
+        
+        """
+        procdf = df[self._operator(df[self._columnName],
+                                   self._filterParameter)]
+                                      
+        return procdf
 
 class FormatSTORM:
     """A datatype representing localization file formatting.
@@ -337,7 +399,7 @@ class Merge:
         return wAvg
         
 if __name__ == '__main__':
-    example = 'merge'
+    example = 'filter'
 
     # Set the directory to the data file and load it into a DataFrame
     from pathlib import Path
@@ -364,6 +426,15 @@ if __name__ == '__main__':
         
         # Perform the clustering and return a DataFrame as a result
         clusteredDF  = clusterMaker(df)
+        
+    elif example == 'filter':
+       
+       # Initialize the filter
+        myFilter = Filter('loglikelihood', '<', 250)
+        
+        # Filter the data by keeping rows with loglikelihood less than or equal
+        # to 250
+        filteredDF = myFilter(df)
         
     elif example == 'merge':
         # Convert test-data headers
