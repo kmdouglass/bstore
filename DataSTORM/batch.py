@@ -88,7 +88,7 @@ class BatchProcessor:
             outputFile = str(fileStem) + '_processed' + str(self._suffix)
             
             # In future versions, allow user to set the export command
-            df.to_csv(outputFile, sep = self._delimiter)
+            df.to_csv(outputFile, sep = self._delimiter, index = False)
             
             
     def _parseDirectory(self, inputDirectory, suffix = '.dat'):
