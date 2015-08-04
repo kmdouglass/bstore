@@ -201,7 +201,7 @@ class Filter:
         
         """
         procdf = df[self._operator(df[self._columnName],
-                                   self._filterParameter)]
+                                   self._filterParameter)].copy(deep = True)
                                       
         return procdf
 
