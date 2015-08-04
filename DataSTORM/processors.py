@@ -200,8 +200,9 @@ class Filter:
             A filtered DataFrame.
         
         """
+        # The index must be reset for some processors to work.
         procdf = df[self._operator(df[self._columnName],
-                                   self._filterParameter)].copy(deep = True)
+                                   self._filterParameter)].reset_index(drop = True)
                                       
         return procdf
 
