@@ -10,7 +10,7 @@ class Cluster:
     
     """
     def __init__(self, minSamples = 50, eps = 20, coordCols = ['x', 'y', 'z']):
-        """Set the DBSCAN parameters and list the columns in the data denotig
+        """Set the DBSCAN parameters and list the columns in the data denoting
         the localizations' spatial coordinates.
         
         Parameters
@@ -143,6 +143,33 @@ class ConvertHeader:
                 pass
             
         return mapping
+        
+class FiducialDriftCorrect:
+    """Correct localizations for lateral drift using fiducials.
+    
+    The fiducial drift correction processor implements an algorithm for
+    automatic fiducial detection and uses these localizations to correct the
+    other localization positions in the dataset.
+    
+    Attributes
+    ----------
+    splines   : UNKNOWN DATATYPE
+    avgSpline : UNKNOWN DATATYPE
+    """
+    def __init__(self,
+                 mergeRadius           = 30,
+                 offTime               = 3,
+                 minSegmentLength      = 30,
+                 minFracFiducialLength = 0.75,
+                 neighborRadius        = 100,
+                 fracWindowSize        = 1/10,
+                 fracFilterSize        = 1/25):
+        """Set parameters for automatic fiducial detection and spline fitting.
+        
+        TODO: FINISH TYPING ATTRIBUTES FOR DOCS
+        
+        """
+        pass
         
 class Filter:
     """Processor for filtering DataFrames containing localizations.
@@ -400,7 +427,7 @@ class Merge:
         return wAvg
         
 if __name__ == '__main__':
-    example = 'filter'
+    example = 'merge'
 
     # Set the directory to the data file and load it into a DataFrame
     from pathlib import Path
