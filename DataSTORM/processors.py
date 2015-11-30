@@ -153,8 +153,9 @@ class FiducialDriftCorrect:
     
     Attributes
     ----------
-    splines   : UNKNOWN DATATYPE
-    avgSpline : UNKNOWN DATATYPE
+    splines   : dict of UnivariateSpline, int, int
+    avgSpline : dict of UnivariateSpline, int, int
+    
     """
     def __init__(self,
                  mergeRadius           = 30,
@@ -162,15 +163,60 @@ class FiducialDriftCorrect:
                  minSegmentLength      = 30,
                  minFracFiducialLength = 0.75,
                  neighborRadius        = 100,
-                 fracWindowSize        = 1/10,
-                 fracFilterSize        = 1/25):
+                 fracWindowSize        = 1./10,
+                 fracFilterSize        = 1./25,
+                 linker                = tp.link_df):
         """Set parameters for automatic fiducial detection and spline fitting.
         
-        TODO: FINISH TYPING ATTRIBUTES FOR DOCS
+        Parameters
+        ----------
+        mergeRadius           : float
+            Maximum distance between successive localizations during merging.
+        offTime               : int
+            The number of frames for which a localization may disappear and
+            still be merged with others within the mergeRadius.
+        minSegmentLength      : int
+            The minimum number of frames grouped segments must span to be
+            considered a fiducial candidate.
+        minFracFiducialLength : float
+            The minimum fraction of the total number of frames a track must
+            span to be a fiducial. Must lie between 0 and 1.
+        neighborRadius        : float
+            The neighborhood radius for DBSCAN when grouping localizations from
+            candidate segments.
+        fracWindowSize        : float
+            Moving average window size as a fraction of the total fiducial
+            track length.
+        fracFilterSize        : float
+            Moving average Gaussian kernel width as a fraction of the total
+            fiducial track length
+        linker                : function
+            Specifies what linker function to use. The choices are tp.link_df
+            for when the entire data frame is stored in memory and
+            tp.link_df_iter for when streaming from an HDF5 file.
+            
+        """
+        # ADD ASSIGNMENT TO CLASS FIELDS
+        pass
+        
+    def __call__(self, df):
+        """Automatically find fiducial localizations and do drift correction.
+        
+        ADD DOCS
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with the same information but new column names.
         
         """
         pass
-        
+    
 class Filter:
     """Processor for filtering DataFrames containing localizations.
     
@@ -315,7 +361,11 @@ class Merge:
     """Merges nearby localizations in subsequent frames into one localization.
     
     """
-    def __init__(self, autoFindMergeRadius = True, tOff = 1, mergeRadius = 50, precisionColumn = 'precision'):
+    def __init__(self,
+                 autoFindMergeRadius = True,
+                 tOff                = 1,
+                 mergeRadius         = 50,
+                 precisionColumn     = 'precision'):
         """Set or calculate the merge radius and set the off time.
         
         The merge radius is the distance around a localization that another
