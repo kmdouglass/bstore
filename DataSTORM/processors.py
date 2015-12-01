@@ -153,7 +153,7 @@ class FiducialDriftCorrect:
     
     Attributes
     ----------
-    splines   : dict of UnivariateSpline, int, int
+    splines   : dict of UnivariateSpline, int, int POSSIBLY CHANGE DATATYPE AFTER IMPLEMENTATION
     avgSpline : dict of UnivariateSpline, int, int
     
     """
@@ -196,8 +196,26 @@ class FiducialDriftCorrect:
             tp.link_df_iter for when streaming from an HDF5 file.
             
         """
-        # ADD ASSIGNMENT TO CLASS FIELDS
-        pass
+        self.mergeRadius           = mergeRadius
+        self.offTime               = offTime
+        self.minSegmentLength      = minSegmentLength
+        self.minFracFiducialLength = minFracFiducialLength
+        self.neighborRadius        = neighborRadius
+        self.fracWindowSize        = fracWindowSize
+        self.fracFilterSize        = fracFilterSize
+        self.linker                = linker
+        
+        # Dict object holds the splines and their range
+        splines = {'xS'       : None,
+                   'yS'       : None,
+                   'minFrame' : None,
+                   'maxFrame' : None}
+                   
+        avgSpline = {'xS'       : None,
+                     'yS'       : None,
+                     'minFrame' : None,
+                     'maxFrame' : None}
+        
         
     def __call__(self, df):
         """Automatically find fiducial localizations and do drift correction.
