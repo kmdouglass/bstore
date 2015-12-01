@@ -153,8 +153,9 @@ class FiducialDriftCorrect:
     
     Attributes
     ----------
-    splines   : dict of UnivariateSpline, int, int POSSIBLY CHANGE DATATYPE AFTER IMPLEMENTATION
-    avgSpline : dict of UnivariateSpline, int, int
+    fiducialTrajectories : list of Pandas dataframe
+    splines              : dict of UnivariateSpline, int, int POSSIBLY CHANGE DATATYPE AFTER IMPLEMENTATION
+    avgSpline            : dict of UnivariateSpline, int, int
     
     """
     def __init__(self,
@@ -205,6 +206,9 @@ class FiducialDriftCorrect:
         self.fracFilterSize        = fracFilterSize
         self.linker                = linker
         
+        # Trajectories of fiducial markers
+        self.fiducialTrajectories = [None]        
+        
         # Dict object holds the splines and their range
         self.splines   = {'xS'       : None,
                           'yS'       : None,
@@ -230,6 +234,27 @@ class FiducialDriftCorrect:
         -------
         procdf : DataFrame
             A DataFrame object with the same information but new column names.
+        
+        """
+        # Reset the fiducial trajectories and find the fiducials
+        self.fiducialTrajectories = [None]        
+        self._detectFiducials(df.copy())
+        
+        # Check whether fiducial trajectories are empty
+        if self.fiducialTrajectories[0] is None:
+            return df
+        
+        # Perform spline fits on fiducial tracks
+        
+        
+        #return procdf
+        
+    def _detectFiducials(self, df):
+        """Automatically detect fiducials.
+        
+        Parameters
+        ----------
+        df : Pandas dataframe
         
         """
         # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
@@ -280,15 +305,15 @@ class FiducialDriftCorrect:
                                        keep    = False,
                                        inplace = True)
                                        
-        # Perform spline fits on fiducial tracks
+        # Save fiducial trajectories to the class's fiducialTrajectories field
+        self.fiducialTrajectories = [fids[['x', 'y', 'frame']]
+                                         for fids in fiducials]
+
+    def _fitSplines(self):
+        """Fit splines to the fiducial trajectories.
         
-        # Change column names back if they were changed at first
-        if renamedCols:
-            procdf.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'},
-                          inplace = True)
-        
-        return procdf
-    
+        """
+        pass
 class Filter:
     """Processor for filtering DataFrames containing localizations.
     
