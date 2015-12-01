@@ -206,16 +206,15 @@ class FiducialDriftCorrect:
         self.linker                = linker
         
         # Dict object holds the splines and their range
-        splines = {'xS'       : None,
-                   'yS'       : None,
-                   'minFrame' : None,
-                   'maxFrame' : None}
+        self.splines   = {'xS'       : None,
+                          'yS'       : None,
+                          'minFrame' : None,
+                          'maxFrame' : None}
                    
-        avgSpline = {'xS'       : None,
-                     'yS'       : None,
-                     'minFrame' : None,
-                     'maxFrame' : None}
-        
+        self.avgSpline = {'xS'       : None,
+                          'yS'       : None,
+                          'minFrame' : None,
+                          'maxFrame' : None}
         
     def __call__(self, df):
         """Automatically find fiducial localizations and do drift correction.
@@ -233,7 +232,10 @@ class FiducialDriftCorrect:
             A DataFrame object with the same information but new column names.
         
         """
-        pass
+        mergedLocs = linker(df, self.mergeRadius, memory = self.offTime)
+        
+        return mergedLocs        
+        
     
 class Filter:
     """Processor for filtering DataFrames containing localizations.
@@ -522,6 +524,19 @@ if __name__ == '__main__':
         
         # Perform the clustering and return a DataFrame as a result
         clusteredDF  = clusterMaker(df)
+        
+    elif example == 'fiducialDriftCorrect':
+        mergeRadius      = 30 # same units as x, y (typically nm)
+        offTime          = 3  # units of frames
+        minSegmentLength = 30 # units of frames
+        
+        # Initialize the drift corrector
+        corrector = FiducialDriftCorrect(mergeRadius      = mergeRadius,
+                                         offTime          = offTime,
+                                         minSegmentLength = minSegmentLength)
+                                         
+        # Perform drift correction
+        correctedDF = corrector(df)
         
     elif example == 'filter':
        
