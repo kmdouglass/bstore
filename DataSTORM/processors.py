@@ -158,7 +158,7 @@ class FiducialDriftCorrect:
     
     """
     def __init__(self,
-                 mergeRadius           = 30,
+                 mergeRadius           = 90,
                  offTime               = 3,
                  minSegmentLength      = 30,
                  minFracFiducialLength = 0.75,
@@ -232,10 +232,62 @@ class FiducialDriftCorrect:
             A DataFrame object with the same information but new column names.
         
         """
-        mergedLocs = linker(df, self.mergeRadius, memory = self.offTime)
+        # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
+        # This allows ThunderSTORM format to be used as well as the LEB format
+        if ('x [nm]' in df.columns) and ('y [nm]' in df.columns):
+            procdf      = df.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'})
+            renamedCols = True
+        else:
+            procdf      = df
+            renamedCols = False
+
+        # Merge localizations        
+        mergedLocs = self.linker(procdf,
+                                 self.mergeRadius,
+                                 memory = self.offTime)
         
-        return mergedLocs        
+        # Compute track lengths and remove tracks shorter than minSegmentLength
+        # Clear mergedLocs from memory when done
+        mergedFilteredLocs = tp.filter_stubs(mergedLocs, self.minSegmentLength)
+        del(mergedLocs)
         
+        # Cluster remaining localizations
+        maxFrame = mergedFilteredLocs['frame'].max() - \
+                   mergedFilteredLocs['frame'].min()
+        db = DBSCAN(eps = self.neighborRadius,
+                    min_samples = maxFrame * self.minFracFiducialLength)
+        db.fit(mergedFilteredLocs[['x', 'y']])
+        
+        # Check whether any fiducials were identified. If not, return the input
+        # dataframe and exit function.
+        numFiducials = len(np.unique(db.labels_)) - 1
+        try:
+            if numFiducials < 1:
+                raise ZeroFiducialsFound(numFiducials)
+        except ZeroFiducialsFound as excp:
+            print(
+            '{0} fiducials found. Returning original dataframe.'.format(excp))
+            return df
+        
+        # Extract localizations as a list of dataframes for each fiducial
+        # (-1 denotes unclustered localizations)
+        fiducials = [mergedFilteredLocs[db.labels_ == label]
+                         for label in np.unique(db.labels_) if label != -1]
+        
+        # Remove localizations belonging to the same frame
+        for fiducialDF in fiducials:
+            fiducialDF.drop_duplicates(subset  = 'frame',
+                                       keep    = False,
+                                       inplace = True)
+                                       
+        # Perform spline fits on fiducial tracks
+        
+        # Change column names back if they were changed at first
+        if renamedCols:
+            procdf.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'},
+                          inplace = True)
+        
+        return procdf
     
 class Filter:
     """Processor for filtering DataFrames containing localizations.
@@ -496,13 +548,22 @@ class Merge:
                
         return wAvg
         
+class ZeroFiducialsFound(Exception):
+    """Exception raised when zero fiducials are found during drift correction.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
 if __name__ == '__main__':
-    example = 'merge'
+    example = 'fiducialDriftCorrect'
 
     # Set the directory to the data file and load it into a DataFrame
     from pathlib import Path
     p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
-    df = pd.read_csv(str(p))    
+    df = pd.read_csv(str(p))
     
     if example == 'convert':
         # Define the input and output formats for the localization file
@@ -526,7 +587,12 @@ if __name__ == '__main__':
         clusteredDF  = clusterMaker(df)
         
     elif example == 'fiducialDriftCorrect':
-        mergeRadius      = 30 # same units as x, y (typically nm)
+        # Load data with fiducials present
+        fileName = Path('../test-data/acTub_COT_gain100_30ms/acTub_COT_gain100_30ms.csv')
+        with open(str(fileName), 'r') as file:
+            df = pd.read_csv(file)       
+        
+        mergeRadius      = 90 # same units as x, y (typically nm)
         offTime          = 3  # units of frames
         minSegmentLength = 30 # units of frames
         
@@ -539,7 +605,6 @@ if __name__ == '__main__':
         correctedDF = corrector(df)
         
     elif example == 'filter':
-       
        # Initialize the filter
         myFilter = Filter('loglikelihood', '<', 250)
         
