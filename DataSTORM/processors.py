@@ -4,6 +4,9 @@ import pandas as pd
 import trackpy as tp
 import numpy as np
 from operator import *
+from scipy.signal      import gaussian
+from scipy.ndimage     import filters
+from scipy.interpolate import UnivariateSpline
 
 class Cluster:
     """Clusters the localizations into spatial clusters.
@@ -205,20 +208,18 @@ class FiducialDriftCorrect:
         self.fracWindowSize        = fracWindowSize
         self.fracFilterSize        = fracFilterSize
         self.linker                = linker
-        
-        # Trajectories of fiducial markers
-        self.fiducialTrajectories = [None]        
+        self.fiducialTrajectories  = []        
         
         # Dict object holds the splines and their range
-        self.splines   = {'xS'       : None,
-                          'yS'       : None,
-                          'minFrame' : None,
-                          'maxFrame' : None}
+        self.splines   = {'xS'       : [],
+                          'yS'       : [],
+                          'minFrame' : [],
+                          'maxFrame' : []}
                    
-        self.avgSpline = {'xS'       : None,
-                          'yS'       : None,
-                          'minFrame' : None,
-                          'maxFrame' : None}
+        self.avgSpline = {'xS'       : [],
+                          'yS'       : [],
+                          'minFrame' : [],
+                          'maxFrame' : []}
         
     def __call__(self, df):
         """Automatically find fiducial localizations and do drift correction.
@@ -237,17 +238,40 @@ class FiducialDriftCorrect:
         
         """
         # Reset the fiducial trajectories and find the fiducials
-        self.fiducialTrajectories = [None]        
+        self.fiducialTrajectories = []        
         self._detectFiducials(df.copy())
         
         # Check whether fiducial trajectories are empty
-        if self.fiducialTrajectories[0] is None:
+        if not self.fiducialTrajectories:
             return df
         
         # Perform spline fits on fiducial tracks
+        self._fitSplines()
         
+        # Average the splines together        
+        self._combineSplines()
         
-        #return procdf
+        # Correct the localizations with the average spline fit
+        procdf = df
+        
+        return procdf
+        
+    def _combineSplines(self):
+        """Average the splines from different fiducials together.
+        
+        """
+        
+        # Build list of evaluated splines between the absolute max and 
+        # min frames. Assign NaNs to points where splines are evaluated outside
+        # their range, which is denoted as 0.
+        
+        # Shift spline with earliest frame to (x = 0, y = 0) at that frame
+        
+        # Shift other splines to the value of the first spline evaluated at
+        # their earliest frame
+        
+        # Compute the average over spline values, ignorning NaN's using isnan
+        pass
         
     def _detectFiducials(self, df):
         """Automatically detect fiducials.
@@ -312,8 +336,68 @@ class FiducialDriftCorrect:
     def _fitSplines(self):
         """Fit splines to the fiducial trajectories.
         
+        """ 
+        for fid in self.fiducialTrajectories:
+            maxFrame        = fid['frame'].max()
+            minFrame        = fid['frame'].min()
+            approxNumFrames = maxFrame - minFrame
+            windowSize      = approxNumFrames / self.fracWindowSize
+            sigma           = approxNumFrames / self.fracFilterSize
+            
+            # Determine the appropriate weighting factors
+            _, varx = self._movingAverage(fid['x'],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            _, vary = self._movingAverage(fid['y'],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            
+            # Perform spline fits. ext=1 means spline return 0 if
+            # extrapolating outside the fit range.
+            xSpline = UnivariateSpline(fid['frame'].as_matrix(),
+                                       fid['x'].as_matrix(),
+                                       w   = 1/np.sqrt(varx),
+                                       ext = 1)
+            ySpline = UnivariateSpline(fid['frame'].as_matrix(),
+                                       fid['y'].as_matrix(),
+                                       w   = 1/np.sqrt(vary),
+                                       ext = 1)
+                                       
+            # Append results to class field splines
+            self.splines['xS'].append(xSpline)
+            self.splines['yS'].append(ySpline)
+            self.splines['minFrame'].append(minFrame)
+            self.splines['maxFrame'].append(maxFrame)
+            
+    def _movingAverage(self, series, windowSize = 100, sigma = 3):
+        """Estimate the weights for the smoothing spline.
+        
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in frames (or time).
+        sigma      : int
+            Size of the Gaussian averaging kernel in frames (or time).
+            
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the moving window.
+        
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+        
         """
-        pass
+        b       = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b/b.sum())
+        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
+        return average, var
+    
 class Filter:
     """Processor for filtering DataFrames containing localizations.
     
