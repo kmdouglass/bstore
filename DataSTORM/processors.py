@@ -1,9 +1,10 @@
-from pathlib import Path
-from sklearn.cluster import DBSCAN
-import pandas as pd
+import pandas  as pd
 import trackpy as tp
-import numpy as np
-from operator import *
+import numpy   as np
+
+from pathlib           import Path
+from sklearn.cluster   import DBSCAN
+from operator          import *
 from scipy.signal      import gaussian
 from scipy.ndimage     import filters
 from scipy.interpolate import UnivariateSpline
@@ -156,9 +157,9 @@ class FiducialDriftCorrect:
     
     Attributes
     ----------
-    fiducialTrajectories : list of Pandas dataframe
-    splines              : dict of UnivariateSpline, int, int POSSIBLY CHANGE DATATYPE AFTER IMPLEMENTATION
-    avgSpline            : dict of UnivariateSpline, int, int
+    fiducialTrajectories : list of Pandas DataFrame
+    splines              : dict of 2x UnivariateSpline, 2x int
+    avgSpline            : Pandas DataFrame
     
     """
     def __init__(self,
@@ -224,8 +225,6 @@ class FiducialDriftCorrect:
     def __call__(self, df):
         """Automatically find fiducial localizations and do drift correction.
         
-        ADD DOCS
-        
         Parameters
         ----------
         df : DataFrame
@@ -234,9 +233,18 @@ class FiducialDriftCorrect:
         Returns
         -------
         procdf : DataFrame
-            A DataFrame object with the same information but new column names.
+            A DataFrame object with drift-corrected x- and y-coordinates.
         
         """
+        # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
+        # This allows ThunderSTORM format to be used as well as the LEB format
+        if ('x [nm]' in df.columns) and ('y [nm]' in df.columns):
+            df.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'},
+                      inplace = True)
+            renamedCols = True
+        else:
+            renamedCols = False        
+        
         # Reset the fiducial trajectories and find the fiducials
         self.fiducialTrajectories = []        
         self._detectFiducials(df.copy())
@@ -249,60 +257,98 @@ class FiducialDriftCorrect:
         self._fitSplines()
         
         # Average the splines together        
-        self._combineSplines()
+        self._combineSplines(df['frame'])
         
         # Correct the localizations with the average spline fit
-        procdf = df
+        self._correctLocalizations(df)
         
+        if renamedCols:
+            procdf = df.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'})
+        else:
+            procdf = df
+            
         return procdf
         
-    def _combineSplines(self):
+    def _combineSplines(self, frames):
         """Average the splines from different fiducials together.
         
+        _combineSplines(self, frames) relies on the assumption that fiducial
+        trajectories span a significant portion of the full number of frames in
+        the acquisition. Under this assumption, it uses the splines found in
+        _fitSplines() to extrapolate values outside of their tracks using the
+        boundary value. It next evaluates the splines at each frame spanning
+        the input DataFrame, shifts the evaluated splines to zero at the first
+        frame, and then computes the average across different fiducials.
+        
+        Parameters
+        ----------
+        frames : Pandas Series
+            All the frames present in the input data frame
         """
         
         # Build list of evaluated splines between the absolute max and 
-        # min frames. Assign NaNs to points where splines are evaluated outside
-        # their range, which is denoted as 0.
-        minFrame = min([i['minFrame'] for i in self.splines])
-        maxFrame = max([i['maxFrame'] for i in self.splines])
-        frames   = np.arange(minFrame, maxFrame, 1)
+        # min frames.
+        minFrame   = frames.min()
+        maxFrame   = frames.max()
+        frames     = np.arange(minFrame, maxFrame + 1, 1)
+        numSplines = len(self.splines['xS'])
         
-        fullRangeSplinesX = np.array([self.splines['xS'][i] for i in frames])
-        fullRangeSplinesY = np.array([self.splines['yS'][i] for i in frames])
+        fullRangeSplines = {'xS' : np.array([self.splines['xS'][i](frames)
+                                                 for i in range(numSplines)]),
+                            'yS' : np.array([self.splines['yS'][i](frames)
+                                                 for i in range(numSplines)])}
         
-        fullRangeSplinesX[fullRangeSplinesX == 0] = np.NaN
-        fullRangeSplinesY[fullRangeSplinesY == 0] = np.NaN        
+        # Shift each spline to (x = 0, y = 0) by subtracting its first value
+        for key in fullRangeSplines.keys():
+            for ctr, spline in enumerate(fullRangeSplines[key]):
+                firstFrameValue = spline[0]
+                fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
+                                                                firstFrameValue  
         
-        # Shift splines to (x = 0, y = 0) at their earliest frames
-        for splineX, splineY in fullRangeSplinesX, fullRangeSplinesY:
-            
+        # Compute the average over spline values
+        avgSpline = {'xS' : [], 'yS' : []}
+        for key in avgSpline.keys():
+            avgSpline[key] = np.mean(fullRangeSplines[key], axis = 0)
         
-        # Shift other splines to the value of the first spline evaluated at
-        # their earliest frame
+        # Append frames to avgSpline
+        avgSpline['frame'] = frames
         
-        # Compute the average over spline values, ignorning NaN's using isnan
-        pass
+        self.avgSpline = pd.DataFrame(avgSpline)
+        self.avgSpline.set_index('frame', inplace = True)
+    
+    def _correctLocalizations(self, df):
+        """Correct the localizations using the spline fits to fiducial tracks.
+        
+        Parameters
+        ----------
+        df : Pandas DataFrame
+            The input DataFrame for processing.
+        
+        """          
+        xc = self.avgSpline.lookup(df.frame, ['xS'] * df.frame.size)
+        yc = self.avgSpline.lookup(df.frame, ['yS'] * df.frame.size)
+        
+        df['x-drift'] = xc
+        df['y-drift'] = yc
+        df['x']       = df['x'] - xc
+        df['y']       = df['y'] - yc
         
     def _detectFiducials(self, df):
         """Automatically detect fiducials.
+        
+        The algorithm works by finding long-lived tracks after merging the
+        localizations. It then spatially clusters the long-lived tracks and
+        keeps clusters with a user-defined number of points, usually equal to
+        approximately 3/4 the total number of frames. Finally, it removes
+        duplicate localizations found in the same frame.
         
         Parameters
         ----------
         df : Pandas dataframe
         
         """
-        # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
-        # This allows ThunderSTORM format to be used as well as the LEB format
-        if ('x [nm]' in df.columns) and ('y [nm]' in df.columns):
-            procdf      = df.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'})
-            renamedCols = True
-        else:
-            procdf      = df
-            renamedCols = False
-
         # Merge localizations        
-        mergedLocs = self.linker(procdf,
+        mergedLocs = self.linker(df,
                                  self.mergeRadius,
                                  memory = self.offTime)
         
@@ -363,16 +409,16 @@ class FiducialDriftCorrect:
                                           windowSize = windowSize,
                                           sigma      = sigma)
             
-            # Perform spline fits. ext=1 means spline return 0 if
-            # extrapolating outside the fit range.
+            # Perform spline fits. Extrapolate using boundary values (const)
+            extrapMethod = 'const'
             xSpline = UnivariateSpline(fid['frame'].as_matrix(),
                                        fid['x'].as_matrix(),
                                        w   = 1/np.sqrt(varx),
-                                       ext = 1)
+                                       ext = extrapMethod)
             ySpline = UnivariateSpline(fid['frame'].as_matrix(),
                                        fid['y'].as_matrix(),
                                        w   = 1/np.sqrt(vary),
-                                       ext = 1)
+                                       ext = extrapMethod)
                                        
             # Append results to class field splines
             self.splines['xS'].append(xSpline)
@@ -710,7 +756,10 @@ if __name__ == '__main__':
         # Load data with fiducials present
         fileName = Path('../test-data/acTub_COT_gain100_30ms/acTub_COT_gain100_30ms.csv')
         with open(str(fileName), 'r') as file:
-            df = pd.read_csv(file)       
+            df = pd.read_csv(file)
+            
+        # Reduce number of columns (for debugging)
+        #newdf = df[df['frame'] < 2000].copy()
         
         mergeRadius      = 90 # same units as x, y (typically nm)
         offTime          = 3  # units of frames
