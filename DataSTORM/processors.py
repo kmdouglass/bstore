@@ -264,8 +264,19 @@ class FiducialDriftCorrect:
         # Build list of evaluated splines between the absolute max and 
         # min frames. Assign NaNs to points where splines are evaluated outside
         # their range, which is denoted as 0.
+        minFrame = min([i['minFrame'] for i in self.splines])
+        maxFrame = max([i['maxFrame'] for i in self.splines])
+        frames   = np.arange(minFrame, maxFrame, 1)
         
-        # Shift spline with earliest frame to (x = 0, y = 0) at that frame
+        fullRangeSplinesX = np.array([self.splines['xS'][i] for i in frames])
+        fullRangeSplinesY = np.array([self.splines['yS'][i] for i in frames])
+        
+        fullRangeSplinesX[fullRangeSplinesX == 0] = np.NaN
+        fullRangeSplinesY[fullRangeSplinesY == 0] = np.NaN        
+        
+        # Shift splines to (x = 0, y = 0) at their earliest frames
+        for splineX, splineY in fullRangeSplinesX, fullRangeSplinesY:
+            
         
         # Shift other splines to the value of the first spline evaluated at
         # their earliest frame
