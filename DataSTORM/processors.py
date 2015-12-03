@@ -260,12 +260,11 @@ class FiducialDriftCorrect:
         self._combineSplines(df['frame'])
         
         # Correct the localizations with the average spline fit
-        self._correctLocalizations(df)
+        procdf = self._correctLocalizations(df)
         
         if renamedCols:
-            procdf = df.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'})
-        else:
-            procdf = df
+            procdf.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'},
+                          inplace = True)
             
         return procdf
         
@@ -321,17 +320,26 @@ class FiducialDriftCorrect:
         
         Parameters
         ----------
-        df : Pandas DataFrame
+        df     : Pandas DataFrame
             The input DataFrame for processing.
+            
+        Returns
+        -------
+        corrdf : Pandas DataFrame
+            The corrected DataFrame.
         
-        """          
-        xc = self.avgSpline.lookup(df.frame, ['xS'] * df.frame.size)
-        yc = self.avgSpline.lookup(df.frame, ['yS'] * df.frame.size)
+        """
+        corrdf = df.copy()
         
-        df['x-drift'] = xc
-        df['y-drift'] = yc
-        df['x']       = df['x'] - xc
-        df['y']       = df['y'] - yc
+        xc = self.avgSpline.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
+        yc = self.avgSpline.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
+        
+        corrdf['x-drift'] = xc
+        corrdf['y-drift'] = yc
+        corrdf['x']       = corrdf['x'] - xc
+        corrdf['y']       = corrdf['y'] - yc
+        
+        return corrdf
         
     def _detectFiducials(self, df):
         """Automatically detect fiducials.
