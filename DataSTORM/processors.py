@@ -236,18 +236,20 @@ class FiducialDriftCorrect:
             A DataFrame object with drift-corrected x- and y-coordinates.
         
         """
+        copydf = df.copy()        
+        
         # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
         # This allows ThunderSTORM format to be used as well as the LEB format
-        if ('x [nm]' in df.columns) and ('y [nm]' in df.columns):
-            df.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'},
-                      inplace = True)
+        if ('x [nm]' in copydf.columns) and ('y [nm]' in copydf.columns):
+            copydf.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'},
+                          inplace = True)
             renamedCols = True
         else:
             renamedCols = False        
         
         # Reset the fiducial trajectories and find the fiducials
         self.fiducialTrajectories = []        
-        self._detectFiducials(df.copy())
+        self._detectFiducials(copydf)
         
         # Check whether fiducial trajectories are empty
         if not self.fiducialTrajectories:
@@ -257,10 +259,11 @@ class FiducialDriftCorrect:
         self._fitSplines()
         
         # Average the splines together        
-        self._combineSplines(df['frame'])
+        self._combineSplines(copydf['frame'])
         
         # Correct the localizations with the average spline fit
-        procdf = self._correctLocalizations(df)
+        # This will delete copydf and replace it with procdf
+        procdf = self._correctLocalizations(copydf)
         
         if renamedCols:
             procdf.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'},
@@ -318,6 +321,9 @@ class FiducialDriftCorrect:
     def _correctLocalizations(self, df):
         """Correct the localizations using the spline fits to fiducial tracks.
         
+        WARNING: To keep memory usage efficient, the input DataFrame is deleted
+        immediately its copied.
+        
         Parameters
         ----------
         df     : Pandas DataFrame
@@ -330,6 +336,7 @@ class FiducialDriftCorrect:
         
         """
         corrdf = df.copy()
+        del(df)        
         
         xc = self.avgSpline.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
         yc = self.avgSpline.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
@@ -355,8 +362,11 @@ class FiducialDriftCorrect:
         df : Pandas dataframe
         
         """
+        
+        procdf = df.copy()
+        
         # Merge localizations        
-        mergedLocs = self.linker(df,
+        mergedLocs = self.linker(procdf,
                                  self.mergeRadius,
                                  memory = self.offTime)
         
@@ -372,6 +382,8 @@ class FiducialDriftCorrect:
                     min_samples = maxFrame * self.minFracFiducialLength)
         db.fit(mergedFilteredLocs[['x', 'y']])
         
+        print(np.unique(db.labels_))        
+        
         # Check whether any fiducials were identified. If not, return the input
         # dataframe and exit function.
         numFiducials = len(np.unique(db.labels_)) - 1
@@ -381,7 +393,6 @@ class FiducialDriftCorrect:
         except ZeroFiducialsFound as excp:
             print(
             '{0} fiducials found. Returning original dataframe.'.format(excp))
-            return df
         
         # Extract localizations as a list of dataframes for each fiducial
         # (-1 denotes unclustered localizations)
