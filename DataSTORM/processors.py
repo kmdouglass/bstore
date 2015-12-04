@@ -170,8 +170,8 @@ class FiducialDriftCorrect:
                  neighborRadius        = 100,
                  interactiveSearch     = False,
                  searchRegions         = {'x' : [], 'y' : []},
-                 smoothingWindowSize   = 10,
-                 smoothingFilterSize   = 25,
+                 smoothingWindowSize   = 625,
+                 smoothingFilterSize   = 400,
                  linker                = tp.link_df):
         """Set parameters for automatic fiducial detection and spline fitting.
         
