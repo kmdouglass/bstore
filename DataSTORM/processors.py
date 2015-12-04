@@ -168,8 +168,10 @@ class FiducialDriftCorrect:
                  minSegmentLength      = 30,
                  minFracFiducialLength = 0.75,
                  neighborRadius        = 100,
-                 fracWindowSize        = 1./10,
-                 fracFilterSize        = 1./25,
+                 interactiveSearch     = False,
+                 searchRegions         = {'x' : [], 'y' : []},
+                 smoothingWindowSize   = 10,
+                 smoothingFilterSize   = 25,
                  linker                = tp.link_df):
         """Set parameters for automatic fiducial detection and spline fitting.
         
@@ -189,16 +191,20 @@ class FiducialDriftCorrect:
         neighborRadius        : float
             The neighborhood radius for DBSCAN when grouping localizations from
             candidate segments.
-        fracWindowSize        : float
-            Moving average window size as a fraction of the total fiducial
-            track length.
-        fracFilterSize        : float
-            Moving average Gaussian kernel width as a fraction of the total
-            fiducial track length
+        interactiveSearch     : bool
+            Interactively search for fiducials to reduce the size of the search
+            area.
+        searchRegions         : dict of list of tuples
+            Non-overlapping subregions of the data to search for fiducials
+        smoothingWindowSize   : float
+            Moving average window size in frames.
+        smoothingFilterSize   : float
+            Moving average Gaussian kernel width in frames.
         linker                : function
             Specifies what linker function to use. The choices are tp.link_df
             for when the entire data frame is stored in memory and
             tp.link_df_iter for when streaming from an HDF5 file.
+            (NOT IMPLEMENTED YET)
             
         """
         self.mergeRadius           = mergeRadius
@@ -206,18 +212,15 @@ class FiducialDriftCorrect:
         self.minSegmentLength      = minSegmentLength
         self.minFracFiducialLength = minFracFiducialLength
         self.neighborRadius        = neighborRadius
-        self.fracWindowSize        = fracWindowSize
-        self.fracFilterSize        = fracFilterSize
+        self.interactiveSearch     = interactiveSearch
+        self.searchRegions         = searchRegions
+        self.smoothingWindowSize   = smoothingWindowSize
+        self.smoothingFilterSize   = smoothingFilterSize
         self.linker                = linker
         self.fiducialTrajectories  = []        
         
         # Dict object holds the splines and their range
         self.splines   = {'xS'       : [],
-                          'yS'       : [],
-                          'minFrame' : [],
-                          'maxFrame' : []}
-                   
-        self.avgSpline = {'xS'       : [],
                           'yS'       : [],
                           'minFrame' : [],
                           'maxFrame' : []}
@@ -247,9 +250,16 @@ class FiducialDriftCorrect:
         else:
             renamedCols = False        
         
+        # Visually find areas where fiducials are likely to be present
+        if self.interactiveSearch:        
+            self._interactiveSearch(copydf)
+            
+        # Extract subregions to search for fiducials
+        fidRegionsdf = self._reduceSearchArea(copydf)
+        
         # Reset the fiducial trajectories and find the fiducials
         self.fiducialTrajectories = []        
-        self._detectFiducials(copydf)
+        self._detectFiducials(fidRegionsdf)
         
         # Check whether fiducial trajectories are empty
         if not self.fiducialTrajectories:
@@ -322,7 +332,7 @@ class FiducialDriftCorrect:
         """Correct the localizations using the spline fits to fiducial tracks.
         
         WARNING: To keep memory usage efficient, the input DataFrame is deleted
-        immediately its copied.
+        immediately after it's copied.
         
         Parameters
         ----------
@@ -412,12 +422,21 @@ class FiducialDriftCorrect:
         """Fit splines to the fiducial trajectories.
         
         """ 
+        # Check whether fiducial trajectories already exist
+        if not self.fiducialTrajectories:
+            return
+            
+        # Clear current spline fits
+        self.splines = {'xS'       : [],
+                        'yS'       : [],
+                        'minFrame' : [],
+                        'maxFrame' : []}
+        
         for fid in self.fiducialTrajectories:
             maxFrame        = fid['frame'].max()
             minFrame        = fid['frame'].min()
-            approxNumFrames = maxFrame - minFrame
-            windowSize      = approxNumFrames / self.fracWindowSize
-            sigma           = approxNumFrames / self.fracFilterSize
+            windowSize      = self.smoothingWindowSize
+            sigma           = self.smoothingFilterSize
             
             # Determine the appropriate weighting factors
             _, varx = self._movingAverage(fid['x'],
@@ -444,6 +463,18 @@ class FiducialDriftCorrect:
             self.splines['minFrame'].append(minFrame)
             self.splines['maxFrame'].append(maxFrame)
             
+    def _interactiveSearch(df):
+        """Interactively find fiducials in the histogram images.
+        
+        NOT IMPLEMENTED        
+        
+        Parameters
+        ----------
+        df : Pandas DataFrame
+        
+        """
+        pass
+    
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
         
@@ -472,6 +503,40 @@ class FiducialDriftCorrect:
         average = filters.convolve1d(series, b/b.sum())
         var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
         return average, var
+        
+    def _reduceSearchArea(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+        
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+        
+        Returns
+        -------
+        fidRegionsdf : Pandas DataFrame
+            DataFrame containing only select regions in which to search for
+            fiducials.
+        
+        """
+        # If search regions are not defined, return all localizations to search
+        if not self.searchRegions['x']:
+            return df
+        
+        minX = self.searchRegions['x'][0][0]
+        maxX = self.searchRegions['x'][0][1]
+        minY = self.searchRegions['y'][0][0]
+        maxY = self.searchRegions['y'][0][1]
+        
+        return df[(df['x'] > minX) & (df['x'] < maxX) & (df['y'] > minY) & (df['y'] < maxY)]
+    
+    def fitSplines():
+        """Perform a spline fit based on previously identified fiducials.
+        
+        NOT IMPLEMENTED
+        
+        """
+        pass
     
 class Filter:
     """Processor for filtering DataFrames containing localizations.
