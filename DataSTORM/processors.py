@@ -382,11 +382,10 @@ class FiducialDriftCorrect:
                     min_samples = maxFrame * self.minFracFiducialLength)
         db.fit(mergedFilteredLocs[['x', 'y']])
         
-        print(np.unique(db.labels_))        
-        
         # Check whether any fiducials were identified. If not, return the input
         # dataframe and exit function.
-        numFiducials = len(np.unique(db.labels_)) - 1
+        nonNoiseLabels = db.labels_[db.labels_ != -1]
+        numFiducials   = len(nonNoiseLabels)
         try:
             if numFiducials < 1:
                 raise ZeroFiducialsFound(numFiducials)
