@@ -169,7 +169,10 @@ class FiducialDriftCorrect:
                  minFracFiducialLength = 0.75,
                  neighborRadius        = 100,
                  interactiveSearch     = False,
-                 searchRegions         = {'x' : [], 'y' : []},
+                 searchRegions         = [{'xMin' : None,
+                                           'xMax' : None,
+                                           'yMin' : None,
+                                           'yMax' : None}],
                  smoothingWindowSize   = 625,
                  smoothingFilterSize   = 400,
                  linker                = tp.link_df):
@@ -194,7 +197,7 @@ class FiducialDriftCorrect:
         interactiveSearch     : bool
             Interactively search for fiducials to reduce the size of the search
             area.
-        searchRegions         : dict of list of tuples
+        searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials
         smoothingWindowSize   : float
             Moving average window size in frames.
@@ -281,10 +284,10 @@ class FiducialDriftCorrect:
             
         return procdf
         
-    def _combineSplines(self, frames):
+    def _combineSplines(self, framesdf):
         """Average the splines from different fiducials together.
         
-        _combineSplines(self, frames) relies on the assumption that fiducial
+        _combineSplines(self, framesdf) relies on the assumption that fiducial
         trajectories span a significant portion of the full number of frames in
         the acquisition. Under this assumption, it uses the splines found in
         _fitSplines() to extrapolate values outside of their tracks using the
@@ -294,14 +297,14 @@ class FiducialDriftCorrect:
         
         Parameters
         ----------
-        frames : Pandas Series
+        framesdf : Pandas Series
             All the frames present in the input data frame
         """
         
         # Build list of evaluated splines between the absolute max and 
         # min frames.
-        minFrame   = frames.min()
-        maxFrame   = frames.max()
+        minFrame   = framesdf.min()
+        maxFrame   = framesdf.max()
         frames     = np.arange(minFrame, maxFrame + 1, 1)
         numSplines = len(self.splines['xS'])
         
@@ -381,9 +384,10 @@ class FiducialDriftCorrect:
                                  memory = self.offTime)
         
         # Compute track lengths and remove tracks shorter than minSegmentLength
-        # Clear mergedLocs from memory when done
+        # Clear mergedLocs and procdf from memory when done
         mergedFilteredLocs = tp.filter_stubs(mergedLocs, self.minSegmentLength)
         del(mergedLocs)
+        del(procdf)
         
         # Cluster remaining localizations
         maxFrame = mergedFilteredLocs['frame'].max() - \
@@ -405,7 +409,8 @@ class FiducialDriftCorrect:
         
         # Extract localizations as a list of dataframes for each fiducial
         # (-1 denotes unclustered localizations)
-        fiducials = [mergedFilteredLocs[db.labels_ == label]
+        # (copy command prevents modifying slice of copy warning)
+        fiducials = [mergedFilteredLocs[db.labels_ == label].copy()
                          for label in np.unique(db.labels_) if label != -1]
         
         # Remove localizations belonging to the same frame
@@ -417,6 +422,9 @@ class FiducialDriftCorrect:
         # Save fiducial trajectories to the class's fiducialTrajectories field
         self.fiducialTrajectories = [fids[['x', 'y', 'frame']]
                                          for fids in fiducials]
+                                             
+        print('{0:d} fiducial(s) detected.'.format(
+                                               len(self.fiducialTrajectories)))
 
     def _fitSplines(self):
         """Fit splines to the fiducial trajectories.
@@ -520,23 +528,41 @@ class FiducialDriftCorrect:
         
         """
         # If search regions are not defined, return all localizations to search
-        if not self.searchRegions['x']:
+        if not self.searchRegions[0]['xMin']:
             return df
         
-        minX = self.searchRegions['x'][0][0]
-        maxX = self.searchRegions['x'][0][1]
-        minY = self.searchRegions['y'][0][0]
-        maxY = self.searchRegions['y'][0][1]
+        fidRegionsdf = []
+        numRegions   = len(self.searchRegions)
+        for region in range(numRegions):
+            xMin = self.searchRegions[region]['xMin']
+            xMax = self.searchRegions[region]['xMax']
+            yMin = self.searchRegions[region]['yMin']
+            yMax = self.searchRegions[region]['yMax']
         
-        return df[(df['x'] > minX) & (df['x'] < maxX) & (df['y'] > minY) & (df['y'] < maxY)]
+            fidRegionsdf = fidRegionsdf.append(df[(df['x'] > xMin) &
+                                                  (df['x'] < xMax) &
+                                                  (df['y'] > yMin) &
+                                                  (df['y'] < yMax)])
+        
+        # Ensure no duplicates with join = 'outer'.
+        return pd.concat(fidRegionsdf, join = 'outer')
     
-    def fitSplines():
+    def fitSplines(self):
         """Perform a spline fit based on previously identified fiducials.
         
         NOT IMPLEMENTED
         
         """
         pass
+    
+    def resetSearchRegions(self):
+        """Resets the search regions so that the entire dataset is searched.
+        
+        """
+        self.searchRegions = [{'xMin' : None,
+                               'xMax' : None,
+                               'yMin' : None,
+                               'yMax' : None}]
     
 class Filter:
     """Processor for filtering DataFrames containing localizations.
