@@ -14,10 +14,40 @@ from matplotlib.widgets import RectangleSelector
 class CleanUp:
     """Performs regular clean up routines on imported data.
     
-    NOT IMPLEMENTED
+    The cleanup processor encapsulates a few common steps that are performed on
+    imported datasets. Currently, these steps are:
+    
+    1) Convert rows containing strings to numeric data types
+    2) Drop rows containing strings that cannot be parsed to numeric types
+    3) Drop rows with Inf's and NaN's
     
     """
-    pass
+    def __call__(self, df):
+        """Clean up the data.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with the same information but new column names.
+        
+        """
+        procdf = df.copy()
+        del(df)
+
+        for column in procdf:        
+            # 'coerce' means anything unable to be parsed becomes a NaN
+            procdf[column] = pd.to_numeric(procdf[column], errors = 'coerce')
+            
+        procdf.replace([np.inf, -np.inf], np.nan, inplace = True)
+        procdf.dropna(inplace = True)
+        procdf.reindex()
+        
+        return procdf
 
 class Cluster:
     """Clusters the localizations into spatial clusters.
@@ -543,8 +573,7 @@ class FiducialDriftCorrect:
                                    (df['y'] > yMin) &
                                    (df['y'] < yMax)])
         
-        # Ensure no duplicates with join = 'outer'.
-        return pd.concat(fidRegionsdf, join = 'outer')
+        return pd.concat(fidRegionsdf).drop_duplicates()
         
     def iSearch(self,
                 df,
