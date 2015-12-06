@@ -320,7 +320,10 @@ class FiducialDriftCorrect:
         procdf = self._correctLocalizations(copydf)
         
         if renamedCols:
-            procdf.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'},
+            procdf.rename(columns = {'x'  : 'x [nm]',
+                                     'y'  : 'y [nm]',
+                                     'dx' : 'dx [nm]',
+                                     'dy' : 'dy [nm]'},
                           inplace = True)
             
         return procdf
@@ -395,10 +398,10 @@ class FiducialDriftCorrect:
         xc = self.avgSpline.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
         yc = self.avgSpline.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
         
-        corrdf['x-drift'] = xc
-        corrdf['y-drift'] = yc
-        corrdf['x']       = corrdf['x'] - xc
-        corrdf['y']       = corrdf['y'] - yc
+        corrdf['dx'] = xc
+        corrdf['dy'] = yc
+        corrdf['x']  = corrdf['x'] - xc
+        corrdf['y']  = corrdf['y'] - yc
         
         return corrdf
         
@@ -600,6 +603,7 @@ class FiducialDriftCorrect:
             Unit label for the histogram. This is only used for labeling the
             axes of the 2D histogram; users may change this depending on the
             units of their data and unitConvFactor.
+            
         """
         self.resetSearchRegions()
         
