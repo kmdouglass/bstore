@@ -1,13 +1,23 @@
-import pandas  as pd
-import trackpy as tp
-import numpy   as np
+import pandas            as pd
+import trackpy           as tp
+import numpy             as np
+import matplotlib.pyplot as plt
 
-from pathlib           import Path
-from sklearn.cluster   import DBSCAN
-from operator          import *
-from scipy.signal      import gaussian
-from scipy.ndimage     import filters
-from scipy.interpolate import UnivariateSpline
+from pathlib            import Path
+from sklearn.cluster    import DBSCAN
+from operator           import *
+from scipy.signal       import gaussian
+from scipy.ndimage      import filters
+from scipy.interpolate  import UnivariateSpline
+from matplotlib.widgets import RectangleSelector
+
+class CleanUp:
+    """Performs regular clean up routines on imported data.
+    
+    NOT IMPLEMENTED
+    
+    """
+    pass
 
 class Cluster:
     """Clusters the localizations into spatial clusters.
@@ -186,8 +196,8 @@ class FiducialDriftCorrect:
             The number of frames for which a localization may disappear and
             still be merged with others within the mergeRadius.
         minSegmentLength      : int
-            The minimum number of frames grouped segments must span to be
-            considered a fiducial candidate.
+            The minimum number of frames segments must span to be considered a
+            fiducial candidate.
         minFracFiducialLength : float
             The minimum fraction of the total number of frames a track must
             span to be a fiducial. Must lie between 0 and 1.
@@ -196,18 +206,19 @@ class FiducialDriftCorrect:
             candidate segments.
         interactiveSearch     : bool
             Interactively search for fiducials to reduce the size of the search
-            area.
+            area when the corrector is called.
         searchRegions         : list of dict of float
-            Non-overlapping subregions of the data to search for fiducials
+            Non-overlapping subregions of the data to search for fiducials.
+            Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
         smoothingWindowSize   : float
-            Moving average window size in frames.
+            Moving average window size in frames for spline fitting.
         smoothingFilterSize   : float
-            Moving average Gaussian kernel width in frames.
+            Moving average Gaussian kernel width in frames for spline fitting.
         linker                : function
             Specifies what linker function to use. The choices are tp.link_df
             for when the entire data frame is stored in memory and
             tp.link_df_iter for when streaming from an HDF5 file.
-            (NOT IMPLEMENTED YET)
+            (NOT IMPLEMENTED)
             
         """
         self.mergeRadius           = mergeRadius
@@ -255,7 +266,7 @@ class FiducialDriftCorrect:
         
         # Visually find areas where fiducials are likely to be present
         if self.interactiveSearch:        
-            self._interactiveSearch(copydf)
+            self.iSearch(copydf)
             
         # Extract subregions to search for fiducials
         fidRegionsdf = self._reduceSearchArea(copydf)
@@ -367,7 +378,7 @@ class FiducialDriftCorrect:
         The algorithm works by finding long-lived tracks after merging the
         localizations. It then spatially clusters the long-lived tracks and
         keeps clusters with a user-defined number of points, usually equal to
-        approximately 3/4 the total number of frames. Finally, it removes
+        approximately 1/2 the total number of frames. Finally, it removes
         duplicate localizations found in the same frame.
         
         Parameters
@@ -384,7 +395,7 @@ class FiducialDriftCorrect:
                                  memory = self.offTime)
         
         # Compute track lengths and remove tracks shorter than minSegmentLength
-        # Clear mergedLocs and procdf from memory when done
+        # Clear mergedLocs and procdf from memory when done for efficiency.
         mergedFilteredLocs = tp.filter_stubs(mergedLocs, self.minSegmentLength)
         del(mergedLocs)
         del(procdf)
@@ -470,18 +481,6 @@ class FiducialDriftCorrect:
             self.splines['yS'].append(ySpline)
             self.splines['minFrame'].append(minFrame)
             self.splines['maxFrame'].append(maxFrame)
-            
-    def _interactiveSearch(df):
-        """Interactively find fiducials in the histogram images.
-        
-        NOT IMPLEMENTED        
-        
-        Parameters
-        ----------
-        df : Pandas DataFrame
-        
-        """
-        pass
     
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
@@ -546,6 +545,92 @@ class FiducialDriftCorrect:
         
         # Ensure no duplicates with join = 'outer'.
         return pd.concat(fidRegionsdf, join = 'outer')
+        
+    def iSearch(self,
+                df,
+                gridSize       = 100,
+                unitConvFactor = 1./1000,
+                unitLabel      = 'microns'):
+        """Interactively find fiducials in the histogram images.
+        
+        Allows the user to select regions in which to search for fiducials.
+        
+        WARNING: This will reset the currently saved search regions.
+        
+        Parameters
+        ----------
+        df             : Pandas DataFrame
+            Data to visualize and search for fiducials.
+        gridSize       : float
+            The size of the hexagonal grid in the 2D histogram.
+        unitConvFactor : float
+            Conversion factor for plotting the 2D histogram in different units
+            than the data. Most commonly used to convert nanometers to microns.
+            In this case, there are unitConvFactor = 1/1000 nm/micron.
+        unitLabel      : str
+            Unit label for the histogram. This is only used for labeling the
+            axes of the 2D histogram; users may change this depending on the
+            units of their data and unitConvFactor.
+        """
+        self.resetSearchRegions()
+        
+        def onClose(event):
+            """Run when the figure closes.
+            
+            """
+            print('Closed Figure!')
+            fig.canvas.stop_event_loop()
+            
+        def onSelect(eclick, erelease):
+            pass
+        
+        def toggleSelector(event, processor):
+            """Handles user input.
+            
+            """
+            if event.key in ['r', 'R']:
+                print('Search regions reset to None.')
+                self.resetSearchRegions()
+            
+            if event.key in [' ']:
+                # Clear searchRegions if they are not empty
+                #(Important for when multiple search regions are selected.)
+                if not self.searchRegions[0]['xMin']:                
+                    # Convert searchRegions to empty list ready for appending
+                    self.searchRegions = []
+                
+                print('Space bar pressed!')
+                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
+                processor.searchRegions.append({'xMin' : xMin/unitConvFactor,
+                                                'xMax' : xMax/unitConvFactor,
+                                                'yMin' : yMin/unitConvFactor,
+                                                'yMax' : yMax/unitConvFactor})
+    
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('close_event', onClose)        
+        
+        im      = ax.hexbin(df['x'] * unitConvFactor,
+                            df['y'] * unitConvFactor,
+                            gridsize = gridSize,
+                            cmap = plt.cm.YlOrRd_r)
+        ax.set_xlabel(r'x-position, ' + unitLabel)
+        ax.set_ylabel(r'y-position, ' + unitLabel)
+        ax.invert_yaxis()
+    
+        cb      = plt.colorbar(im)
+        cb.set_label('Counts')
+
+        toggleSelector.RS = RectangleSelector(ax,
+                                              onSelect,
+                                              drawtype    = 'box',
+                                              useblit     = True,
+                                              button      = [1, 3], #l/r only
+                                              spancoords  = 'data',
+                                              interactive = True)
+        plt.connect('key_press_event',
+                    lambda event: toggleSelector(event, self))
+        plt.show()        
+        fig.canvas.start_event_loop_default()
     
     def fitSplines(self):
         """Perform a spline fit based on previously identified fiducials.
