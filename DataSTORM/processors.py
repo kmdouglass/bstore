@@ -213,6 +213,7 @@ class FiducialDriftCorrect:
                                            'xMax' : None,
                                            'yMin' : None,
                                            'yMax' : None}],
+                 dropFiducials         = True,
                  smoothingWindowSize   = 625,
                  smoothingFilterSize   = 400,
                  linker                = tp.link_df):
@@ -240,6 +241,8 @@ class FiducialDriftCorrect:
         searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials.
             Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
+        dropFiducials         : bool
+            Should the fiducial trajectories be dropped from the final dataset?
         smoothingWindowSize   : float
             Moving average window size in frames for spline fitting.
         smoothingFilterSize   : float
@@ -258,6 +261,7 @@ class FiducialDriftCorrect:
         self.neighborRadius        = neighborRadius
         self.interactiveSearch     = interactiveSearch
         self.searchRegions         = searchRegions
+        self.dropFiducials         = dropFiducials
         self.smoothingWindowSize   = smoothingWindowSize
         self.smoothingFilterSize   = smoothingFilterSize
         self.linker                = linker
@@ -283,7 +287,7 @@ class FiducialDriftCorrect:
             A DataFrame object with drift-corrected x- and y-coordinates.
         
         """
-        copydf = df.copy()        
+        copydf = df.copy()   
         
         # Rename 'x [nm]' and 'y [nm]' to 'x' and 'y' if necessary
         # This allows ThunderSTORM format to be used as well as the LEB format
@@ -308,6 +312,11 @@ class FiducialDriftCorrect:
         # Check whether fiducial trajectories are empty
         if not self.fiducialTrajectories:
             return df
+            
+        # Drop the fiducials from the full dataset
+        # MUST FIX BUGS
+        #if self.dropFiducials:
+        #    copydf = self._dropFiducials(copydf)
         
         # Perform spline fits on fiducial tracks
         self._fitSplines()
@@ -464,11 +473,31 @@ class FiducialDriftCorrect:
                                        inplace = True)
                                        
         # Save fiducial trajectories to the class's fiducialTrajectories field
-        self.fiducialTrajectories = [fids[['x', 'y', 'frame']]
-                                         for fids in fiducials]
+        self.fiducialTrajectories = fiducials
                                              
         print('{0:d} fiducial(s) detected.'.format(
                                                len(self.fiducialTrajectories)))
+    
+    def _dropFiducials(self, df):
+        """Drop rows belong to fiducial localizations from the dataset.
+        
+        Parameters
+        ----------
+        df : Pandas DataFrame
+        
+        Returns
+        -------
+        procdf : Pandas DataFrame
+        
+        """
+        procdf = df.copy()
+        
+        for fid in self.fiducialTrajectories:
+            del fid['particle']
+            procdf = pd.concat([procdf, fid])
+            procdf.drop_duplicates(keep = False)
+        
+        return procdf        
 
     def _fitSplines(self):
         """Fit splines to the fiducial trajectories.
