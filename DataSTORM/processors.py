@@ -769,6 +769,7 @@ class FormatSTORM:
         ts2leb['intensity [photon]'] = 'photons'
         ts2leb['offset [photon]']    = 'bg'
         ts2leb['loglikelihood']      = 'loglikelihood'
+        ts2leb['sigma [nm]']         = 'sigma'
         ts2leb['identifier']         = 'TSLEB'
         self.ts2leb                  = ts2leb
 
@@ -852,7 +853,7 @@ class Merge:
         self._autoFindMergeRadius = autoFindMergeRadius
         self._tOff                = tOff
         self._mergeRadius         = mergeRadius
-        self._precisionColumn      = precisionColumn
+        self._precisionColumn     = precisionColumn
     
     def __call__(self, df):
         """Merge nearby localizations into one.
