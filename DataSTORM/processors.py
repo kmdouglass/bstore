@@ -539,10 +539,10 @@ class FiducialDriftCorrect:
             yMin = self.searchRegions[region]['yMin']
             yMax = self.searchRegions[region]['yMax']
         
-            fidRegionsdf = fidRegionsdf.append(df[(df['x'] > xMin) &
-                                                  (df['x'] < xMax) &
-                                                  (df['y'] > yMin) &
-                                                  (df['y'] < yMax)])
+            fidRegionsdf.append(df[(df['x'] > xMin) &
+                                   (df['x'] < xMax) &
+                                   (df['y'] > yMin) &
+                                   (df['y'] < yMax)])
         
         # Ensure no duplicates with join = 'outer'.
         return pd.concat(fidRegionsdf, join = 'outer')
