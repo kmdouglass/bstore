@@ -315,8 +315,8 @@ class FiducialDriftCorrect:
             
         # Drop the fiducials from the full dataset
         # MUST FIX BUGS
-        #if self.dropFiducials:
-        #    copydf = self._dropFiducials(copydf)
+        if self.dropFiducials:
+            copydf = self._dropFiducials(copydf)
         
         # Perform spline fits on fiducial tracks
         self._fitSplines()
@@ -493,11 +493,17 @@ class FiducialDriftCorrect:
         procdf = df.copy()
         
         for fid in self.fiducialTrajectories:
-            del fid['particle']
-            procdf = pd.concat([procdf, fid])
-            procdf.drop_duplicates(keep = False)
+            procdf = pd.concat([procdf, fid], ignore_index = True)
+            procdf.drop_duplicates(subset = ['x', 'y', 'frame'],
+                                   keep = False,
+                                   inplace = True)
+            
+        try:
+            del procdf['particle']
+        except:
+            pass
         
-        return procdf        
+        return procdf       
 
     def _fitSplines(self):
         """Fit splines to the fiducial trajectories.
