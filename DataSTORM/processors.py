@@ -711,10 +711,18 @@ class FiducialDriftCorrect:
         Parameters
         ----------
         splineNumber : int
-            Index of the spline to plot.
+            Index of the spline to plot. (0-index)
         
         """
-        for fid in range(len(self.splines)):
+        if not splineNumber:
+            startIndex = 0
+            stopIndex  = len(self.splines)
+        else:
+            # Plot only the input spline
+            startIndex = splineNumber
+            stopIndex  = splineNumber + 1
+        
+        for fid in range(startIndex, stopIndex):
             fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True) 
             
             # Shift fiducial trajectories to zero at their start
@@ -745,6 +753,14 @@ class FiducialDriftCorrect:
             axy.set_xlabel('Frame number')
             axy.set_ylabel('y-position')
             plt.show()
+            
+    def plotSplines(self):
+        """Plot the spline fits on top of one another.
+        
+        NOT IMPLEMENTED
+        
+        """
+        pass
     
     def resetSearchRegions(self):
         """Resets the search regions so that the entire dataset is searched.
