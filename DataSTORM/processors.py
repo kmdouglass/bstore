@@ -730,8 +730,9 @@ class FiducialDriftCorrect:
             fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True) 
             
             # Shift fiducial trajectories to zero at their start
-            x0 = self.fiducialTrajectories[fid]['x'].iloc[[0]].as_matrix()
-            y0 = self.fiducialTrajectories[fid]['y'].iloc[[0]].as_matrix()
+            frame0 = self.fiducialTrajectories[fid]['frame'].iloc[[0]].as_matrix()
+            x0 = self.splines[fid]['xS'](frame0)
+            y0 = self.splines[fid]['yS'](frame0)            
             
             axx.plot(self.fiducialTrajectories[fid]['frame'],
                      self.fiducialTrajectories[fid]['x'] - x0,
