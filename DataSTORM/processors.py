@@ -198,7 +198,7 @@ class FiducialDriftCorrect:
     Attributes
     ----------
     fiducialTrajectories : list of Pandas DataFrame
-    splines              : dict of 2x UnivariateSpline, 2x int
+    splines              : list of dict of 2x UnivariateSpline, 2x int
     avgSpline            : Pandas DataFrame
     
     """
@@ -268,10 +268,10 @@ class FiducialDriftCorrect:
         self.fiducialTrajectories  = []        
         
         # Dict object holds the splines and their range
-        self.splines   = {'xS'       : [],
-                          'yS'       : [],
-                          'minFrame' : [],
-                          'maxFrame' : []}
+        self.splines   = [{'xS'       : [],
+                           'yS'       : [],
+                           'minFrame' : [],
+                           'maxFrame' : []}]
         
     def __call__(self, df):
         """Automatically find fiducial localizations and do drift correction.
@@ -359,11 +359,11 @@ class FiducialDriftCorrect:
         minFrame   = framesdf.min()
         maxFrame   = framesdf.max()
         frames     = np.arange(minFrame, maxFrame + 1, 1)
-        numSplines = len(self.splines['xS'])
+        numSplines = len(self.splines)
         
-        fullRangeSplines = {'xS' : np.array([self.splines['xS'][i](frames)
+        fullRangeSplines = {'xS' : np.array([self.splines[i]['xS'](frames)
                                                  for i in range(numSplines)]),
-                            'yS' : np.array([self.splines['yS'][i](frames)
+                            'yS' : np.array([self.splines[i]['yS'](frames)
                                                  for i in range(numSplines)])}
         
         # Shift each spline to (x = 0, y = 0) by subtracting its first value
@@ -514,10 +514,7 @@ class FiducialDriftCorrect:
             return
             
         # Clear current spline fits
-        self.splines = {'xS'       : [],
-                        'yS'       : [],
-                        'minFrame' : [],
-                        'maxFrame' : []}
+        self.splines = []
         
         for fid in self.fiducialTrajectories:
             maxFrame        = fid['frame'].max()
@@ -543,12 +540,12 @@ class FiducialDriftCorrect:
                                        fid['y'].as_matrix(),
                                        w   = 1/np.sqrt(vary),
                                        ext = extrapMethod)
-                                       
+            
             # Append results to class field splines
-            self.splines['xS'].append(xSpline)
-            self.splines['yS'].append(ySpline)
-            self.splines['minFrame'].append(minFrame)
-            self.splines['maxFrame'].append(maxFrame)
+            self.splines.append({'xS'       : xSpline,
+                                 'yS'       : ySpline,
+                                 'minFrame' : minFrame,
+                                 'maxFrame' : maxFrame})
     
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
