@@ -706,7 +706,10 @@ class FiducialDriftCorrect:
         pass
     
     def plotFiducials(self, splineNumber = None):
-        """Make a plot of each fiducial track and spline fit for verification.
+        """Make a plot of each fiducial track and the average spline fit.
+        
+        plotFiducials(splineNumber = None) allows the user to check the
+        individual fiducial tracks against the average spline fit.
                 
         Parameters
         ----------
@@ -715,10 +718,11 @@ class FiducialDriftCorrect:
         
         """
         if not splineNumber:
+            # Plot all trajectories and splines
             startIndex = 0
             stopIndex  = len(self.splines)
         else:
-            # Plot only the input spline
+            # Plot only the input trajectory and spline
             startIndex = splineNumber
             stopIndex  = splineNumber + 1
         
@@ -739,7 +743,7 @@ class FiducialDriftCorrect:
                      linewidth = 3,
                      color = 'red')
             axx.set_ylabel('x-position')
-            axx.set_title('Fiducial number: {0:d}'.format(fid))
+            axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
                      
             axy.plot(self.fiducialTrajectories[fid]['frame'],
                      self.fiducialTrajectories[fid]['y'] - y0,
@@ -760,7 +764,31 @@ class FiducialDriftCorrect:
         NOT IMPLEMENTED
         
         """
-        pass
+        for fid in range(len(self.splines)):
+            fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True) 
+            
+            # Shift fiducial trajectories to zero at their start
+            minFrame = self.splines[fid]['minFrame']
+            maxFrame = self.splines[fid]['maxFrame']
+            frames = np.arange(minFrame, maxFrame + 1)            
+            
+            axx.plot(frames,
+                     self.splines[fid]['xS'](frames),
+                     linewidth = 2,
+                     label = 'Fiducial number: {0:d}'.format(fid))
+            axx.set_ylabel('x-position')
+            axx.set_title('Splines')
+            axx.legend(loc = 'best')
+                     
+            axy.plot(frames,
+                     self.splines[fid]['yS'](frames),
+                     linewidth = 2,
+                     label = 'Fiducial number: {0:d}'.format(fid))
+            axy.set_xlabel('Frame number')
+            axy.set_ylabel('y-position')
+            axy.legend(loc = 'best')
+        
+        plt.show()
     
     def resetSearchRegions(self):
         """Resets the search regions so that the entire dataset is searched.
