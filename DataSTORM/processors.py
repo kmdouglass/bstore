@@ -891,6 +891,9 @@ class FormatSTORM:
         ts2leb['offset [photon]']    = 'bg'
         ts2leb['loglikelihood']      = 'loglikelihood'
         ts2leb['sigma [nm]']         = 'sigma'
+        ts2leb['dx [nm]']            = 'dx'
+        ts2leb['dy [nm]']            = 'dy'
+        ts2leb['length [frames]']    = 'length'
         ts2leb['identifier']         = 'TSLEB'
         self.ts2leb                  = ts2leb
 
