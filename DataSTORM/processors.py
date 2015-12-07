@@ -705,6 +705,47 @@ class FiducialDriftCorrect:
         """
         pass
     
+    def plotFiducials(self, splineNumber = None):
+        """Make a plot of each fiducial track and spline fit for verification.
+                
+        Parameters
+        ----------
+        splineNumber : int
+            Index of the spline to plot.
+        
+        """
+        for fid in range(len(self.splines)):
+            fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True) 
+            
+            # Shift fiducial trajectories to zero at their start
+            x0 = self.fiducialTrajectories[fid]['x'].iloc[[0]].as_matrix()
+            y0 = self.fiducialTrajectories[fid]['y'].iloc[[0]].as_matrix()
+            
+            axx.plot(self.fiducialTrajectories[fid]['frame'],
+                     self.fiducialTrajectories[fid]['x'] - x0,
+                     '.',
+                     color = 'blue',
+                     alpha = 0.5)
+            axx.plot(self.avgSpline.index,
+                     self.avgSpline['xS'],
+                     linewidth = 3,
+                     color = 'red')
+            axx.set_ylabel('x-position')
+            axx.set_title('Fiducial number: {0:d}'.format(fid))
+                     
+            axy.plot(self.fiducialTrajectories[fid]['frame'],
+                     self.fiducialTrajectories[fid]['y'] - y0,
+                     '.',
+                     color = 'blue',
+                     alpha = 0.5)
+            axy.plot(self.avgSpline.index,
+                     self.avgSpline['yS'],
+                     linewidth = 3,
+                     color = 'red')
+            axy.set_xlabel('Frame number')
+            axy.set_ylabel('y-position')
+            plt.show()
+    
     def resetSearchRegions(self):
         """Resets the search regions so that the entire dataset is searched.
         
