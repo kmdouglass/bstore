@@ -303,26 +303,25 @@ class FiducialDriftCorrect:
             self.iSearch(copydf)
             
         # Extract subregions to search for fiducials
-        fidRegionsdf = self._reduceSearchArea(copydf)
+        fidRegionsdf = self.reduceSearchArea(copydf)
         
         # Reset the fiducial trajectories and find the fiducials
         self.fiducialTrajectories = []        
-        self._detectFiducials(fidRegionsdf)
+        self.detectFiducials(fidRegionsdf)
         
         # Check whether fiducial trajectories are empty
         if not self.fiducialTrajectories:
             return df
             
         # Drop the fiducials from the full dataset
-        # MUST FIX BUGS
         if self.dropFiducials:
-            copydf = self._dropFiducials(copydf)
+            copydf = self.dropFiducials(copydf)
         
         # Perform spline fits on fiducial tracks
         self._fitSplines()
         
         # Average the splines together        
-        self._combineSplines(copydf['frame'])
+        self.combineSplines(copydf['frame'])
         
         # Correct the localizations with the average spline fit
         # This will delete copydf and replace it with procdf
@@ -336,53 +335,6 @@ class FiducialDriftCorrect:
                           inplace = True)
             
         return procdf
-        
-    def _combineSplines(self, framesdf):
-        """Average the splines from different fiducials together.
-        
-        _combineSplines(self, framesdf) relies on the assumption that fiducial
-        trajectories span a significant portion of the full number of frames in
-        the acquisition. Under this assumption, it uses the splines found in
-        _fitSplines() to extrapolate values outside of their tracks using the
-        boundary value. It next evaluates the splines at each frame spanning
-        the input DataFrame, shifts the evaluated splines to zero at the first
-        frame, and then computes the average across different fiducials.
-        
-        Parameters
-        ----------
-        framesdf : Pandas Series
-            All the frames present in the input data frame
-        """
-        
-        # Build list of evaluated splines between the absolute max and 
-        # min frames.
-        minFrame   = framesdf.min()
-        maxFrame   = framesdf.max()
-        frames     = np.arange(minFrame, maxFrame + 1, 1)
-        numSplines = len(self.splines)
-        
-        fullRangeSplines = {'xS' : np.array([self.splines[i]['xS'](frames)
-                                                 for i in range(numSplines)]),
-                            'yS' : np.array([self.splines[i]['yS'](frames)
-                                                 for i in range(numSplines)])}
-        
-        # Shift each spline to (x = 0, y = 0) by subtracting its first value
-        for key in fullRangeSplines.keys():
-            for ctr, spline in enumerate(fullRangeSplines[key]):
-                firstFrameValue = spline[0]
-                fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
-                                                                firstFrameValue  
-        
-        # Compute the average over spline values
-        avgSpline = {'xS' : [], 'yS' : []}
-        for key in avgSpline.keys():
-            avgSpline[key] = np.mean(fullRangeSplines[key], axis = 0)
-        
-        # Append frames to avgSpline
-        avgSpline['frame'] = frames
-        
-        self.avgSpline = pd.DataFrame(avgSpline)
-        self.avgSpline.set_index('frame', inplace = True)
     
     def _correctLocalizations(self, df):
         """Correct the localizations using the spline fits to fiducial tracks.
@@ -412,9 +364,94 @@ class FiducialDriftCorrect:
         corrdf['x']  = corrdf['x'] - xc
         corrdf['y']  = corrdf['y'] - yc
         
-        return corrdf
+        return corrdf    
+    
+    def _movingAverage(self, series, windowSize = 100, sigma = 3):
+        """Estimate the weights for the smoothing spline.
         
-    def _detectFiducials(self, df):
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in frames (or time).
+        sigma      : int
+            Size of the Gaussian averaging kernel in frames (or time).
+            
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the moving window.
+        
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+        
+        """
+        b       = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b/b.sum())
+        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
+        return average, var
+        
+    def combineSplines(self, framesdf, startFrame = None, stopFrame = None):
+        """Average the splines from different fiducials together.
+        
+        combineSplines(self, framesdf) relies on the assumption that fiducial
+        trajectories span a significant portion of the full number of frames in
+        the acquisition. Under this assumption, it uses the splines found in
+        _fitSplines() to extrapolate values outside of their tracks using the
+        boundary value. It next evaluates the splines at each frame spanning
+        the input DataFrame, shifts the evaluated splines to zero at the first
+        frame, and then computes the average across different fiducials.
+        
+        Parameters
+        ----------
+        framesdf   : Pandas Series
+            All the frames present in the input data frame
+        startFrame : int
+            Optional minimum frame number in full dataset (for chunking data)
+        stopFrame  : int
+            Optional maximum frame number in full dataset (for chunking data)
+        """
+        
+        # Build list of evaluated splines between the absolute max and 
+        # min frames.
+        if (not startFrame) and (not stopFrame):
+            minFrame   = framesdf.min()
+            maxFrame   = framesdf.max()
+        else:
+            minFrame = startFrame
+            maxFrame = stopFrame
+            
+        frames     = np.arange(minFrame, maxFrame + 1, 1)
+        numSplines = len(self.splines)
+        
+        fullRangeSplines = {'xS' : np.array([self.splines[i]['xS'](frames)
+                                                 for i in range(numSplines)]),
+                            'yS' : np.array([self.splines[i]['yS'](frames)
+                                                 for i in range(numSplines)])}
+        
+        # Shift each spline to (x = 0, y = 0) by subtracting its first value
+        for key in fullRangeSplines.keys():
+            for ctr, spline in enumerate(fullRangeSplines[key]):
+                firstFrameValue = spline[0]
+                fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
+                                                                firstFrameValue  
+        
+        # Compute the average over spline values
+        avgSpline = {'xS' : [], 'yS' : []}
+        for key in avgSpline.keys():
+            avgSpline[key] = np.mean(fullRangeSplines[key], axis = 0)
+        
+        # Append frames to avgSpline
+        avgSpline['frame'] = frames
+        
+        self.avgSpline = pd.DataFrame(avgSpline)
+        self.avgSpline.set_index('frame', inplace = True)
+        
+    def detectFiducials(self, df):
         """Automatically detect fiducials.
         
         The algorithm works by finding long-lived tracks after merging the
@@ -477,8 +514,8 @@ class FiducialDriftCorrect:
                                              
         print('{0:d} fiducial(s) detected.'.format(
                                                len(self.fiducialTrajectories)))
-    
-    def _dropFiducials(self, df):
+                                               
+    def dropFiducials(self, df):
         """Drop rows belong to fiducial localizations from the dataset.
         
         Parameters
@@ -503,9 +540,99 @@ class FiducialDriftCorrect:
         except:
             pass
         
-        return procdf       
+        return procdf
+        
+    def iSearch(self,
+                df,
+                resetRegions   = True,
+                gridSize       = 100,
+                unitConvFactor = 1./1000,
+                unitLabel      = 'microns'):
+        """Interactively find fiducials in the histogram images.
+        
+        Allows the user to select regions in which to search for fiducials.
+        
+        WARNING: This will reset the currently saved search regions.
+        
+        Parameters
+        ----------
+        df             : Pandas DataFrame
+            Data to visualize and search for fiducials.
+        resetRegions   : bool
+            Should the regions be reset every time iSearch is run? This should
+            be False when performing out-of-core processing.
+        gridSize       : float
+            The size of the hexagonal grid in the 2D histogram.
+        unitConvFactor : float
+            Conversion factor for plotting the 2D histogram in different units
+            than the data. Most commonly used to convert nanometers to microns.
+            In this case, there are unitConvFactor = 1/1000 nm/micron.
+        unitLabel      : str
+            Unit label for the histogram. This is only used for labeling the
+            axes of the 2D histogram; users may change this depending on the
+            units of their data and unitConvFactor.
+            
+        """
+        if resetRegions:
+            self.resetSearchRegions()
+        
+        def onClose(event):
+            """Run when the figure closes.
+            
+            """
+            fig.canvas.stop_event_loop()
+            
+        def onSelect(eclick, erelease):
+            pass
+        
+        def toggleSelector(event, processor):
+            """Handles user input.
+            
+            """
+            if event.key in ['r', 'R']:
+                print('Search regions reset to None.')
+                self.resetSearchRegions()
+            
+            if event.key in [' ']:
+                # Clear searchRegions if they are not empty
+                #(Important for when multiple search regions are selected.)
+                if not self.searchRegions[0]['xMin']:                
+                    # Convert searchRegions to empty list ready for appending
+                    self.searchRegions = []
+                
+                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
+                processor.searchRegions.append({'xMin' : xMin/unitConvFactor,
+                                                'xMax' : xMax/unitConvFactor,
+                                                'yMin' : yMin/unitConvFactor,
+                                                'yMax' : yMax/unitConvFactor})
+    
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('close_event', onClose)        
+        
+        im      = ax.hexbin(df['x'] * unitConvFactor,
+                            df['y'] * unitConvFactor,
+                            gridsize = gridSize,
+                            cmap = plt.cm.YlOrRd_r)
+        ax.set_xlabel(r'x-position, ' + unitLabel)
+        ax.set_ylabel(r'y-position, ' + unitLabel)
+        ax.invert_yaxis()
+    
+        cb      = plt.colorbar(im)
+        cb.set_label('Counts')
 
-    def _fitSplines(self):
+        toggleSelector.RS = RectangleSelector(ax,
+                                              onSelect,
+                                              drawtype    = 'box',
+                                              useblit     = True,
+                                              button      = [1, 3], #l/r only
+                                              spancoords  = 'data',
+                                              interactive = True)
+        plt.connect('key_press_event',
+                    lambda event: toggleSelector(event, self))
+        plt.show()        
+        fig.canvas.start_event_loop_default()
+    
+    def fitSplines(self):
         """Fit splines to the fiducial trajectories.
         
         """ 
@@ -546,164 +673,6 @@ class FiducialDriftCorrect:
                                  'yS'       : ySpline,
                                  'minFrame' : minFrame,
                                  'maxFrame' : maxFrame})
-    
-    def _movingAverage(self, series, windowSize = 100, sigma = 3):
-        """Estimate the weights for the smoothing spline.
-        
-        Parameters
-        ----------
-        series     : array of int
-            Discrete samples from a time series.
-        windowSize : int
-            Size of the moving average window in frames (or time).
-        sigma      : int
-            Size of the Gaussian averaging kernel in frames (or time).
-            
-        Returns
-        -------
-        average : float
-            The moving window average.
-        var     : float
-            The variance of the data within the moving window.
-        
-        References
-        ----------
-        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
-        
-        """
-        b       = gaussian(windowSize, sigma)
-        average = filters.convolve1d(series, b/b.sum())
-        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
-        return average, var
-        
-    def _reduceSearchArea(self, df):
-        """Reduce the size of the search area for automatic fiducial detection.
-        
-        Parameters
-        ----------
-        df           : Pandas DataFrame
-            DataFrame that will be spatially filtered.
-        
-        Returns
-        -------
-        fidRegionsdf : Pandas DataFrame
-            DataFrame containing only select regions in which to search for
-            fiducials.
-        
-        """
-        # If search regions are not defined, return all localizations to search
-        if not self.searchRegions[0]['xMin']:
-            return df
-        
-        fidRegionsdf = []
-        numRegions   = len(self.searchRegions)
-        for region in range(numRegions):
-            xMin = self.searchRegions[region]['xMin']
-            xMax = self.searchRegions[region]['xMax']
-            yMin = self.searchRegions[region]['yMin']
-            yMax = self.searchRegions[region]['yMax']
-        
-            fidRegionsdf.append(df[(df['x'] > xMin) &
-                                   (df['x'] < xMax) &
-                                   (df['y'] > yMin) &
-                                   (df['y'] < yMax)])
-        
-        return pd.concat(fidRegionsdf).drop_duplicates()
-        
-    def iSearch(self,
-                df,
-                gridSize       = 100,
-                unitConvFactor = 1./1000,
-                unitLabel      = 'microns'):
-        """Interactively find fiducials in the histogram images.
-        
-        Allows the user to select regions in which to search for fiducials.
-        
-        WARNING: This will reset the currently saved search regions.
-        
-        Parameters
-        ----------
-        df             : Pandas DataFrame
-            Data to visualize and search for fiducials.
-        gridSize       : float
-            The size of the hexagonal grid in the 2D histogram.
-        unitConvFactor : float
-            Conversion factor for plotting the 2D histogram in different units
-            than the data. Most commonly used to convert nanometers to microns.
-            In this case, there are unitConvFactor = 1/1000 nm/micron.
-        unitLabel      : str
-            Unit label for the histogram. This is only used for labeling the
-            axes of the 2D histogram; users may change this depending on the
-            units of their data and unitConvFactor.
-            
-        """
-        self.resetSearchRegions()
-        
-        def onClose(event):
-            """Run when the figure closes.
-            
-            """
-            print('Closed Figure!')
-            fig.canvas.stop_event_loop()
-            
-        def onSelect(eclick, erelease):
-            pass
-        
-        def toggleSelector(event, processor):
-            """Handles user input.
-            
-            """
-            if event.key in ['r', 'R']:
-                print('Search regions reset to None.')
-                self.resetSearchRegions()
-            
-            if event.key in [' ']:
-                # Clear searchRegions if they are not empty
-                #(Important for when multiple search regions are selected.)
-                if not self.searchRegions[0]['xMin']:                
-                    # Convert searchRegions to empty list ready for appending
-                    self.searchRegions = []
-                
-                print('Space bar pressed!')
-                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
-                processor.searchRegions.append({'xMin' : xMin/unitConvFactor,
-                                                'xMax' : xMax/unitConvFactor,
-                                                'yMin' : yMin/unitConvFactor,
-                                                'yMax' : yMax/unitConvFactor})
-    
-        fig, ax = plt.subplots()
-        fig.canvas.mpl_connect('close_event', onClose)        
-        
-        im      = ax.hexbin(df['x'] * unitConvFactor,
-                            df['y'] * unitConvFactor,
-                            gridsize = gridSize,
-                            cmap = plt.cm.YlOrRd_r)
-        ax.set_xlabel(r'x-position, ' + unitLabel)
-        ax.set_ylabel(r'y-position, ' + unitLabel)
-        ax.invert_yaxis()
-    
-        cb      = plt.colorbar(im)
-        cb.set_label('Counts')
-
-        toggleSelector.RS = RectangleSelector(ax,
-                                              onSelect,
-                                              drawtype    = 'box',
-                                              useblit     = True,
-                                              button      = [1, 3], #l/r only
-                                              spancoords  = 'data',
-                                              interactive = True)
-        plt.connect('key_press_event',
-                    lambda event: toggleSelector(event, self))
-        plt.show()        
-        fig.canvas.start_event_loop_default()
-    
-    def fitSplines(self):
-        """Perform a spline fit based on previously identified fiducials.
-        
-        NOT IMPLEMENTED
-        
-        """
-        pass
     
     def plotFiducials(self, splineNumber = None):
         """Make a plot of each fiducial track and the average spline fit.
@@ -762,8 +731,6 @@ class FiducialDriftCorrect:
     def plotSplines(self):
         """Plot the spline fits on top of one another.
         
-        NOT IMPLEMENTED
-        
         """
         for fid in range(len(self.splines)):
             fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True) 
@@ -790,6 +757,40 @@ class FiducialDriftCorrect:
             axy.legend(loc = 'best')
         
         plt.show()
+        
+    def reduceSearchArea(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+        
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+        
+        Returns
+        -------
+        fidRegionsdf : Pandas DataFrame
+            DataFrame containing only select regions in which to search for
+            fiducials.
+        
+        """
+        # If search regions are not defined, return all localizations to search
+        if not self.searchRegions[0]['xMin']:
+            return df
+        
+        fidRegionsdf = []
+        numRegions   = len(self.searchRegions)
+        for region in range(numRegions):
+            xMin = self.searchRegions[region]['xMin']
+            xMax = self.searchRegions[region]['xMax']
+            yMin = self.searchRegions[region]['yMin']
+            yMax = self.searchRegions[region]['yMax']
+        
+            fidRegionsdf.append(df[(df['x'] > xMin) &
+                                   (df['x'] < xMax) &
+                                   (df['y'] > yMin) &
+                                   (df['y'] < yMax)])
+        
+        return pd.concat(fidRegionsdf).drop_duplicates()
     
     def resetSearchRegions(self):
         """Resets the search regions so that the entire dataset is searched.
