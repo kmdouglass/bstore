@@ -213,7 +213,7 @@ class FiducialDriftCorrect:
                                            'xMax' : None,
                                            'yMin' : None,
                                            'yMax' : None}],
-                 dropFiducials         = True,
+                 removeFiducials       = True,
                  smoothingWindowSize   = 625,
                  smoothingFilterSize   = 400,
                  linker                = tp.link_df):
@@ -241,7 +241,7 @@ class FiducialDriftCorrect:
         searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials.
             Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
-        dropFiducials         : bool
+        removeFiducials       : bool
             Should the fiducial trajectories be dropped from the final dataset?
         smoothingWindowSize   : float
             Moving average window size in frames for spline fitting.
@@ -261,7 +261,7 @@ class FiducialDriftCorrect:
         self.neighborRadius        = neighborRadius
         self.interactiveSearch     = interactiveSearch
         self.searchRegions         = searchRegions
-        self.dropFiducials         = dropFiducials
+        self.removeFiducials       = removeFiducials
         self.smoothingWindowSize   = smoothingWindowSize
         self.smoothingFilterSize   = smoothingFilterSize
         self.linker                = linker
@@ -314,18 +314,18 @@ class FiducialDriftCorrect:
             return df
             
         # Drop the fiducials from the full dataset
-        if self.dropFiducials:
+        if self.removeFiducials:
             copydf = self.dropFiducials(copydf)
         
         # Perform spline fits on fiducial tracks
-        self._fitSplines()
+        self.fitSplines()
         
         # Average the splines together        
         self.combineSplines(copydf['frame'])
         
         # Correct the localizations with the average spline fit
         # This will delete copydf and replace it with procdf
-        procdf = self._correctLocalizations(copydf)
+        procdf = self.correctLocalizations(copydf)
         
         if renamedCols:
             procdf.rename(columns = {'x'  : 'x [nm]',
@@ -335,36 +335,6 @@ class FiducialDriftCorrect:
                           inplace = True)
             
         return procdf
-    
-    def _correctLocalizations(self, df):
-        """Correct the localizations using the spline fits to fiducial tracks.
-        
-        WARNING: To keep memory usage efficient, the input DataFrame is deleted
-        immediately after it's copied.
-        
-        Parameters
-        ----------
-        df     : Pandas DataFrame
-            The input DataFrame for processing.
-            
-        Returns
-        -------
-        corrdf : Pandas DataFrame
-            The corrected DataFrame.
-        
-        """
-        corrdf = df.copy()
-        del(df)        
-        
-        xc = self.avgSpline.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
-        yc = self.avgSpline.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
-        
-        corrdf['dx'] = xc
-        corrdf['dy'] = yc
-        corrdf['x']  = corrdf['x'] - xc
-        corrdf['y']  = corrdf['y'] - yc
-        
-        return corrdf    
     
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
@@ -401,7 +371,7 @@ class FiducialDriftCorrect:
         combineSplines(self, framesdf) relies on the assumption that fiducial
         trajectories span a significant portion of the full number of frames in
         the acquisition. Under this assumption, it uses the splines found in
-        _fitSplines() to extrapolate values outside of their tracks using the
+        fitSplines() to extrapolate values outside of their tracks using the
         boundary value. It next evaluates the splines at each frame spanning
         the input DataFrame, shifts the evaluated splines to zero at the first
         frame, and then computes the average across different fiducials.
@@ -450,6 +420,36 @@ class FiducialDriftCorrect:
         
         self.avgSpline = pd.DataFrame(avgSpline)
         self.avgSpline.set_index('frame', inplace = True)
+        
+    def correctLocalizations(self, df):
+        """Correct the localizations using the spline fits to fiducial tracks.
+        
+        WARNING: To keep memory usage efficient, the input DataFrame is deleted
+        immediately after it's copied.
+        
+        Parameters
+        ----------
+        df     : Pandas DataFrame
+            The input DataFrame for processing.
+            
+        Returns
+        -------
+        corrdf : Pandas DataFrame
+            The corrected DataFrame.
+        
+        """
+        corrdf = df.copy()
+        del(df)        
+        
+        xc = self.avgSpline.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
+        yc = self.avgSpline.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
+        
+        corrdf['dx'] = xc
+        corrdf['dy'] = yc
+        corrdf['x']  = corrdf['x'] - xc
+        corrdf['y']  = corrdf['y'] - yc
+        
+        return corrdf    
         
     def detectFiducials(self, df):
         """Automatically detect fiducials.
@@ -518,6 +518,12 @@ class FiducialDriftCorrect:
     def dropFiducials(self, df):
         """Drop rows belong to fiducial localizations from the dataset.
         
+        Notes
+        -----
+        This will only work if the full DataFrame is in memory. It will not
+        work if processing chunked data because fiducials will be added on to
+        the chunks.
+                
         Parameters
         ----------
         df : Pandas DataFrame
@@ -790,7 +796,9 @@ class FiducialDriftCorrect:
                                    (df['y'] > yMin) &
                                    (df['y'] < yMax)])
         
-        return pd.concat(fidRegionsdf).drop_duplicates()
+        return pd.concat(fidRegionsdf).drop_duplicates(subset=['x',
+                                                               'y',
+                                                               'frame'])
     
     def resetSearchRegions(self):
         """Resets the search regions so that the entire dataset is searched.
