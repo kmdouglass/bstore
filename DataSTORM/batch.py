@@ -85,7 +85,7 @@ class BatchProcessor:
             else:
                 fileStem = self._outputDirectory / file.stem
                 
-            outputFile = str(fileStem) + '_processed' + str(self._suffix)
+            outputFile = str(fileStem) + '_processed' + '.dat'
             
             # In future versions, allow user to set the export command
             df.to_csv(outputFile, sep = self._delimiter, index = False)
