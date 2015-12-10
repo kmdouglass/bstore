@@ -1029,6 +1029,15 @@ class Merge:
             A DataFrame object with the merged localizations.
         
         """
+        # Convert header if necessary
+        if 'x [nm]' in df.columns:
+            convertedHeader = True
+            
+            conv = ConvertHeader(FormatThunderSTORM(), FormatLEB())
+            df   = conv(df)
+        else:
+            convertedHeader = False
+        
         if self._autoFindMergeRadius:
             mergeRadius = 3 * df[self._precisionColumn].mean()
         else:
@@ -1064,6 +1073,10 @@ class Merge:
                       tempResultsMisc,
                       tempResultsLength)
         procdf = pd.concat(dataToJoin, axis = 1)
+        
+        if convertedHeader:
+            invconv = ConvertHeader(FormatLEB(), FormatThunderSTORM())
+            procdf  = invconv(procdf)
         
         return procdf
         
