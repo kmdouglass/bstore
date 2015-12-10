@@ -213,6 +213,8 @@ class FiducialDriftCorrect:
                                            'xMax' : None,
                                            'yMin' : None,
                                            'yMax' : None}],
+                 noLinking             = False,
+                 noClustering          = False,
                  removeFiducials       = True,
                  smoothingWindowSize   = 625,
                  smoothingFilterSize   = 400,
@@ -241,6 +243,14 @@ class FiducialDriftCorrect:
         searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials.
             Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
+        noLinking             : bool
+            Determines whether or not localizations should be linked in time.
+            This step can be computationally expensive for large/long datasets.
+        noClustering          : bool
+            Determines whether or not fiducial candidates should be spatially
+            clustered. This should be set to true if your fiducial tracks are
+            longer than about 60,000 frames due to memory consumption in
+            scikit-learn's DBSCAN implementation.
         removeFiducials       : bool
             Should the fiducial trajectories be dropped from the final dataset?
         smoothingWindowSize   : float
@@ -261,6 +271,8 @@ class FiducialDriftCorrect:
         self.neighborRadius        = neighborRadius
         self.interactiveSearch     = interactiveSearch
         self.searchRegions         = searchRegions
+        self.noLinking             = noLinking
+        self.noClustering          = noClustering
         self.removeFiducials       = removeFiducials
         self.smoothingWindowSize   = smoothingWindowSize
         self.smoothingFilterSize   = smoothingFilterSize
@@ -468,40 +480,49 @@ class FiducialDriftCorrect:
         
         procdf = df.copy()
         
-        # Merge localizations        
-        mergedLocs = self.linker(procdf,
-                                 self.mergeRadius,
-                                 memory = self.offTime)
+        if not self.noLinking:
+            # Merge localizations using the linker      
+            mergedLocs = self.linker(procdf,
+                                     self.mergeRadius,
+                                     memory = self.offTime)
+            
+            # Compute track lengths and remove tracks shorter than minSegmentLength
+            # Clear mergedLocs and procdf from memory when done for efficiency.
+            mergedFilteredLocs = tp.filter_stubs(mergedLocs, self.minSegmentLength)
+            del(mergedLocs)
+            del(procdf)
+        else:
+            # Don't perform linking; keep localizations within the search area
+            mergedFilteredLocs = procdf.copy()
+            del(procdf)
         
-        # Compute track lengths and remove tracks shorter than minSegmentLength
-        # Clear mergedLocs and procdf from memory when done for efficiency.
-        mergedFilteredLocs = tp.filter_stubs(mergedLocs, self.minSegmentLength)
-        del(mergedLocs)
-        del(procdf)
+        if not self.noClustering:
+            # Cluster remaining localizations
+            maxFrame = mergedFilteredLocs['frame'].max() - \
+                       mergedFilteredLocs['frame'].min()
+            db = DBSCAN(eps = self.neighborRadius,
+                        min_samples = maxFrame * self.minFracFiducialLength)
+            db.fit(mergedFilteredLocs[['x', 'y']])
+           
+            # Check whether any fiducials were identified. If not, return the input
+            # dataframe and exit function.
+            nonNoiseLabels = db.labels_[db.labels_ != -1]
+            numFiducials   = len(nonNoiseLabels)
+            try:
+                if numFiducials < 1:
+                    raise ZeroFiducialsFound(numFiducials)
+            except ZeroFiducialsFound as excp:
+                print(
+                '{0} fiducials found. Returning original dataframe.'.format(excp))
+            
+            # Extract localizations as a list of dataframes for each fiducial
+            # (-1 denotes unclustered localizations)
+            # (copy command prevents modifying slice of copy warning)
+            fiducials = [mergedFilteredLocs[db.labels_ == label].copy()
+                             for label in np.unique(db.labels_) if label != -1]
+        else:
+            fiducials = [mergedFilteredLocs]
         
-        # Cluster remaining localizations
-        maxFrame = mergedFilteredLocs['frame'].max() - \
-                   mergedFilteredLocs['frame'].min()
-        db = DBSCAN(eps = self.neighborRadius,
-                    min_samples = maxFrame * self.minFracFiducialLength)
-        db.fit(mergedFilteredLocs[['x', 'y']])
-        
-        # Check whether any fiducials were identified. If not, return the input
-        # dataframe and exit function.
-        nonNoiseLabels = db.labels_[db.labels_ != -1]
-        numFiducials   = len(nonNoiseLabels)
-        try:
-            if numFiducials < 1:
-                raise ZeroFiducialsFound(numFiducials)
-        except ZeroFiducialsFound as excp:
-            print(
-            '{0} fiducials found. Returning original dataframe.'.format(excp))
-        
-        # Extract localizations as a list of dataframes for each fiducial
-        # (-1 denotes unclustered localizations)
-        # (copy command prevents modifying slice of copy warning)
-        fiducials = [mergedFilteredLocs[db.labels_ == label].copy()
-                         for label in np.unique(db.labels_) if label != -1]
         
         # Remove localizations belonging to the same frame
         for fiducialDF in fiducials:
@@ -641,7 +662,8 @@ class FiducialDriftCorrect:
     def fitSplines(self):
         """Fit splines to the fiducial trajectories.
         
-        """ 
+        """
+        print('Performing spline fits...')
         # Check whether fiducial trajectories already exist
         if not self.fiducialTrajectories:
             return
