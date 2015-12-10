@@ -144,7 +144,7 @@ class ConvertHeader:
             A DataFrame object with the same information but new column names.
         
         """
-        procdf = df        
+        procdf = df       
         
         # Change the column names
         colNames = [self.mapping[oldName] for oldName in df.columns]
@@ -1074,6 +1074,7 @@ class Merge:
                       tempResultsLength)
         procdf = pd.concat(dataToJoin, axis = 1)
         
+        # Convert the header back to the ThunderSTORM format
         if convertedHeader:
             invconv = ConvertHeader(FormatLEB(), FormatThunderSTORM())
             procdf  = invconv(procdf)
