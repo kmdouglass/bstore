@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import DataSTORM.processors as dsproc
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
@@ -58,16 +59,16 @@ class BatchProcessor:
         self._outputDirectory = Path(outputDirectory)
         self._suffix          = suffix
         self._delimiter       = delimiter
+        
+        if (not self._outputDirectory.exists()) and (not self._useSameFolder):
+            print('Output directory does not exist. Creating it...')
+            self._outputDirectory.mkdir()
+            print('Created folder {:s}'.format(str(self._outputDirectory.resolve())))
             
     def go(self):
         """Initiate batch processing on all the files.
         
         """
-        if (not self._outputDirectory.exists()) and (not self._useSameFolder):
-            print('Output directory does not exist. Creating it...')
-            self._outputDirectory.mkdir()
-            print('Created folder {:s}'.format(str(self._outputDirectory.resolve())))
-        
         # Perform batch processing on all files
         for file in self.fileList:
             inputFile = str(file.resolve())
@@ -114,7 +115,7 @@ class BatchProcessor:
         return locResultFiles
         
 class H5BatchProcessor(BatchProcessor):
-    """Performs batch processing on H5 datafiles.
+    """Performs batch processing from CSV or H5 to H5 datafiles.
     
     Notes
     -----
@@ -129,7 +130,8 @@ class H5BatchProcessor(BatchProcessor):
                  outputDirectory = 'processed_data',
                  suffix          = '.h5',
                  delimiter       = ',',
-                 key             = 'raw',
+                 inputFileType   = 'csv',
+                 inputKey        = 'raw',
                  chunksize       = 2e6):
         """Parse the input directory by finding SMLM data files.
         
@@ -148,12 +150,16 @@ class H5BatchProcessor(BatchProcessor):
         outputDirectory : str or Path (default: 'processed_data')
             Relative path to the folder for saving the processed results. This
             is ignored if useSameFolder is True.
-        suffix          : str         (default: '.h5')
+        suffix          : str         (default: '.dat')
             The suffix identifying SMLM data files.
         delimiter       : str         (default: ',')
             Delimiter used to separate entries in the data files.
-        key             : str         (default: 'raw')
+        inputFileType   : str         (default: 'csv')
+            Specifies the input file type and determines which Pandas import
+            command is used. Can be either 'csv' or 'hdf'.
+        inputKey        : str         (default: 'raw')
             The key to the DataFrame inside the h5 file that will be processed.
+            This is only used if h5 files are being processed in batch.
         chunksize       : float       (default: 2e6)
             The number of rows to read when performing out-of-core processing.
         
@@ -164,19 +170,20 @@ class H5BatchProcessor(BatchProcessor):
                                                outputDirectory,
                                                suffix,
                                                delimiter)
-        self._key       = key
-        self._chunksize = chunksize
         
+        if (inputFileType != 'csv') and (inputFileType != 'hdf'):
+            message = "Error: Input file type must be either 'csv' or 'hdf'"
+            print(message)
+            raise ValueError(message)
+        
+        self._inputFileType = inputFileType                                       
+        self._inputKey      = inputKey
+        self._chunksize     = chunksize
 
     def go(self):
         """Initiate batch processing on all the files.
         
         """
-        if (not self._outputDirectory.exists()) and (not self._useSameFolder):
-            print('Output directory does not exist. Creating it...')
-            self._outputDirectory.mkdir()
-            print('Created folder {:s}'.format(str(self._outputDirectory.resolve())))
-        
         # Perform batch processing on all files
         for file in self.fileList:
             inputFile = str(file.resolve())
@@ -188,20 +195,30 @@ class H5BatchProcessor(BatchProcessor):
                 fileStem = self._outputDirectory / file.stem
                 
             outputFile  = str(fileStem) + '_processed.h5'            
-            outputStore = pd.HDFStore(outputFile)            
+            outputStore = pd.HDFStore(outputFile)
             
             # Read the data and divide it into chunks
-            """inputData = pd.read_hdf(inputFile,
-                                    key = self._key,
-                                    chunksize = self._chunksize)"""
-            inputData = pd.read_csv(inputFile,
-                                    sep = self._delimiter,
-                                    chunksize = self._chunksize)
+            if self._inputFileType == "hdf":
+                inputData = pd.read_hdf(inputFile,
+                                        key = self._key,
+                                        chunksize = self._chunksize)
+            else:
+                inputData = pd.read_csv(inputFile,
+                                        sep = self._delimiter,
+                                        chunksize = self._chunksize)
+                                        
+            # Convert to a format without units. This is to make the columns in
+            # the hdf file searchable.
+                converter  = dsproc.ConvertHeader(dsproc.FormatThunderSTORM(),
+                                                  dsproc.FormatLEB())
+                modPipeline = [converter] + self.pipeline
+                
             
             # Iterate over each chunk                               
             for ctr, chunk in enumerate(inputData):
+                
                 # Run each processor on the data in the store
-                for proc in self.pipeline:
+                for proc in modPipeline:
                     df = proc(chunk)
             
                 # Write the chunk to the hdf file
@@ -215,7 +232,14 @@ class H5BatchProcessor(BatchProcessor):
                                        df,
                                        format = 'table',
                                        data_columns = True)
+                                       
+            outputStore.close()
+            
+    def goMerge(self):
+        """Performs out-of-core merging on HDF files.
         
+        """
+        pass
 
 if __name__ == '__main__':
     from pathlib import Path
