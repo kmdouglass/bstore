@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import DataSTORM.processors as dsproc
+import trackpy as tp
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
@@ -60,6 +61,9 @@ class BatchProcessor:
         self._suffix          = suffix
         self._delimiter       = delimiter
         
+        # Remember the paths to all the processed files here
+        self._outputFileList   = []
+        
         if (not self._outputDirectory.exists()) and (not self._useSameFolder):
             print('Output directory does not exist. Creating it...')
             self._outputDirectory.mkdir()
@@ -87,6 +91,7 @@ class BatchProcessor:
                 fileStem = self._outputDirectory / file.stem
                 
             outputFile = str(fileStem) + '_processed' + '.dat'
+            self._outputFileList.append(Path(outputFile))
             
             # In future versions, allow user to set the export command
             df.to_csv(outputFile, sep = self._delimiter, index = False)
@@ -194,7 +199,7 @@ class H5BatchProcessor(BatchProcessor):
             else:
                 fileStem = self._outputDirectory / file.stem
                 
-            outputFile  = str(fileStem) + '_processed.h5'            
+            outputFile  = str(fileStem) + '_processed.h5'
             outputStore = pd.HDFStore(outputFile)
             
             # Read the data and divide it into chunks
@@ -222,24 +227,41 @@ class H5BatchProcessor(BatchProcessor):
                     df = proc(chunk)
             
                 # Write the chunk to the hdf file
-                if ctr == 1:
-                    outputStore.put('localizations',
-                                    df,
-                                    format = 'table',
-                                    data_columns = True)
-                else:
-                    outputStore.append('localizations',
-                                       df,
-                                       format = 'table',
-                                       data_columns = True)
-                                       
-            outputStore.close()
+                outputStore.append('raw',
+                                   df,
+                                   format = 'table',
+                                   data_columns = True)
             
-    def goMerge(self):
+            outputStore.close()
+            self._outputFileList.append(Path(outputFile))
+            
+    def goMerge(self, mergeRadius = 40, tOff = 1, preprocessed = True):
         """Performs out-of-core merging on HDF files.
         
+        goMerge requires HDF files (.h5) as inputs because the columns may be
+        queried directly from disk. Merged data is written directly into the
+        same h5 file, but with a different key.
+        
+        Parameters
+        ----------
+        preprocessed : bool (default: False)
+            Was the data already preprocssed in batch? If True, use the
+            self._outputFileList from the previous go() operation as inputs for
+            merging. Otherwise, use the files from the search of
+            inputDirectory.
         """
-        pass
+        if preprocessed:        
+            fileList = self._outputFileList
+        else:
+            fileList = self.fileList
+            
+        for file in fileList:
+            inputFile = str(file.resolve())
+            
+            # Link nearby localizations into one
+            with tp.PandasHDFStoreSingleNode(inputFile, key = self._inputKey) as s:
+                for linked in tp.link_df_iter(s, mergeRadius, memory = tOff):
+                    s.store.append('linked', linked, data_columns = True)           
 
 if __name__ == '__main__':
     from pathlib import Path
