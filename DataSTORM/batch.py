@@ -137,7 +137,8 @@ class H5BatchProcessor(BatchProcessor):
                  suffix          = '.h5',
                  delimiter       = ',',
                  inputFileType   = 'csv',
-                 inputKey        = 'processed',
+                 inputKey        = 'raw',
+                 outputKey       = 'processed',
                  chunksize       = 2e6):
         """Parse the input directory by finding SMLM data files.
         
@@ -166,6 +167,8 @@ class H5BatchProcessor(BatchProcessor):
         inputKey        : str         (default: 'processed')
             The key to the DataFrame inside the h5 file that will be processed.
             This is only used if h5 files are being processed in batch.
+        outputKey       : str         (default: 'processed')
+            The key to the DataFrame for writing.
         chunksize       : float       (default: 2e6)
             The number of rows to read when performing out-of-core processing.
             Set this to None if you don't want chunking to occur.
@@ -185,6 +188,7 @@ class H5BatchProcessor(BatchProcessor):
         
         self._inputFileType = inputFileType                                       
         self._inputKey      = inputKey
+        self._outputKey     = outputKey
         self._chunksize     = chunksize
 
     def go(self):
@@ -207,7 +211,7 @@ class H5BatchProcessor(BatchProcessor):
             # Read the data and divide it into chunks
             if self._inputFileType == "hdf":
                 inputData = pd.read_hdf(inputFile,
-                                        key = self._key,
+                                        key = self._inputKey,
                                         chunksize = self._chunksize,
                                         iterator  = True)
             else:
@@ -231,7 +235,7 @@ class H5BatchProcessor(BatchProcessor):
                     df = proc(chunk)
             
                 # Write the chunk to the hdf file
-                outputStore.append(self._inputKey,
+                outputStore.append(self._outputKey,
                                    df,
                                    format = 'table',
                                    data_columns = True)
@@ -275,7 +279,7 @@ class H5BatchProcessor(BatchProcessor):
             inputFile = str(file.resolve())
             
             # Link nearby localizations into one
-            with tp.PandasHDFStoreSingleNode(inputFile, key = self._inputKey) as s:
+            with tp.PandasHDFStoreSingleNode(inputFile, key = self._outputKey) as s:
                 for linked in tp.link_df_iter(s, mergeRadius, memory = tOff):
                     # Stream linked dataset to a temporary table named 'linked'
                     # inside the same hdf file.
