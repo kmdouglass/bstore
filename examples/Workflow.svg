@@ -9,12 +9,15 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="744.09448"
-   height="1052.3622"
+   width="663.73187"
+   height="794.13379"
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="New document 1">
+   sodipodi:docname="Workflow.svg"
+   inkscape:export-filename="/home/douglass/src/DataSTORM/examples/Workflow.png"
+   inkscape:export-xdpi="600.00238"
+   inkscape:export-ydpi="600.00238">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -24,9 +27,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="308.24481"
-     inkscape:cy="548.66287"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="129.18677"
+     inkscape:cy="403.33637"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -39,7 +42,11 @@
      inkscape:window-height="1129"
      inkscape:window-x="0"
      inkscape:window-y="49"
-     inkscape:window-maximized="1">
+     inkscape:window-maximized="1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0">
     <inkscape:grid
        type="xygrid"
        id="grid2985"
@@ -51,7 +58,9 @@
        spacingx="5mm"
        spacingy="5mm"
        empcolor="#ff0000"
-       empopacity="0.25098039" />
+       empopacity="0.25098039"
+       originx="-0.35402345mm"
+       originy="-51.089799mm" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -69,7 +78,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,1.0195312e-5)">
+     transform="translate(-1.2544138,-77.201513)">
     <rect
        style="fill:#00adef;fill-opacity:0.57456144;fill-rule:nonzero;stroke:#000000;stroke-width:1.57624996;stroke-linecap:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect2987"
@@ -81,7 +90,7 @@
     <flowRoot
        xml:space="preserve"
        id="flowRoot3759"
-       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Arial;font-style:normal;font-weight:normal;font-size:18px;line-height:125%;letter-spacing:0px;word-spacing:0px;-inkscape-font-specification:Arial;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr"><flowRegion
+       style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"><flowRegion
          id="flowRegion3761"><rect
            id="rect3763"
            width="81.428574"
@@ -89,7 +98,7 @@
            x="332.14285"
            y="123.79076"
            style="font-size:18px" /></flowRegion><flowPara
-         id="flowPara3765"></flowPara></flowRoot>    <text
+         id="flowPara3765" /></flowRoot>    <text
        xml:space="preserve"
        style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
        x="260.67007"
@@ -193,10 +202,139 @@
          sodipodi:role="line">No</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 124.01575,609.4488 212.5984,494.03054 301.1811,609.4488"
+       d="M 124.01575,609.4488 212.5984,494.03054 301.1811,662.5984"
        id="path3813"
        inkscape:connector-curvature="0"
        transform="translate(0,-1.0195312e-5)"
        sodipodi:nodetypes="ccc" />
+    <text
+       xml:space="preserve"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       x="0.83253878"
+       y="626.38629"
+       id="text3006"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3008"
+         x="0.83253878"
+         y="626.38629"
+         style="font-size:18px">Tutorial 2 - Batch Processing</tspan><tspan
+         sodipodi:role="line"
+         x="0.83253878"
+         y="648.88629"
+         id="tspan3010"
+         style="font-size:18px">Tutorial 3 - Drift correction</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3012"
+       y="690.38629"
+       x="200.83252"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       xml:space="preserve"><tspan
+         style="font-size:18px"
+         y="690.38629"
+         x="200.83252"
+         id="tspan3014"
+         sodipodi:role="line">Tutorial 4 - Out-of-core drift correction</tspan><tspan
+         style="font-size:18px"
+         id="tspan3016"
+         y="712.88629"
+         x="200.83252"
+         sodipodi:role="line">Tutorial 5 - Batch Processing with HDF</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3018"
+       y="556.08826"
+       x="123.96301"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       xml:space="preserve"><tspan
+         style="font-size:18px"
+         y="556.08826"
+         x="123.96301"
+         id="tspan3020"
+         sodipodi:role="line">Yes</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       x="253.11398"
+       y="556.08826"
+       id="text3022"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3024"
+         x="253.11398"
+         y="556.08826"
+         style="font-size:18px">No</tspan></text>
+    <path
+       sodipodi:nodetypes="ccc"
+       inkscape:connector-curvature="0"
+       id="path3026"
+       d="m 407.66142,662.59839 88.58265,-168.56786 88.5827,115.41826"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3028"
+       y="628.38629"
+       x="557.72711"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       xml:space="preserve"><tspan
+         style="font-size:18px"
+         id="tspan3032"
+         y="628.38629"
+         x="557.72711"
+         sodipodi:role="line">Tutorial 1</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3042"
+       y="556.08826"
+       x="431.11398"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       xml:space="preserve"><tspan
+         style="font-size:18px"
+         y="556.08826"
+         x="431.11398"
+         id="tspan3044"
+         sodipodi:role="line">No</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       x="553.96301"
+       y="556.08826"
+       id="text3046"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3048"
+         x="553.96301"
+         y="556.08826"
+         style="font-size:18px">Yes</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       x="42.866142"
+       y="800.04724"
+       id="text3050"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3052"
+         x="42.866142"
+         y="800.04724"
+         style="font-size:18px"><tspan
+   style="font-weight:bold;-inkscape-font-specification:Arial Bold"
+   id="tspan3060">Note</tspan>: Tutorial 5 on batch processing with HDF can be used for all cases, i.e.</tspan><tspan
+         sodipodi:role="line"
+         x="42.866142"
+         y="822.54724"
+         style="font-size:18px"
+         id="tspan3054">regardless of whether there is a single or multiple files and whether the</tspan><tspan
+         sodipodi:role="line"
+         x="42.866142"
+         y="845.04724"
+         style="font-size:18px"
+         id="tspan3056">data can fit into memory or not. However, HDF files are more complicated to</tspan><tspan
+         sodipodi:role="line"
+         x="42.866142"
+         y="867.54724"
+         style="font-size:18px"
+         id="tspan3058">use, .csv file functionality is also available.</tspan></text>
   </g>
 </svg>

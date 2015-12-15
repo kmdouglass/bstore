@@ -1079,8 +1079,8 @@ class Merge:
         tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
                                                      'frame'         : 'min',
                                                      'photons'       : 'sum',
-                                                     'bg'            : 'sum'})#,
-                                                     #'sigma'         : 'mean'})
+                                                     'bg'            : 'sum',
+                                                     'sigma'         : 'mean'})
         tempResultsLength      = pd.Series(particleGroups.size())
 
         # Rename the series

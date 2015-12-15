@@ -163,7 +163,7 @@ class H5BatchProcessor(BatchProcessor):
             Delimiter used to separate entries in the data files.
         inputFileType   : str         (default: 'csv')
             Specifies the input file type and determines which Pandas import
-            command is used. Can be either 'csv' or 'hdf'.
+            command is used. Can be either 'csv' or 'h5'.
         inputKey        : str         (default: 'processed')
             The key to the DataFrame inside the h5 file that will be processed.
             This is only used if h5 files are being processed in batch.
@@ -181,8 +181,8 @@ class H5BatchProcessor(BatchProcessor):
                                                suffix,
                                                delimiter)
         
-        if (inputFileType != 'csv') and (inputFileType != 'hdf'):
-            message = "Error: Input file type must be either 'csv' or 'hdf'"
+        if (inputFileType != 'csv') and (inputFileType != 'h5'):
+            message = "Error: Input file type must be either 'csv' or 'h5'"
             print(message)
             raise ValueError(message)
         
@@ -209,7 +209,7 @@ class H5BatchProcessor(BatchProcessor):
             outputStore = pd.HDFStore(outputFile)
             
             # Read the data and divide it into chunks
-            if self._inputFileType == "hdf":
+            if self._inputFileType == "h5":
                 inputData = pd.read_hdf(inputFile,
                                         key = self._inputKey,
                                         chunksize = self._chunksize,
