@@ -240,7 +240,7 @@ class H5BatchProcessor(BatchProcessor):
             self._outputFileList.append(Path(outputFile))
             
     def goMerge(self, mergeRadius = 40, tOff = 1, preprocessed = True):
-        """Performs out-of-core merging on HDF files.
+        """Performs both out-of-core and in-core merging on HDF files.
         
         goMerge requires HDF files (.h5) as inputs because the columns may be
         queried directly from disk. Merged data is written directly into the
