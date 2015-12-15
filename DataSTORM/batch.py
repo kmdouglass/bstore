@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 import DataSTORM.processors as dsproc
 import trackpy as tp
+import numpy as np
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
@@ -93,7 +94,7 @@ class BatchProcessor:
             outputFile = str(fileStem) + '_processed' + '.dat'
             self._outputFileList.append(Path(outputFile))
             
-            # In future versions, allow user to set the export command
+            # Save data to csv
             df.to_csv(outputFile, sep = self._delimiter, index = False)
             
             
@@ -167,6 +168,7 @@ class H5BatchProcessor(BatchProcessor):
             This is only used if h5 files are being processed in batch.
         chunksize       : float       (default: 2e6)
             The number of rows to read when performing out-of-core processing.
+            Set this to None if you don't want chunking to occur.
         
         """
         super(H5BatchProcessor, self).__init__(inputDirectory,
@@ -206,11 +208,13 @@ class H5BatchProcessor(BatchProcessor):
             if self._inputFileType == "hdf":
                 inputData = pd.read_hdf(inputFile,
                                         key = self._key,
-                                        chunksize = self._chunksize)
+                                        chunksize = self._chunksize,
+                                        iterator  = True)
             else:
                 inputData = pd.read_csv(inputFile,
                                         sep = self._delimiter,
-                                        chunksize = self._chunksize)
+                                        chunksize = self._chunksize,
+                                        iterator  = True)
                                         
             # Convert to a format without units. This is to make the columns in
             # the hdf file searchable.
@@ -220,7 +224,7 @@ class H5BatchProcessor(BatchProcessor):
                 
             
             # Iterate over each chunk                               
-            for ctr, chunk in enumerate(inputData):
+            for chunk in inputData:
                 
                 # Run each processor on the data in the store
                 for proc in modPipeline:
@@ -250,6 +254,11 @@ class H5BatchProcessor(BatchProcessor):
             merging. Otherwise, use the files from the search of
             inputDirectory.
         """
+        # Create a Merge instance for computing statistics
+        merger = dsproc.Merge(autoFindMergeRadius = False,
+                              mergeRadius = mergeRadius,
+                              tOff = tOff)        
+        
         if preprocessed:        
             fileList = self._outputFileList
         else:
@@ -261,7 +270,39 @@ class H5BatchProcessor(BatchProcessor):
             # Link nearby localizations into one
             with tp.PandasHDFStoreSingleNode(inputFile, key = self._inputKey) as s:
                 for linked in tp.link_df_iter(s, mergeRadius, memory = tOff):
-                    s.store.append('linked', linked, data_columns = True)           
+                    # Stream linked dataset to a separate table named 'linked'
+                    # inside the same hdf file.
+                    s.store.append('linked', linked, data_columns = True)
+                    
+            # Compute the statistics for each trajectory
+            with tp.PandasHDFStoreSingleNode(inputFile, key = 'linked') as s:
+                maxParticle = s.store.select_column('linked', 'particle').max()
+                maxParticle = int(maxParticle)
+                
+                # Chunk trajectories for faster processing
+                # (~10000 trajectory chunks)
+                chunkSize = int(maxParticle / 10000) + 1
+                particleChunks = np.array_split(np.arange(maxParticle),
+                                                chunkSize)
+                
+                # Loop over each trajectory (trackpy calls them particles)
+                for chunk in particleChunks:
+                    minTraj = np.min(chunk)
+                    maxTraj = np.max(chunk)
+                                        
+                    # Select all particles in the current chunk
+                    select  = ['particle>={:d}'.format(minTraj),
+                               'particle<={:d}'.format(maxTraj)]
+                    locData = s.store.select('linked', where = select).groupby('particle')
+                    
+                    # Send particle to Merge object to compute its statistics
+                    procdf = merger.calcGroupStats(locData)
+                    
+                    #Save this trajectory to the store in the 'merged' table
+                    s.store.append('merged', procdf, data_columns = True)
+            
+            # Remove the linked table from the hdf5 file
+            # TODO
 
 if __name__ == '__main__':
     from pathlib import Path

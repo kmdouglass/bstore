@@ -1050,14 +1050,37 @@ class Merge:
         particleGroups = dfTracked.groupby('particle')
         
         # Compute the statistics for each group of localizations
+        procdf = self.calcGroupStats(particleGroups)
+
+        # Convert the header back to the ThunderSTORM format
+        if convertedHeader:
+            invconv = ConvertHeader(FormatLEB(), FormatThunderSTORM())
+            procdf  = invconv(procdf)
+        
+        return procdf
+        
+    def calcGroupStats(self, particleGroups):
+        """Calculates the statistics of the linked trajectories.
+        
+        Parameters
+        ----------
+        group  : Pandas GroupBy
+            The linked localizations.
+            
+        Returns
+        -------
+        procdf : Pandas DataFrame
+            DataFrame containing the fully merged localizations.
+            
+        """
         tempResultsX           = particleGroups.apply(self._wAvg, 'x')
         tempResultsY           = particleGroups.apply(self._wAvg, 'y')
         tempResultsZ           = particleGroups.apply(self._wAvg, 'z')
         tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
                                                      'frame'         : 'min',
                                                      'photons'       : 'sum',
-                                                     'bg'            : 'sum',
-                                                     'sigma'         : 'mean'})
+                                                     'bg'            : 'sum'})#,
+                                                     #'sigma'         : 'mean'})
         tempResultsLength      = pd.Series(particleGroups.size())
 
         # Rename the series
@@ -1073,11 +1096,6 @@ class Merge:
                       tempResultsMisc,
                       tempResultsLength)
         procdf = pd.concat(dataToJoin, axis = 1)
-        
-        # Convert the header back to the ThunderSTORM format
-        if convertedHeader:
-            invconv = ConvertHeader(FormatLEB(), FormatThunderSTORM())
-            procdf  = invconv(procdf)
         
         return procdf
         
@@ -1119,11 +1137,11 @@ class ZeroFiducialsFound(Exception):
         return repr(self.value)
         
 if __name__ == '__main__':
-    example = 'fiducialDriftCorrect'
+    example = 'merge'
 
     # Set the directory to the data file and load it into a DataFrame
     from pathlib import Path
-    p  = Path('../test-data/pSuper_1/pSuper_1_locResults.dat')
+    p  = Path('../test-data/Telomeres/pSuper_1/pSuper_1_locResults.dat')
     df = pd.read_csv(str(p))
     
     if example == 'convert':
@@ -1197,4 +1215,6 @@ if __name__ == '__main__':
         
         # Perform the merging
         mergedDF = merger(cdf)
+        
+        mergedDF.to_csv('temp.csv',sep = ',', index = False)
         
