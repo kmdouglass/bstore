@@ -137,7 +137,7 @@ class H5BatchProcessor(BatchProcessor):
                  suffix          = '.h5',
                  delimiter       = ',',
                  inputFileType   = 'csv',
-                 inputKey        = 'raw',
+                 inputKey        = 'processed',
                  chunksize       = 2e6):
         """Parse the input directory by finding SMLM data files.
         
@@ -163,7 +163,7 @@ class H5BatchProcessor(BatchProcessor):
         inputFileType   : str         (default: 'csv')
             Specifies the input file type and determines which Pandas import
             command is used. Can be either 'csv' or 'hdf'.
-        inputKey        : str         (default: 'raw')
+        inputKey        : str         (default: 'processed')
             The key to the DataFrame inside the h5 file that will be processed.
             This is only used if h5 files are being processed in batch.
         chunksize       : float       (default: 2e6)
@@ -231,7 +231,7 @@ class H5BatchProcessor(BatchProcessor):
                     df = proc(chunk)
             
                 # Write the chunk to the hdf file
-                outputStore.append('raw',
+                outputStore.append(self._inputKey,
                                    df,
                                    format = 'table',
                                    data_columns = True)
@@ -239,7 +239,11 @@ class H5BatchProcessor(BatchProcessor):
             outputStore.close()
             self._outputFileList.append(Path(outputFile))
             
-    def goMerge(self, mergeRadius = 40, tOff = 1, preprocessed = True):
+    def goMerge(self,
+                mergeRadius = 40,
+                tOff         = 1,
+                preprocessed = True,
+                writeChunks  = 10000):
         """Performs both out-of-core and in-core merging on HDF files.
         
         goMerge requires HDF files (.h5) as inputs because the columns may be
@@ -253,6 +257,9 @@ class H5BatchProcessor(BatchProcessor):
             self._outputFileList from the previous go() operation as inputs for
             merging. Otherwise, use the files from the search of
             inputDirectory.
+        chunkSize    : int  (default: 10000)
+            The number of trajectories to save at once to the HDF file. Larger
+            numbers give better performance but consume more memory.
         """
         # Create a Merge instance for computing statistics
         merger = dsproc.Merge(autoFindMergeRadius = False,
@@ -270,7 +277,7 @@ class H5BatchProcessor(BatchProcessor):
             # Link nearby localizations into one
             with tp.PandasHDFStoreSingleNode(inputFile, key = self._inputKey) as s:
                 for linked in tp.link_df_iter(s, mergeRadius, memory = tOff):
-                    # Stream linked dataset to a separate table named 'linked'
+                    # Stream linked dataset to a temporary table named 'linked'
                     # inside the same hdf file.
                     s.store.append('linked', linked, data_columns = True)
                     
@@ -281,7 +288,7 @@ class H5BatchProcessor(BatchProcessor):
                 
                 # Chunk trajectories for faster processing
                 # (~10000 trajectory chunks)
-                chunkSize = int(maxParticle / 10000) + 1
+                chunkSize = int(maxParticle / writeChunks) + 1
                 particleChunks = np.array_split(np.arange(maxParticle),
                                                 chunkSize)
                 
@@ -301,8 +308,8 @@ class H5BatchProcessor(BatchProcessor):
                     #Save this trajectory to the store in the 'merged' table
                     s.store.append('merged', procdf, data_columns = True)
             
-            # Remove the linked table from the hdf5 file
-            # TODO
+                # Remove the linked table from the hdf5 file
+                s.store.remove('linked')
 
 if __name__ == '__main__':
     from pathlib import Path
