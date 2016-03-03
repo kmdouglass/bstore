@@ -3,6 +3,7 @@ from pathlib import Path
 import DataSTORM.processors as dsproc
 import trackpy as tp
 import numpy as np
+import h5py
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
@@ -120,10 +121,12 @@ class BatchProcessor:
                 df = converter(df)
                 
                 # Write the chunk to the hdf file
-                outputStore.append('processed_localizations',
-                                   df,
-                                   format = 'table',
-                                   data_columns = True)
+                outputStore.put(self._genKey(file.stem) \
+                              + '/processed_localizations',
+                                df,
+                                format       = 'table',
+                                data_columns = True,
+                                index        = False)
             
                 outputStore.close()
             
@@ -152,11 +155,50 @@ class BatchProcessor:
         
         return locResultFiles
         
-    def genKey(self):
+    def _genKey(self, fileStem, sep = '_MMStack'):
         """Generates a key string for a dataset in the h5 file.
         
         """
-        pass
+        # Removes everything after and including sep, usually '_MMStack...'
+        subkey, _ = fileStem.split(sep = sep)
+        
+        # Removes the number to create the parent key
+        # For example, HeLaS_shTRF_1 becomes HeLaS_shTRF
+        parentKey = subkey.split(sep = '_')
+        parentKey.pop()
+        parentKey = '_'.join(parentKey)
+        
+        return parentKey + '/' + subkey
+    
+    @staticmethod
+    def bindImage(h5Filename, searchFolder):
+        """Finds widefield images and saves them to an hdf5 file.
+        
+        bindImage() searches a directory for widefield images that match the
+        keys in an hdf5 file and saves these images to the file.
+        """
+        # Open the h5 file and read its keys
+        f = h5py.File(str(h5Filename), 'a')        
+        datasetNames = [key for key in f.keys()]
+        
+        # Loop through each dataset's subkeys and find a matching WF file
+        # fov = field of view
+        for dataset in f.keys():
+            for fov in f[dataset].keys():
+                # Get the current fov number
+                fovNum = fov.split(sep = '_'); fovNum = fovNum[-1]
+                
+                # Search the folder for the widefield images
+                searchString = '**/' + dataset + '*_WF' + str(fovNum) + '*'
+                folder = searchFolder.glob(searchString)
+                folder = sorted(folder)
+                
+                # Assert that there's only one folder                
+                
+                # Find the ONE TIF file within folder
+                image = folder[0].glob('**/*.tif')
+                image = sorted(image)
+                print(image)
         
 class H5BatchProcessor(BatchProcessor):
     """Performs batch processing from CSV or H5 to H5 datafiles.
