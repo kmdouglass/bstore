@@ -22,7 +22,9 @@ class BatchProcessor:
                  useSameFolder   = False,
                  outputDirectory = 'processed_data',
                  suffix          = '.dat',
-                 delimiter       = ','):
+                 delimiter       = ',',
+                 saveFormat      = 'csv',
+                 h5Filename      = 'DataSTORM'):
         """Parse the input directory by finding SMLM data files.
         
         The constructor parses the input directory and creates a list of Path
@@ -44,6 +46,11 @@ class BatchProcessor:
             The suffix identifying SMLM data files.
         delimiter       : str         (default: ',')
             Delimiter used to separate entries in the data files.
+        saveFormat      : str         (default: 'csv')
+            One of 'csv' or 'hdf'.
+        h5Filename      : str         (default: 'DataSTORM')
+            The filename of the output hdf5 store. This is ignored if
+            saveFormat is set to 'csv'.
         
         """
         try:        
@@ -54,6 +61,8 @@ class BatchProcessor:
                 raise UserWarning
             elif not self.fileList:
                 raise ValueError('Error: No files ending in {:s} were found.'.format(suffix))
+            elif saveFormat not in ['csv', 'hdf']:
+                raise ValueError('Error: saveFormat must be \'csv\' or \'hdf\'. \'{:s}\' was provided.'.format(saveFormat))
         except UserWarning:
             print('Warning: Pipeline contains no Processors.')
         
@@ -61,6 +70,8 @@ class BatchProcessor:
         self._outputDirectory = Path(outputDirectory)
         self._suffix          = suffix
         self._delimiter       = delimiter
+        self._saveFormat      = saveFormat
+        self._h5Filename      = h5Filename + '.h5'
         
         # Remember the paths to all the processed files here
         self._outputFileList   = []
@@ -85,18 +96,39 @@ class BatchProcessor:
             for proc in self.pipeline:
                 df = proc(df)
             
-            # Save the final DataFrame
-            if self._useSameFolder:
-                fileStem = file.resolve().parent / file.stem
-            else:
-                fileStem = self._outputDirectory / file.stem
+            # Save the final DataFrame to a csv flat file
+            if self._saveFormat == 'csv':
+                # Set the csv filename stem
+                if self._useSameFolder:
+                    fileStem = file.resolve().parent / file.stem
+                else:
+                    fileStem = self._outputDirectory / file.stem                
                 
-            outputFile = str(fileStem) + '_processed' + '.dat'
+                # Write the data
+                outputFile = str(fileStem) + '_processed' + '.dat'                
+                df.to_csv(outputFile, sep = self._delimiter, index = False)
+               
+            # Save the final DataFrame to a hdf5 store
+            elif self._saveFormat == 'hdf':
+                outputFile  = self._outputDirectory / Path(self._h5Filename)
+                outputStore = pd.HDFStore(str(outputFile))
+                
+                # Convert to a format without units. This is to make the columns in
+                # the hdf file searchable.
+                converter  = dsproc.ConvertHeader(dsproc.FormatThunderSTORM(),
+                                                  dsproc.FormatLEB())
+                df = converter(df)
+                
+                # Write the chunk to the hdf file
+                outputStore.append('processed_localizations',
+                                   df,
+                                   format = 'table',
+                                   data_columns = True)
+            
+                outputStore.close()
+            
+            # Remember the output files                
             self._outputFileList.append(Path(outputFile))
-            
-            # Save data to csv
-            df.to_csv(outputFile, sep = self._delimiter, index = False)
-            
             
     def _parseDirectory(self, inputDirectory, suffix = '.dat'):
         """Finds all localization data files in a directory or directory tree.
@@ -119,6 +151,12 @@ class BatchProcessor:
         locResultFiles    = sorted(locResultFilesGen)
         
         return locResultFiles
+        
+    def genKey(self):
+        """Generates a key string for a dataset in the h5 file.
+        
+        """
+        pass
         
 class H5BatchProcessor(BatchProcessor):
     """Performs batch processing from CSV or H5 to H5 datafiles.
