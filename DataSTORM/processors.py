@@ -134,29 +134,41 @@ class ComputeClusterStats:
         groups = df.groupby(self._idLabel)
         
         # Computes the statistics for each cluster
-        tempResultsMisc        = groups.agg({'x' : 'mean',
-                                             'y' : 'mean'})
-        tempResultsLength      = pd.Series(groups.size())
+        tempResultsCoM    = groups.agg({'x' : 'mean',
+                                        'y' : 'mean'})
+        tempResultsRg     = groups.apply(self._radiusOfGyration, ['x', 'y'])
+        
+        tempResultsLength = pd.Series(groups.size())
 
         # Rename the series
-        tempResultsMisc['x'].name   = 'x_Center'
-        tempResultsMisc['y'].name   = 'y_Center'
+        tempResultsCoM.rename(columns = {'x': 'x_center',
+                                         'y': 'y_center'},
+                              inplace = True)
+        tempResultsRg.name          = 'radius_of_gyration'
         tempResultsLength.name      = 'length'
         
         # Create the merged DataFrame
-        dataToJoin = (tempResultsMisc,
-                      tempResultsLength)
+        dataToJoin = (tempResultsCoM,
+                      tempResultsLength,
+                      tempResultsRg)
         procdf = pd.concat(dataToJoin, axis = 1)
                                                      
         # To save: cluster_ID, numLoc, xmean, ymean, Rg, eccentricity
         return procdf
     
-    def _radiusOfGyration(self):
+    def _radiusOfGyration(self, group, coordinates):
         """Computes the radius of gyration of a grouped cluster.
         
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations.       
+        
         """
-        pass
-    
+        variances = group[coordinates].var()
+        return np.sqrt(3 * variances.sum() / 2)
+        
+        
     def _eccentricity(self):
         """ Computes the eccentricity of a grouped cluster.
         
