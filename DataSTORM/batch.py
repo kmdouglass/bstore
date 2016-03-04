@@ -4,6 +4,7 @@ import DataSTORM.processors as dsproc
 import trackpy as tp
 import numpy as np
 import h5py
+import matplotlib.pyplot as plt
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
@@ -176,9 +177,10 @@ class BatchProcessor:
         
         bindImage() searches a directory for widefield images that match the
         keys in an hdf5 file and saves these images to the file.
+        
         """
         # Open the h5 file and read its keys
-        f = h5py.File(str(h5Filename), 'a')        
+        f            = h5py.File(str(h5Filename), 'a')        
         datasetNames = [key for key in f.keys()]
         
         # Loop through each dataset's subkeys and find a matching WF file
@@ -193,12 +195,26 @@ class BatchProcessor:
                 folder = searchFolder.glob(searchString)
                 folder = sorted(folder)
                 
-                # Assert that there's only one folder                
-                
-                # Find the ONE TIF file within folder
+                # There should be only one widefield image
+                assert len(folder) == 1, \
+                       'Error: multiple widefield image directories found. Are they named correctly?'
+
                 image = folder[0].glob('**/*.tif')
                 image = sorted(image)
-                print(image)
+                assert len(image) == 1, \
+                       'Error: multiple widefield images found. Are there multiple images in a directory?'
+                image = image[0]
+                
+                # Read the image into memory, then save it to the hdf5 file
+                wfImage = plt.imread(str(image))
+                saveKey = dataset + '/' + fov + '/widefield_image'
+                saveImg = f.create_dataset(saveKey,
+                                           wfImage.shape,
+                                           data = wfImage) 
+                
+                print('Binding {0:s} to {1:s}...'.format(str(image), saveKey))
+                
+        f.close()
         
 class H5BatchProcessor(BatchProcessor):
     """Performs batch processing from CSV or H5 to H5 datafiles.
