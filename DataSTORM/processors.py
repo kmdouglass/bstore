@@ -53,7 +53,7 @@ class Cluster:
     """Clusters the localizations into spatial clusters.
     
     """
-    def __init__(self, minSamples = 50, eps = 20, coordCols = ['x', 'y', 'z']):
+    def __init__(self, minSamples = 50, eps = 20, coordCols = ['x', 'y']):
         """Set the DBSCAN parameters and list the columns in the data denoting
         the localizations' spatial coordinates.
         
@@ -95,12 +95,74 @@ class Cluster:
         db.fit(df[columnsToCluster])
         
         # Get the cluster labels and make it a Pandas Series
-        clusterLabels = pd.Series(db.labels_, name = 'cluster id')
+        clusterLabels = pd.Series(db.labels_, name = 'cluster_id')
         
         # Append the labels to the DataFrame
         procdf = pd.concat([df, clusterLabels], axis = 1)
         
         return procdf
+
+class ComputeClusterStats:
+    """Computes statistics for clusters of localizations.
+    
+    """
+    def __init__(self, idLabel = 'cluster_id', coordCols = ['x', 'y']):
+        """Set the column name for the cluster ID numbers.
+        
+        """
+        self._idLabel = idLabel
+    
+    def __call__(self, df):
+        """Compute the statistics for each cluster of localizations.
+        
+        This function takes a DataFrame, groups the data by the column idLabel,
+        then computes the cluster statistics for each cluster. A new DataFrame
+        for the statistics are returned.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object containing cluster statistics.
+        
+        """        
+        # Group localizations by their ID
+        groups = df.groupby(self._idLabel)
+        
+        # Computes the statistics for each cluster
+        tempResultsMisc        = groups.agg({'x' : 'mean',
+                                             'y' : 'mean'})
+        tempResultsLength      = pd.Series(groups.size())
+
+        # Rename the series
+        tempResultsMisc['x'].name   = 'x_Center'
+        tempResultsMisc['y'].name   = 'y_Center'
+        tempResultsLength.name      = 'length'
+        
+        # Create the merged DataFrame
+        dataToJoin = (tempResultsMisc,
+                      tempResultsLength)
+        procdf = pd.concat(dataToJoin, axis = 1)
+                                                     
+        # To save: cluster_ID, numLoc, xmean, ymean, Rg, eccentricity
+        return procdf
+    
+    def _radiusOfGyration(self):
+        """Computes the radius of gyration of a grouped cluster.
+        
+        """
+        pass
+    
+    def _eccentricity(self):
+        """ Computes the eccentricity of a grouped cluster.
+        
+        """
+        pass
+
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
@@ -926,6 +988,7 @@ class FormatSTORM:
         ts2leb['dx [nm]']            = 'dx'
         ts2leb['dy [nm]']            = 'dy'
         ts2leb['length [frames]']    = 'length'
+        ts2leb['cluster_id']         = 'cluster_id'
         ts2leb['identifier']         = 'TSLEB'
         self.ts2leb                  = ts2leb
 
