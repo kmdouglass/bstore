@@ -137,20 +137,29 @@ class ComputeClusterStats:
         tempResultsCoM    = groups.agg({'x' : 'mean',
                                         'y' : 'mean'})
         tempResultsRg     = groups.apply(self._radiusOfGyration, ['x', 'y'])
-        
+        tempResultsEcc    = groups.apply(self._eccentricity,     ['x', 'y'])
         tempResultsLength = pd.Series(groups.size())
+        
+        # Create a column that determines whether to reject the cluster
+        # These can be set to False during a manual filtering stage.
+        tempResultsKeep = pd.Series([True] * len(tempResultsLength),
+                                    index = np.arange(len(tempResultsLength)) - 1,
+                                    name  = 'keep_for_analysis')
 
         # Rename the series
         tempResultsCoM.rename(columns = {'x': 'x_center',
                                          'y': 'y_center'},
                               inplace = True)
-        tempResultsRg.name          = 'radius_of_gyration'
-        tempResultsLength.name      = 'length'
+        tempResultsRg.name     = 'radius_of_gyration'
+        tempResultsEcc.name    = 'eccentricity'
+        tempResultsLength.name = 'number_of_localizations'
         
         # Create the merged DataFrame
         dataToJoin = (tempResultsCoM,
                       tempResultsLength,
-                      tempResultsRg)
+                      tempResultsRg,
+                      tempResultsEcc,
+                      tempResultsKeep)
         procdf = pd.concat(dataToJoin, axis = 1)
                                                      
         # To save: cluster_ID, numLoc, xmean, ymean, Rg, eccentricity
@@ -162,19 +171,43 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The merged localizations.       
+            The merged localizations.   
+            
+        Returns
+        -------
+        Rg    : float
+            The radius of gyration of the group of localizations.
         
         """
         variances = group[coordinates].var()
-        return np.sqrt(3 * variances.sum() / 2)
+        
+        # sqrt(3/2) makes the radius of gyration comparable to a 3D cluster        
+        Rg = np.sqrt(3 * variances.sum() / 2)
+        return Rg
         
         
-    def _eccentricity(self):
+    def _eccentricity(self, group, coordinates):
         """ Computes the eccentricity of a grouped cluster.
         
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations.   
+            
+        Returns
+        -------
+        ecc   : float
+            The eccentricity of the group of localizations.
         """
-        pass
-
+        # Compute the x-y covariance matrix  and its eigevalues
+        Mcov = np.cov(group[coordinates].as_matrix(),
+                      rowvar = 0,
+                      bias   = 1)
+                      
+        eigs = np.linalg.eigvals(Mcov)
+        
+        ecc = np.max(eigs) / min(eigs)
+        return ecc
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
