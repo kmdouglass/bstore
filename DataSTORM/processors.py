@@ -143,7 +143,7 @@ class ComputeClusterStats:
         # Create a column that determines whether to reject the cluster
         # These can be set to False during a manual filtering stage.
         tempResultsKeep = pd.Series([True] * len(tempResultsLength),
-                                    index = np.arange(len(tempResultsLength)) - 1,
+                                    index = tempResultsLength.index,
                                     name  = 'keep_for_analysis')
 
         # Rename the series
@@ -162,7 +162,6 @@ class ComputeClusterStats:
                       tempResultsKeep)
         procdf = pd.concat(dataToJoin, axis = 1)
                                                      
-        # To save: cluster_ID, numLoc, xmean, ymean, Rg, eccentricity
         return procdf
     
     def _radiusOfGyration(self, group, coordinates):

@@ -16,17 +16,20 @@ class BatchProcessor:
         in a directory or a directory tree.    
     pipeLine : list of Processors
         List of Processor objects to process the data.
+        
     """
     
     def __init__(self,
                  inputDirectory,
                  pipeline,
+                 inputFormat     = 'csv',
                  useSameFolder   = False,
                  outputDirectory = 'processed_data',
-                 suffix          = '.dat',
+                 searchString    = '.dat',
                  delimiter       = ',',
                  saveFormat      = 'csv',
-                 h5Filename      = 'DataSTORM'):
+                 h5SaveName      = 'DataSTORM',
+                 h5SaveKey       = 'processed_localizations'):
         """Parse the input directory by finding SMLM data files.
         
         The constructor parses the input directory and creates a list of Path
@@ -35,45 +38,59 @@ class BatchProcessor:
         Parameters
         ----------
         inputDirectory  : str or Path
-            A string to a directory containg SMLM data files, or a pathlib Path
-            instance to a directory.
+            A string to a directory or hdf file containg SMLM data files, or a
+            pathlib Path instance to a directory or hdf file.
         pipeline        : list of Processors
             List of Processor objects to process the data.
+        inputFormat     : str         (default: 'csv')
+            One of 'csv' or 'hdf'.
         useSameFolder   : bool        (default: False)
             Place output results in the same folder as the inputs?
         outputDirectory : str or Path (default: 'processed_data')
             Relative path to the folder for saving the processed results. This
             is ignored if useSameFolder is True.
-        suffix          : str         (default: '.dat')
-            The suffix identifying SMLM data files.
+        searchString    : str         (default: '.dat')
+            The string identifying SMLM data files.
         delimiter       : str         (default: ',')
-            Delimiter used to separate entries in the data files.
+            Delimiter used to separate entries in csv data files.
         saveFormat      : str         (default: 'csv')
             One of 'csv' or 'hdf'.
-        h5Filename      : str         (default: 'DataSTORM')
+        h5SaveName      : str         (default: 'DataSTORM')
             The filename of the output hdf5 store. This is ignored if
-            saveFormat is set to 'csv'.
+            saveFormat is set to 'csv' OR useSameFolder is True.
+        h5SaveKey       : str         (default: 'processed_localizations')
+            The stem (last part) of the key that identifies the dataset.
         
         """
+        if inputFormat == 'csv':
+            searchHDF = False
+        elif inputFormat == 'hdf':
+            searchHDF = True
+        else:
+            raise ValueError('Error: inputFormat must be \'csv\' or \'hdf\'. \'{:s}\' was provided.'.format(saveFormat))
+        
         try:        
-            self.fileList = self._parseDirectory(str(inputDirectory), suffix)
+            self.fileList = self._parseDirectory(str(inputDirectory), searchString, searchHDF)
             self.pipeline = pipeline
             
             if  not self.pipeline:
                 raise UserWarning
             elif not self.fileList:
-                raise ValueError('Error: No files ending in {:s} were found.'.format(suffix))
+                raise ValueError('Error: No files ending in {:s} were found.'.format(searchString))
             elif saveFormat not in ['csv', 'hdf']:
                 raise ValueError('Error: saveFormat must be \'csv\' or \'hdf\'. \'{:s}\' was provided.'.format(saveFormat))
         except UserWarning:
             print('Warning: Pipeline contains no Processors.')
         
+        self._inputDirectory  = inputDirectory
+        self._inputFormat     = inputFormat
         self._useSameFolder   = useSameFolder
         self._outputDirectory = Path(outputDirectory)
-        self._suffix          = suffix
+        self._searchString    = searchString
         self._delimiter       = delimiter
         self._saveFormat      = saveFormat
-        self._h5Filename      = h5Filename + '.h5'
+        self._h5SaveName      = h5SaveName + '.h5'
+        self._h5SaveKey       = h5SaveKey
         
         # Remember the paths to all the processed files here
         self._outputFileList   = []
@@ -85,15 +102,23 @@ class BatchProcessor:
             
     def go(self):
         """Initiate batch processing on all the files.
-        
+
         """
-        # Perform batch processing on all files
+        # Perform batch processing on all files.
+        # It's important to note that 'file' is a csv file if the inputFormat
+        # is 'csv'. If inputformat is 'hdf', it's the group directory pointing
+        # to a dataset, not the hdf file itself.
         for file in self.fileList:
-            inputFile = str(file.resolve())
+            print('Processing file {:s}'.format(str(file)))            
             
-            # In future versions, allow user to set the import command
-            df   = pd.read_csv(inputFile, sep = self._delimiter)
-            
+            # Load the DataFrame
+            if   self._inputFormat == 'csv':
+                inputFile = str(file.resolve())
+                df        = pd.read_csv(inputFile, sep = self._delimiter)
+            elif self._inputFormat == 'hdf':
+                inputKey = str(file)
+                df   = pd.read_hdf(str(self._inputDirectory), key = inputKey)
+
             # Run each processor on the DataFrame
             for proc in self.pipeline:
                 df = proc(df)
@@ -112,18 +137,26 @@ class BatchProcessor:
                
             # Save the final DataFrame to a hdf5 store
             elif self._saveFormat == 'hdf':
-                outputFile  = self._outputDirectory / Path(self._h5Filename)
+                if self._useSameFolder:
+                    outputFile = self._inputDirectory
+                else:
+                    outputFile = self._outputDirectory / Path(self._h5SaveName)
+                
                 outputStore = pd.HDFStore(str(outputFile))
                 
-                # Convert to a format without units. This is to make the columns in
-                # the hdf file searchable.
-                converter  = dsproc.ConvertHeader(dsproc.FormatThunderSTORM(),
-                                                  dsproc.FormatLEB())
-                df = converter(df)
-                
-                # Write the chunk to the hdf file
-                outputStore.put(self._genKey(file.stem) \
-                              + '/processed_localizations',
+                # Write the final DataFrame to the hdf file
+                if self._inputFormat == 'csv':
+                    keyStem = self._genKey(file.stem)
+                    
+                    # Convert to a format without units. This is to make the
+                    # columns in the hdf file searchable.
+                    converter  = dsproc.ConvertHeader(dsproc.FormatThunderSTORM(),
+                                                      dsproc.FormatLEB())
+                    df = converter(df)                    
+                elif self._inputFormat == 'hdf':
+                    keyStem = str(file.parent)
+                    
+                outputStore.put(keyStem + '/' + self._h5SaveKey,
                                 df,
                                 format       = 'table',
                                 data_columns = True,
@@ -134,30 +167,56 @@ class BatchProcessor:
             # Remember the output files                
             self._outputFileList.append(Path(outputFile))
             
-    def _parseDirectory(self, inputDirectory, suffix = '.dat'):
-        """Finds all localization data files in a directory or directory tree.
+    def _parseDirectory(self,
+                        inputDirectory,
+                        searchString = '.dat',
+                        searchHDF    = False,):
+        """Finds all localization data files in a directory tree or HDF file.
         
         Parameters
         ----------
         inputDirectory : str
             String of the directory tree containing SMLM data files.
-        suffix         : str (optional, default: '.dat')
-            Suffix for localization result files. This must be unique to
+        searchString   : str  (optional, default: '.dat')
+            Ending suffix for csv localization result files or keys to
+            localization results in an hdf file. This must be unique to
             files containing localization data.
+        searchHDF      : bool (optional, default: False)
+            If True, searches a HDF file for localization files matching
+            searchString.
         
         Returns
         -------
         locResultFiles : list of Path
-            A list of all the localization data files in a directory tree.
+            A list of all the localization data files in a directory tree/
+            HDF file.
         """
-        inputDirectory    = Path(inputDirectory)
-        locResultFilesGen = inputDirectory.glob('**/*{:s}'.format(suffix))
-        locResultFiles    = sorted(locResultFilesGen)
+        if not searchHDF:
+            inputDirectory    = Path(inputDirectory)
+            locResultFilesGen = inputDirectory.glob('**/*{:s}'.format(searchString))
+            locResultFiles    = sorted(locResultFilesGen)
         
-        return locResultFiles
+            return locResultFiles
+        else:
+            # Open the hdf file
+            f = h5py.File(inputDirectory, 'r')
+            
+            # Extract all localization filesets from the HDF5 file by matching
+            # each group to the search string.
+            # ('table' not in name) excludes the subgroup inside every
+            # processed_localization parent group.
+            locResultFiles = []
+            def find_locs(name):
+                """Finds localization files matching the name pattern."""
+                if (searchString in name) and ('table' not in name):
+                    locResultFiles.append(name)
+            f.visit(find_locs)
+            f.close()
+            
+            return list(map(Path, locResultFiles))
         
     def _genKey(self, fileStem, sep = '_MMStack'):
-        """Generates a key string for a dataset in the h5 file.
+        """Generates a key string from csv files for a dataset in a h5 file.
         
         """
         # Removes everything after and including sep, usually '_MMStack...'
@@ -180,8 +239,7 @@ class BatchProcessor:
         
         """
         # Open the h5 file and read its keys
-        f            = h5py.File(str(h5Filename), 'a')        
-        datasetNames = [key for key in f.keys()]
+        f = h5py.File(str(h5Filename), 'a')        
         
         # Loop through each dataset's subkeys and find a matching WF file
         # fov = field of view
@@ -217,7 +275,8 @@ class BatchProcessor:
         f.close()
         
 class H5BatchProcessor(BatchProcessor):
-    """Performs batch processing from CSV or H5 to H5 datafiles.
+    """Performs batch processing from CSV or H5 to H5 datafiles. This class is
+    ONLY used for out-of-core processing.
     
     Notes
     -----
@@ -230,7 +289,7 @@ class H5BatchProcessor(BatchProcessor):
                  pipeline,
                  useSameFolder   = False,
                  outputDirectory = 'processed_data',
-                 suffix          = '.h5',
+                 searchString    = '.h5',
                  delimiter       = ',',
                  inputFileType   = 'csv',
                  inputKey        = 'raw',
@@ -253,8 +312,8 @@ class H5BatchProcessor(BatchProcessor):
         outputDirectory : str or Path (default: 'processed_data')
             Relative path to the folder for saving the processed results. This
             is ignored if useSameFolder is True.
-        suffix          : str         (default: '.dat')
-            The suffix identifying SMLM data files.
+        searchString    : str         (default: '.dat')
+            The string identifying SMLM data files.
         delimiter       : str         (default: ',')
             Delimiter used to separate entries in the data files.
         inputFileType   : str         (default: 'csv')
@@ -274,7 +333,7 @@ class H5BatchProcessor(BatchProcessor):
                                                pipeline,
                                                useSameFolder,
                                                outputDirectory,
-                                               suffix,
+                                               searchString,
                                                delimiter)
         
         if (inputFileType != 'csv') and (inputFileType != 'h5'):
@@ -410,6 +469,7 @@ class H5BatchProcessor(BatchProcessor):
             
                 # Remove the linked table from the hdf5 file
                 s.store.remove('linked')
+        
 
 if __name__ == '__main__':
     from pathlib import Path
