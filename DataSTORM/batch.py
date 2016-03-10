@@ -237,6 +237,13 @@ class BatchProcessor:
         bindImage() searches a directory for widefield images that match the
         keys in an hdf5 file and saves these images to the file.
         
+        Parameters
+        ----------
+        h5Filename   : str or Path
+            The filename of the h5 file containing the data.
+        searchFolder : Path
+            The folder to search for widefield images.
+        
         """
         # Open the h5 file and read its keys
         f = h5py.File(str(h5Filename), 'a')        
@@ -249,7 +256,7 @@ class BatchProcessor:
                 fovNum = fov.split(sep = '_'); fovNum = fovNum[-1]
                 
                 # Search the folder for the widefield images
-                searchString = '**/' + dataset + '*_WF' + str(fovNum) + '*'
+                searchString = '**/' + dataset + '_WF' + str(fovNum) + '*'
                 folder = searchFolder.glob(searchString)
                 folder = sorted(folder)
                 
