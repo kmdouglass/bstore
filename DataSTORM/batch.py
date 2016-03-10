@@ -231,7 +231,7 @@ class BatchProcessor:
         return parentKey + '/' + subkey
     
     @staticmethod
-    def bindImage(h5Filename, searchFolder):
+    def bindImage(h5Filename, searchFolder, keyName = 'widefield_image'):
         """Finds widefield images and saves them to an hdf5 file.
         
         bindImage() searches a directory for widefield images that match the
@@ -243,6 +243,8 @@ class BatchProcessor:
             The filename of the h5 file containing the data.
         searchFolder : Path
             The folder to search for widefield images.
+        keyName      : str
+            The name of the key containing the widefield image data.
         
         """
         # Open the h5 file and read its keys
@@ -272,7 +274,7 @@ class BatchProcessor:
                 
                 # Read the image into memory, then save it to the hdf5 file
                 wfImage = plt.imread(str(image))
-                saveKey = dataset + '/' + fov + '/widefield_image'
+                saveKey = dataset + '/' + fov + '/' + keyName
                 saveImg = f.create_dataset(saveKey,
                                            wfImage.shape,
                                            data = wfImage) 
