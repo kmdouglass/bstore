@@ -11,6 +11,7 @@ differently, each will have its own batch processor associated with it.
 import pandas            as pd
 import numpy             as np
 import matplotlib.pyplot as plt
+import DataSTORM.batch   as bp
 
 class OverlayClusters:
     """Produces overlays of clustered localizations on widefield images.
@@ -247,6 +248,11 @@ class OverlayClusters:
                     locs[locs['cluster_id'] == -1]['y'] / self._pixelSize,
                     s = 4,
                     color = 'white')
+        # Plot the cluster centers
+        ax1.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'][1:] / self._pixelSize,
+                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'][1:] / self._pixelSize,
+                    s     = 30,
+                    color = 'green')
         ax1.set_xlabel('x-position, pixel')
         ax1.set_ylabel('y-position, pixel')
         ax1.set_aspect('equal')
