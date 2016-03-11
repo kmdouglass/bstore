@@ -51,8 +51,9 @@ class OverlayClusters:
         self._zoomSize       = zoomSize
         
         # Holds information on the current cluster being analyzed
-        self.currentCluster = 0
-        self.clusterIDs     = []
+        self._currentClusterIndex = 0
+        self.currentCluster       = []
+        self.clusterIDs           = []
         
         # Holds information on the current figure
         self._fig           = None
@@ -60,7 +61,7 @@ class OverlayClusters:
         self._ax1           = None
         self._clusterLocs   = None
     
-    def __call__(self, locs, wfImage = None, stats = None):
+    def __call__(self, locs, wfImage = None, stats = None, numberFilter = None):
         """Overlay the localizations onto the widefield image.
         
         This opens an interactive matplotlib window that shows the full overlay
@@ -69,12 +70,16 @@ class OverlayClusters:
         
         Parameters
         ----------
-        locs    : DataFrame
+        locs         : DataFrame
             A Pandas DataFrame object containing the localizations.
-        wfImage : Numpy Array
+        wfImage    : Numpy Array
             Allows the user to specify the wfImage
-        stats   : Pandas DataFrame
+        stats        : Pandas DataFrame
             Dataframe containing the statistics for each cluster.
+        numberFilter : int
+            Remove clusters with fewer than this number of localizations from
+            the processing. They will automatically have their 'switchColumn'
+            set to False.
             
         Returns
         -------
@@ -89,10 +94,16 @@ class OverlayClusters:
                 'Error: No switchColumn found in statistics DataFrame. Searched for column name \'{0:s}\'.'.format(self._switchColumn)
 
         # Apply the initial filter to the data
-        #TODO
+        if numberFilter is not None:
+            # A slice of the localization DataFrame is made here;
+            # The original is not overwritten.
+            stats.loc[stats['number_of_localizations'] <= numberFilter, 'keep_for_analysis'] = False
+            
+        # Ensure that the noise cluster is removed from the analysis
+        stats.loc[-1, 'keep_for_analysis'] = False
         
         # Find the cluster ID information
-        self._extractClusterID(locs)     
+        self._extractClusterID(stats)     
         
         # Draw the localizations in the figure
         self._initCanvas(locs, wfImage, stats)
@@ -110,26 +121,26 @@ class OverlayClusters:
             """
             if event.key in ['b', 'B']:
                 # Go back one cluster.
-                if self.currentCluster != 0:
-                    self.currentCluster -= 1
+                if self._currentClusterIndex != 0:
+                    self._currentClusterIndex -= 1
                     self._drawCurrentCluster(locs)
-                    
+            
             if event.key in ['g', 'G']:
                 # Go forward one cluster
-                if self.currentCluster != np.max(self.clusterIDs):
-                    self.currentCluster +=1
+                if self._currentClusterIndex != len(self.clusterIDs) - 1:
+                    self._currentClusterIndex +=1
                     self._drawCurrentCluster(locs)
             
             if event.key in [' ']:
                 # Set switchColumn to True for this cluster and go to the next.
-                stats.loc[self.currentCluster] = self._keepCluster(stats)
-                self.currentCluster += 1
+                stats.loc[self.currentCluster, self._switchColumn] = True
+                self._currentClusterIndex += 1
                 self._drawCurrentCluster(locs)
                 
             if event.key in ['r', 'R']:
                 # Set switchColumn to True for this cluster and go to the next.
-                stats.loc[self.currentCluster] = self._rejectCluster(stats)
-                self.currentCluster += 1
+                stats.loc[self.currentCluster, self._switchColumn] = False
+                self._currentClusterIndex += 1
                 self._drawCurrentCluster(locs)
                 
         self._fig.canvas.mpl_connect('close_event', onClose)
@@ -141,6 +152,12 @@ class OverlayClusters:
         """Draws the current cluster onto the figure.
         
         """
+        # Check for end of clusters
+        if self._currentClusterIndex >= len(self.clusterIDs):
+            plt.close(self._fig)
+            return None
+        
+        self.currentCluster = self.clusterIDs[self._currentClusterIndex]
         ax1          = self._ax1
         zoomHalfSize = np.floor(self._zoomSize / 2)
         
@@ -155,20 +172,23 @@ class OverlayClusters:
                                    coords['y'] / self._pixelSize)         
         ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
         ax1.set_ylim(yMean - zoomHalfSize, yMean + zoomHalfSize)
-        ax1.set_title('Current cluster ID: {0:d} / {1:d}'.format((self.currentCluster), np.max(self.clusterIDs)))
+        ax1.set_title('Current cluster ID: {0:d} : Index {1:d} / {2:d}'.format((self.currentCluster), (self._currentClusterIndex) , len(self.clusterIDs) - 1))
         self._fig.canvas.draw()
         
-    def _extractClusterID(self, locs):
+    def _extractClusterID(self, stats):
         """Obtains a list of the cluster IDs.
         
         Parameters
         ----------
-        locs : Pandas DataFrame
+        stats : Pandas DataFrame
             Localization information.
             
         """
-        # Get the cluster IDs except for the noise, which has ID -1
-        self.clusterIDs = locs[locs['cluster_id'] != -1]['cluster_id'].unique()
+        # Get the cluster IDs except for the noise, which has ID -1, and those
+        # whose 'switchColumns' are already set to false.
+        self.clusterIDs     = stats[(stats.index != -1)
+                                  & (stats[self._switchColumn] != False)].index.unique()
+        self.currentCluster = np.min(self.clusterIDs)
         
     def _initCanvas(self, locs, wfImage, stats):
         """Draws the initial canvas for the localizations and other data.
@@ -184,7 +204,8 @@ class OverlayClusters:
         
         """
         # Reset the current cluster to zero
-        self.currentCluster = 0        
+        self._currentClusterIndex = 0
+        self.currentCluster       = self.clusterIDs[self._currentClusterIndex]        
         
         # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)
@@ -197,8 +218,8 @@ class OverlayClusters:
                    cmap          = 'inferno',
                    interpolation = 'nearest',
                    vmax          = np.max(wfImage) / 2)
-        ax0.scatter(stats['x_center'][1:] / self._pixelSize,
-                    stats['y_center'][1:] / self._pixelSize,
+        ax0.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'][1:] / self._pixelSize,
+                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'][1:] / self._pixelSize,
                     s     = 1,
                     color = 'white')
         self._clusterCenter, = ax0.plot([],
@@ -237,21 +258,3 @@ class OverlayClusters:
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
         plt.show()
-        
-    def _keepCluster(self, stats):
-        """Set the current cluster's switchColumn entry to True.
-        
-        """
-        clusterRow = stats.loc[self.currentCluster]
-        clusterRow[self._switchColumn] = True
-        
-        return clusterRow
-        
-    def _rejectCluster(self, stats):
-        """Set the current cluster's switchColumn entry to True.
-        
-        """
-        clusterRow = stats.loc[self.currentCluster]
-        clusterRow[self._switchColumn] = False
-        
-        return clusterRow

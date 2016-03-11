@@ -954,7 +954,7 @@ class Filter:
                     '>=' : ge,
                     '>'  : gt}    
     
-    def __init__(self, columnName, operator, filterParameter):
+    def __init__(self, columnName, operator, filterParameter, resetIndex = True):
         """Define the data column and filter operation to perform.
         
         Parameters
@@ -964,6 +964,8 @@ class Filter:
             A string matching an operator defined in the _operatorMap dict.
             Examples include '+', '<=' and '>'.
         filterParameter : float
+        resetIndex      : bool
+            Should the returned index be reset?
         
         """
         try:
@@ -974,6 +976,7 @@ class Filter:
         
         self._columnName      = columnName
         self._filterParameter = filterParameter
+        self._resetIndex      = resetIndex
     
     def __call__(self, df):
         """Filter out rows of the DataFrame.
@@ -993,9 +996,13 @@ class Filter:
             A filtered DataFrame.
         
         """
-        # The index must be reset for some processors to work.
-        procdf = df[self._operator(df[self._columnName],
-                                   self._filterParameter)].reset_index(drop = True)
+        if self._resetIndex:
+            # The index must be reset for some processors to work.
+            procdf = df[self._operator(df[self._columnName],
+                        self._filterParameter)].reset_index(drop = True)
+        else:
+            procdf = df[self._operator(df[self._columnName],
+                        self._filterParameter)]
                                       
         return procdf
 
