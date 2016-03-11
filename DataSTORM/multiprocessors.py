@@ -105,7 +105,7 @@ class OverlayClusters:
             """Handles user input.
             
             """
-            if event.key in ['r', 'R']:
+            if event.key in ['b', 'B']:
                 # Go back one cluster.
                 if self.currentCluster != 0:
                     self.currentCluster -= 1
@@ -113,6 +113,13 @@ class OverlayClusters:
             
             if event.key in [' ']:
                 # Set switchColumn to True for this cluster and go to the next.
+                stats.loc[self.currentCluster] = self._keepCluster(stats)
+                self.currentCluster += 1
+                self._drawCurrentCluster(locs, wfImage)
+                
+            if event.key in ['r', 'R']:
+                # Set switchColumn to True for this cluster and go to the next.
+                stats.loc[self.currentCluster] = self._rejectCluster(stats)
                 self.currentCluster += 1
                 self._drawCurrentCluster(locs, wfImage)
                 
@@ -134,6 +141,7 @@ class OverlayClusters:
         yMean  = coords['y'].mean() / self._pixelSize
         
         # Draw the current cluster zoom to it
+        self._clusterCenter.set_data([xMean], [yMean])
         self._clusterLocs.set_data(coords['x'] / self._pixelSize,
                                    coords['y'] / self._pixelSize)         
         ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
@@ -184,6 +192,12 @@ class OverlayClusters:
                     stats['y_center'][1:] / self._pixelSize,
                     s     = 1,
                     color = 'white')
+        self._clusterCenter, = ax0.plot([],
+                                        [],
+                                        'oy',
+                                        markersize      = 10,
+                                        fillstyle       = 'none',
+                                        markeredgewidth = 2.5)
                     
         ax0.set_xlim(0, wfImage.shape[1])
         ax0.set_ylim(0, wfImage.shape[0])
@@ -193,11 +207,16 @@ class OverlayClusters:
         ax0.set_aspect('equal')
         
         # Draw the zoomed region of the current cluster
-        self._clusterLocs, = ax1.plot([], [], '.g')
+        self._clusterLocs, = ax1.plot([], [], '.c')
         ax1.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
                    vmax          = np.max(wfImage) / 2)
+        # Plot unclustered localizations
+        ax1.scatter(locs[locs['cluster_id'] == -1]['x'] / self._pixelSize,
+                    locs[locs['cluster_id'] == -1]['y'] / self._pixelSize,
+                    s = 4,
+                    color = 'white')
         ax1.set_xlabel('x-position, pixel')
         ax1.set_ylabel('y-position, pixel')
         ax1.set_aspect('equal')
@@ -209,3 +228,21 @@ class OverlayClusters:
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
         plt.show()
+        
+    def _keepCluster(self, stats):
+        """Set the current cluster's switchColumn entry to True.
+        
+        """
+        clusterRow = stats.loc[self.currentCluster]
+        clusterRow[self._switchColumn] = True
+        
+        return clusterRow
+        
+    def _rejectCluster(self, stats):
+        """Set the current cluster's switchColumn entry to True.
+        
+        """
+        clusterRow = stats.loc[self.currentCluster]
+        clusterRow[self._switchColumn] = False
+        
+        return clusterRow
