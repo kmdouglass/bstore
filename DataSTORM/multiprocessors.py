@@ -28,7 +28,10 @@ class OverlayClusters:
     gyration.Rejecting a cluster sets the value in the 'switchColumn' of the
     new DataFrame to False. Accepting it sets it to True.
     """
-    def __init__(self, switchColumn = 'keep_for_analysis', pixelSize = 108):
+    def __init__(self,
+                 switchColumn = 'keep_for_analysis',
+                 pixelSize = 108,
+                 zoomSize  = 21):
         """Setup the OverlayClusters processor.
         
         Parameters
@@ -39,10 +42,13 @@ class OverlayClusters:
         pixelSize      : float
             The physical size of a pixel. For converting the localization units
             to pixels.
+        zoomSize       : int
+            The linear size of the zoomed region around a cluster in pixels.
             
         """
         self._switchColumn   = switchColumn
         self._pixelSize      = pixelSize
+        self._zoomSize       = zoomSize
         
         # Holds information on the current cluster being analyzed
         self.currentCluster = 0
@@ -52,6 +58,7 @@ class OverlayClusters:
         self._fig           = None
         self._ax0           = None
         self._ax1           = None
+        self._clusterLocs   = None
     
     def __call__(self, locs, wfImage = None, stats = None):
         """Overlay the localizations onto the widefield image.
@@ -87,6 +94,53 @@ class OverlayClusters:
         # Draw the localizations in the figure
         self._initCanvas(locs, wfImage, stats)
         
+        # Attach the keyboard monitor to the figure
+        def onClose(event):
+            """Run when the figure closes.
+            
+            """
+            self._fig.canvas.stop_event_loop()
+            
+        def keyMonitor(event, processor):
+            """Handles user input.
+            
+            """
+            if event.key in ['r', 'R']:
+                # Go back one cluster.
+                if self.currentCluster != 0:
+                    self.currentCluster -= 1
+                    self._drawCurrentCluster(locs, wfImage)
+            
+            if event.key in [' ']:
+                # Set switchColumn to True for this cluster and go to the next.
+                self.currentCluster += 1
+                self._drawCurrentCluster(locs, wfImage)
+                
+        self._fig.canvas.mpl_connect('close_event', onClose)
+        plt.connect('key_press_event',
+                    lambda event: keyMonitor(event, self))
+        self._fig.canvas.start_event_loop_default()
+        
+    def _drawCurrentCluster(self, locs, wfImage):
+        """Draws the current cluster onto the figure.
+        
+        """
+        ax1          = self._ax1
+        zoomHalfSize = np.floor(self._zoomSize / 2)
+        
+        # Get the current cluster
+        coords = locs[locs['cluster_id'] == self.currentCluster][['x', 'y']]
+        xMean  = coords['x'].mean() / self._pixelSize
+        yMean  = coords['y'].mean() / self._pixelSize
+        
+        # Draw the current cluster zoom to it
+        self._clusterLocs.set_data(coords['x'] / self._pixelSize,
+                                   coords['y'] / self._pixelSize)         
+        ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
+        ax1.set_ylim(yMean - zoomHalfSize, yMean + zoomHalfSize)
+        ax1.set_title('Current cluster ID: {:d}'.format(self.currentCluster))
+        self._fig.canvas.draw()
+        
     def _extractClusterID(self, locs):
         """Obtains a list of the cluster IDs.
         
@@ -117,6 +171,9 @@ class OverlayClusters:
         
         # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)
+        self._fig = fig
+        self._ax0 = ax0
+        self._ax1 = ax1    
         
         # Draw the cluster centers ([1:] excludes the noise cluster)
         ax0.imshow(wfImage,
@@ -135,30 +192,20 @@ class OverlayClusters:
         ax0.set_ylabel('y-position, pixel')
         ax0.set_aspect('equal')
         
-        # Draw the current cluster
-        coords = locs[locs['cluster_id'] == self.currentCluster][['x', 'y']]
+        # Draw the zoomed region of the current cluster
+        self._clusterLocs, = ax1.plot([], [], '.g')
         ax1.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
                    vmax          = np.max(wfImage) / 2)
-        ax1.scatter(coords['x'] / self._pixelSize,
-                    coords['y'] / self._pixelSize,
-                    s     = 2,
-                    color = 'green')
-        ax1.set_xlim(0, wfImage.shape[1])
-        ax1.set_ylim(0, wfImage.shape[0])
-        ax1.set_title('Current cluster ID: {:d}'.format(self.currentCluster))
         ax1.set_xlabel('x-position, pixel')
         ax1.set_ylabel('y-position, pixel')
         ax1.set_aspect('equal')
         
+        # Draw the initial cluster
+        self._drawCurrentCluster(locs, wfImage)        
+        
         # Make the figure full screen
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
-        
-        # Assign the figure artists to the class fields
-        self._fig = fig
-        self._ax0 = ax0
-        self._ax1 = ax1        
-        
         plt.show()
