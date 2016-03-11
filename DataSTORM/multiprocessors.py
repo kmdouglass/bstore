@@ -33,7 +33,7 @@ class OverlayClusters:
         
         Parameters
         ----------
-         switchColumn  : str
+        switchColumn   : str
             Name of the column in stats for deciding whether a cluster is
             retained for analysis.
         pixelSize      : float
@@ -45,8 +45,13 @@ class OverlayClusters:
         self._pixelSize      = pixelSize
         
         # Holds information on the current cluster being analyzed
-        self._currentCluster = 0
-        self._maxClusterID   = 0
+        self.currentCluster = 0
+        self.clusterIDs     = []
+        
+        # Holds information on the current figure
+        self._fig           = None
+        self._ax0           = None
+        self._ax1           = None
     
     def __call__(self, locs, wfImage = None, stats = None):
         """Overlay the localizations onto the widefield image.
@@ -91,7 +96,8 @@ class OverlayClusters:
             Localization information.
             
         """
-        pass
+        # Get the cluster IDs except for the noise, which has ID -1
+        self.clusterIDs = locs[locs['cluster_id'] != -1]['cluster_id'].unique()
         
     def _initCanvas(self, locs, wfImage, stats):
         """Draws the initial canvas for the localizations and other data.
@@ -106,6 +112,10 @@ class OverlayClusters:
             The DataFrame containing the cluster statistics.
         
         """
+        # Reset the current cluster to zero
+        self.currentCluster = 0        
+        
+        # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)
         
         # Draw the cluster centers ([1:] excludes the noise cluster)
@@ -120,11 +130,35 @@ class OverlayClusters:
                     
         ax0.set_xlim(0, wfImage.shape[1])
         ax0.set_ylim(0, wfImage.shape[0])
+        ax0.set_title('Cluster centers')
         ax0.set_xlabel('x-position, pixel')
         ax0.set_ylabel('y-position, pixel')
         ax0.set_aspect('equal')
         
+        # Draw the current cluster
+        coords = locs[locs['cluster_id'] == self.currentCluster][['x', 'y']]
+        ax1.imshow(wfImage,
+                   cmap          = 'inferno',
+                   interpolation = 'nearest',
+                   vmax          = np.max(wfImage) / 2)
+        ax1.scatter(coords['x'] / self._pixelSize,
+                    coords['y'] / self._pixelSize,
+                    s     = 2,
+                    color = 'green')
+        ax1.set_xlim(0, wfImage.shape[1])
+        ax1.set_ylim(0, wfImage.shape[0])
+        ax1.set_title('Current cluster ID: {:d}'.format(self.currentCluster))
+        ax1.set_xlabel('x-position, pixel')
+        ax1.set_ylabel('y-position, pixel')
+        ax1.set_aspect('equal')
+        
         # Make the figure full screen
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
+        
+        # Assign the figure artists to the class fields
+        self._fig = fig
+        self._ax0 = ax0
+        self._ax1 = ax1        
+        
         plt.show()
