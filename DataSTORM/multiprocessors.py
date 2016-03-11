@@ -87,6 +87,9 @@ class OverlayClusters:
                'Error: No cluster ID column found in localization DataFrame. Searched for column name \'cluster_id\'.'
         assert self._switchColumn in stats, \
                 'Error: No switchColumn found in statistics DataFrame. Searched for column name \'{0:s}\'.'.format(self._switchColumn)
+
+        # Apply the initial filter to the data
+        #TODO
         
         # Find the cluster ID information
         self._extractClusterID(locs)     
@@ -109,26 +112,32 @@ class OverlayClusters:
                 # Go back one cluster.
                 if self.currentCluster != 0:
                     self.currentCluster -= 1
-                    self._drawCurrentCluster(locs, wfImage)
+                    self._drawCurrentCluster(locs)
+                    
+            if event.key in ['g', 'G']:
+                # Go forward one cluster
+                if self.currentCluster != np.max(self.clusterIDs):
+                    self.currentCluster +=1
+                    self._drawCurrentCluster(locs)
             
             if event.key in [' ']:
                 # Set switchColumn to True for this cluster and go to the next.
                 stats.loc[self.currentCluster] = self._keepCluster(stats)
                 self.currentCluster += 1
-                self._drawCurrentCluster(locs, wfImage)
+                self._drawCurrentCluster(locs)
                 
             if event.key in ['r', 'R']:
                 # Set switchColumn to True for this cluster and go to the next.
                 stats.loc[self.currentCluster] = self._rejectCluster(stats)
                 self.currentCluster += 1
-                self._drawCurrentCluster(locs, wfImage)
+                self._drawCurrentCluster(locs)
                 
         self._fig.canvas.mpl_connect('close_event', onClose)
         plt.connect('key_press_event',
                     lambda event: keyMonitor(event, self))
         self._fig.canvas.start_event_loop_default()
         
-    def _drawCurrentCluster(self, locs, wfImage):
+    def _drawCurrentCluster(self, locs):
         """Draws the current cluster onto the figure.
         
         """
@@ -146,7 +155,7 @@ class OverlayClusters:
                                    coords['y'] / self._pixelSize)         
         ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
         ax1.set_ylim(yMean - zoomHalfSize, yMean + zoomHalfSize)
-        ax1.set_title('Current cluster ID: {:d}'.format(self.currentCluster))
+        ax1.set_title('Current cluster ID: {0:d} / {1:d}'.format((self.currentCluster), np.max(self.clusterIDs)))
         self._fig.canvas.draw()
         
     def _extractClusterID(self, locs):
@@ -222,7 +231,7 @@ class OverlayClusters:
         ax1.set_aspect('equal')
         
         # Draw the initial cluster
-        self._drawCurrentCluster(locs, wfImage)        
+        self._drawCurrentCluster(locs)        
         
         # Make the figure full screen
         figManager = plt.get_current_fig_manager()
