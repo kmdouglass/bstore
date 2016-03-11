@@ -1234,63 +1234,6 @@ class Merge:
                
         return wAvg
         
-class OverlayClusters:
-    """Produces overlays of clustered localizations on widefield images.
-    
-    The OverlayClusters processor is used to overlay localizations onto
-    widefield images. It allows you to see the individual localizations and
-    clusters on top of the widefield images, showing both the full image and
-    a zoomed region at the same time. The user can interactively step through
-    each cluster with the keyboard.
-    
-    It also allows for interactive processing, such as choosing to keep
-    or reject clusters for analysis. For this, a secondary DataFrame whose
-    index matches the clusters' numeric IDs is used. Typically, this DataFrame 
-    will record the statistics for each cluster, such as the radius of
-    gyration.Rejecting a cluster sets the value in the 'switchColumn' of the
-    new DataFrame to False. Accepting it sets it to True.
-    """
-    def __init__(self, switchColumn = 'keep_for_analysis'):
-        """Setup the OverlayClusters processor.
-        
-        Parameters
-        ----------
-         switchColumn  : str
-            Name of the column in stats for deciding whether a cluster is
-            retained for analysis.
-        
-        """
-        self._switchColumn = switchColumn
-    
-    def __call__(self, df, wfImage = None, stats = None):
-        """Overlay the localizations onto the widefield image.
-        
-        This opens an interactive matplotlib window that shows the full overlay
-        and a zoomed region around a particular cluster. The user may use the
-        keyboard to go forward and backward through the clusters.
-        
-        Parameters
-        ----------
-        df      : DataFrame
-            A Pandas DataFrame object.
-        wfImage : Numpy Array
-            Allows the user to specify the wfImage
-        stats         : Pandas DataFrame
-            Dataframe containing the statistics for each cluster.
-            
-        Returns
-        -------
-        procdf : DataFrame
-            A DataFrame object with the merged localizations.
-            
-        """
-        # Ensure that the localizations are already clustered
-        assert 'cluster_id' in df, \
-               'Error: No cluster ID column found in localization DataFrame. Searched for column name \'cluster_id\'.'
-        assert self._switchColumn in stats, \
-                'Error: No switchColumn found in statistics DataFrame. Searched for column name \'{0:s}\'.'.format(self._switchColumn)
-                
-
 class ZeroFiducialsFound(Exception):
     """Exception raised when zero fiducials are found during drift correction.
     
