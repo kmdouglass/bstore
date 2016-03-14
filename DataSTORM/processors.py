@@ -762,6 +762,10 @@ class FiducialDriftCorrect:
                                               interactive = True)
         plt.connect('key_press_event',
                     lambda event: toggleSelector(event, self))
+        
+        # Make figure full screen
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
         plt.show()        
         fig.canvas.start_event_loop_default()
     
