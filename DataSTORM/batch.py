@@ -239,11 +239,11 @@ class BatchProcessor:
         
         Parameters
         ----------
-        h5Filename   : str or Path
+        h5Filename     : str or Path
             The filename of the h5 file containing the data.
-        searchFolder : Path
+        searchFolder   : Path
             The folder to search for widefield images.
-        keyName      : str
+        keyName        : str
             The name of the key containing the widefield image data.
         
         """
@@ -258,19 +258,22 @@ class BatchProcessor:
                 fovNum = fov.split(sep = '_'); fovNum = fovNum[-1]
                 
                 # Search the folder for the widefield images
-                searchString = '**/' + dataset + '_WF' + str(fovNum) + '*'
-                folder = searchFolder.glob(searchString)
-                folder = sorted(folder)
+                #searchString = '**/' + dataset + '_WF' + str(fovNum) + '*'
+                #folder = searchFolder.glob(searchString)
+                #folder = sorted(folder)     
                 
                 # There should be only one widefield image
-                assert len(folder) == 1, \
-                       'Error: multiple widefield image directories found. Are they named correctly?'
+                #assert len(folder) == 1, \
+                #       'Error: multiple widefield image directories found. Are they named correctly?'
 
-                image = folder[0].glob('**/*.tif')
+                searchString = '**/' + dataset + '_WF' + str(fovNum) + '_*.tif'
+
+                image = searchFolder.glob(searchString)
                 image = sorted(image)
                 assert len(image) == 1, \
-                       'Error: multiple widefield images found. Are there multiple images in a directory?'
-                image = image[0]
+                       'Error: multiple widefield images found. Are there multiple images in a directory?'          
+                       
+                image = image[0] 
                 
                 # Read the image into memory, then save it to the hdf5 file
                 wfImage = plt.imread(str(image))

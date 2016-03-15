@@ -11,6 +11,29 @@ from scipy.ndimage      import filters
 from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
 
+class AddColumn:
+    """Adds a column to a DataFrame.
+    
+    """
+    def __init__(self):
+        pass
+    
+    def __call__(self, df):
+        """Clean up the data.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with a new column.
+        
+        """
+        pass
+
 class CleanUp:
     """Performs regular clean up routines on imported data.
     
