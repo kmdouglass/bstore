@@ -14,9 +14,13 @@ from matplotlib.widgets import RectangleSelector
 class AddColumn:
     """Adds a column to a DataFrame.
     
+    AddColumn adds a column to a DataFrame and initializes every row to the
+    same value.
+    
     """
-    def __init__(self):
-        pass
+    def __init__(self, columnName, defaultValue = 1):
+        self.columnName   = columnName
+        self.defaultValue = defaultValue
     
     def __call__(self, df):
         """Clean up the data.
@@ -32,7 +36,14 @@ class AddColumn:
             A DataFrame object with a new column.
         
         """
-        pass
+        procdf = df.copy()
+        del(df)
+        
+        numRows, _         = procdf.shape
+        procdf[self.columnName] = pd.Series([self.defaultValue]*numRows,
+                                             index = procdf.index)
+        
+        return procdf
 
 class CleanUp:
     """Performs regular clean up routines on imported data.
