@@ -106,6 +106,10 @@ class OverlayClusters:
         # Ensure that the noise cluster is removed from the analysis
         stats.loc[-1, self._switchColumn] = False
         
+        # Apply the column filter, if it exists
+        if columnFilter is not None:
+            stats.loc[stats[columnFilter] == False, self._switchColumn] = False
+        
         # Find the cluster ID information
         self._extractClusterID(stats, columnFilter)     
         
