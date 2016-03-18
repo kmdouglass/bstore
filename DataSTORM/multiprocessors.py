@@ -62,7 +62,7 @@ class OverlayClusters:
         self._ax1           = None
         self._clusterLocs   = None
     
-    def __call__(self, locs, wfImage = None, stats = None, numberFilter = None):
+    def __call__(self, locs, wfImage = None, stats = None, numberFilter = None, columnFilter = None):
         """Overlay the localizations onto the widefield image.
         
         This opens an interactive matplotlib window that shows the full overlay
@@ -81,6 +81,9 @@ class OverlayClusters:
             Remove clusters with fewer than this number of localizations from
             the processing. They will automatically have their 'switchColumn'
             set to False.
+        columnFilter : str
+            The name of a column containing boolean data. Only rows with a
+            value of True in this column will be displayed.
             
         Returns
         -------
@@ -98,13 +101,13 @@ class OverlayClusters:
         if numberFilter is not None:
             # A slice of the localization DataFrame is made here;
             # The original is not overwritten.
-            stats.loc[stats['number_of_localizations'] <= numberFilter, 'keep_for_analysis'] = False
+            stats.loc[stats['number_of_localizations'] <= numberFilter, self._switchColumn] = False
             
         # Ensure that the noise cluster is removed from the analysis
-        stats.loc[-1, 'keep_for_analysis'] = False
+        stats.loc[-1, self._switchColumn] = False
         
         # Find the cluster ID information
-        self._extractClusterID(stats)     
+        self._extractClusterID(stats, columnFilter)     
         
         # Draw the localizations in the figure
         self._initCanvas(locs, wfImage, stats)
@@ -176,19 +179,27 @@ class OverlayClusters:
         ax1.set_title('Current cluster ID: {0:d} : Index {1:d} / {2:d}'.format((self.currentCluster), (self._currentClusterIndex) , len(self.clusterIDs) - 1))
         self._fig.canvas.draw()
         
-    def _extractClusterID(self, stats):
+    def _extractClusterID(self, stats, columnFilter):
         """Obtains a list of the cluster IDs.
         
         Parameters
         ----------
         stats : Pandas DataFrame
             Localization information.
+        columnFilter : str
+            The name of a column containing boolean data. Only rows with a
+            value of True in this column will be analyzed.
             
         """
         # Get the cluster IDs except for the noise, which has ID -1, and those
         # whose 'switchColumns' are already set to false.
-        self.clusterIDs     = stats[(stats.index != -1)
-                                  & (stats[self._switchColumn] != False)].index.unique()
+        if not columnFilter:
+            self.clusterIDs     = stats[(stats.index != -1)
+                                      & (stats[self._switchColumn] != False)].index.unique()
+        else:
+            self.clusterIDs     = stats[(stats.index != -1)
+                                      & (stats[self._switchColumn] != False)
+                                      & (stats[columnFilter]       != False)].index.unique()
         self.currentCluster = np.min(self.clusterIDs)
         
     def _initCanvas(self, locs, wfImage, stats):

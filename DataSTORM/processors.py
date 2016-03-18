@@ -18,7 +18,7 @@ class AddColumn:
     same value.
     
     """
-    def __init__(self, columnName, defaultValue = 1):
+    def __init__(self, columnName, defaultValue = True):
         self.columnName   = columnName
         self.defaultValue = defaultValue
     
