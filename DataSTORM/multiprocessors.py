@@ -218,6 +218,7 @@ class OverlayClusters:
         ax0.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
+                   #vmin          = np.max(wfImage) / 6,
                    vmax          = np.max(wfImage) / 2)
         ax0.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'][1:] / self._pixelSize,
                     stats.loc[stats['keep_for_analysis'] != False, 'y_center'][1:] / self._pixelSize,
