@@ -64,7 +64,7 @@ def test_MMParser_Attributes():
     assert_equal(mmParser.acqID,                              3)
     assert_equal(mmParser.channelID,                     'A647')
     assert_equal(mmParser.posID,                           (0,))
-    assert_equal(mmParser.prefix,      'Cos7_Microtubules_A647')
+    assert_equal(mmParser.prefix,           'Cos7_Microtubules')
     assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Attributes_NoChannel():
@@ -110,5 +110,5 @@ def test_MMParser_Path_Input():
     assert_equal(mmParser.acqID,                              3)
     assert_equal(mmParser.channelID,                     'A750')
     assert_equal(mmParser.posID,                           (0,))
-    assert_equal(mmParser.prefix,      'Cos7_Microtubules_A750')
+    assert_equal(mmParser.prefix,           'Cos7_Microtubules')
     assert_equal(mmParser.datasetType,             'locResults')

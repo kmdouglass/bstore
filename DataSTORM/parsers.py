@@ -74,6 +74,9 @@ class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
     
     """
+    def __init__(self):
+        # Overload the parent's __init__ to prevent automatically calling it.
+        pass
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Parse the filename to extract the acquisition information.
@@ -114,15 +117,18 @@ class MMParser(Parser):
         # Split the string at 'MMStack'
         prefixRaw, suffixRaw = filename.split('_MMStack_')
         
-        # Obtain the acquisition ID and prefix
+        # Obtain the acquisition ID
         prefixRawParts = prefixRaw.split('_')
         acqID          = int(prefixRawParts[-1])
+        
+        # Obtain the channel ID and prefix
         # Extract any channel identifiers if present. See channelIdentifer dict
-        prefix         = '_'.join(prefixRawParts[:-1])
+        prefix    = '_'.join(prefixRawParts[:-1])
         channelID = [channel for channel in channelIdentifier.keys() if channel in prefix]
         assert (len(channelID) <= 1), channelID
         try:
             channelID = channelID[0]
+            prefix = prefix.replace('_' + channelID, '')
         except IndexError:
             # When there is no channel identifier found, set it to None
             channelID = None
