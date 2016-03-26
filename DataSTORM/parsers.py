@@ -7,7 +7,7 @@ class Parser:
         The number identifying the Multi-D acquisition for a given prefix name.
     channelID   : str
         The color channel associated with the dataset.
-    posID       : int, or (int, int)
+    posID       : (int,) or (int, int)
         The position identifier. It is a single element tuple if positions were
         manually set; otherwise, it's a 2-tuple indicating the x and y
         identifiers.
@@ -21,7 +21,27 @@ class Parser:
     def __init__(self, acqID, channelID, posID, prefix, datasetType):
         """Initialize the parser's metadata information.
         
+        Parameters
+        ----------
+        acqID       : int
+            The number identifying the Multi-D acquisition for a given prefix
+            name.
+        channelID   : str
+            The color channel associated with the dataset.
+        posID       : int, or (int, int)
+            The position identifier. It is a single element tuple if positions
+            were manually set; otherwise, it's a 2-tuple indicating the x and y
+            identifiers.
+        prefix      : str
+            The descriptive name given to the dataset by the user.
+        datasetType : str
+            The type of data contained in the dataset. Can be one of
+            'locResults', 'locMetadata', or 'widefieldImage'.
+        
         """
+        if datasetType not in ['locResults','locMetadata','widefieldImage']:
+            raise DatasetError(datasetType)
+        
         # These are the essential pieces of information to identify a dataset.
         self.acqID       =       acqID
         self.channelID   =   channelID
@@ -33,7 +53,13 @@ class Parser:
         """Return a dictionary containing the basic dataset information.
         
         """
-        
+        basicInfo = {'acquisition_id' : self.acqID,
+                     'channel_id'     : self.channelID,
+                     'position_id'    : self.posID,
+                     'prefix'         : self.prefix,
+                     'dataset_type'   : self.datasetType}
+                     
+        return basicInfo
 
 class MMFileParser(Parser):
     """Parses a filename to extract the dataset's acquisition information.
@@ -43,7 +69,8 @@ class MMFileParser(Parser):
         """Initialize the Micro-Manager metadata.
         
         """
-        """self.MM_Channels
+        """PROTOTYPE
+        self.MM_Channels
         self.MM_ChColors
         self.MM_ChContrastMax
         self.MM_ChContrastMin
@@ -78,9 +105,19 @@ class MMFileParser(Parser):
         self.MM_Width
         self.MM_z-step_um
         """
+        pass
 
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
     
     """
     pass
+
+class DatasetError(Exception):
+    """Error raised when a bad datasetType is passed to Parser.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
