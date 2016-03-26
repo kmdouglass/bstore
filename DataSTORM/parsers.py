@@ -1,3 +1,12 @@
+import pathlib
+import re
+
+# This dictionary contains all the channel identifiers DataSTORM knows natively
+channelIdentifier = {'A647' : 'AlexaFluor 647',
+                     'A750' : 'AlexaFluor 750',
+                     'DAPI' : 'DAPI',
+                     'Cy5'  : 'Cy5'}
+
 class Parser:
     """Machine-readable data structure containing SMLM acquisition information.
     
@@ -53,59 +62,79 @@ class Parser:
         """Return a dictionary containing the basic dataset information.
         
         """
-        basicInfo = {'acquisition_id' : self.acqID,
-                     'channel_id'     : self.channelID,
-                     'position_id'    : self.posID,
-                     'prefix'         : self.prefix,
+        basicInfo = {'acquisition_id' :       self.acqID,
+                     'channel_id'     :   self.channelID,
+                     'position_id'    :       self.posID,
+                     'prefix'         :      self.prefix,
                      'dataset_type'   : self.datasetType}
                      
         return basicInfo
 
-class MMFileParser(Parser):
-    """Parses a filename to extract the dataset's acquisition information.
+class MMParser(Parser):
+    """Parses a Micro-Manger-based filename for the dataset's acquisition info.
     
     """
-    def __init__(self):
-        """Initialize the Micro-Manager metadata.
+    
+    def parseFilename(self, filename, datasetType = 'locResults'):
+        """Parse the filename to extract the acquisition information.
+        
+        Parameters
+        ----------
+        filename    : str or Path
+            A string or pathlib Path object containing the dataset's filename.
+        datasetType : str
+            One of 'locResults', 'locMetadata', or 'widefieldImage'.
+            
+        Returns
+        -------
+        self        : MMParser
+            The parsed acquisition information.
+            
+        """
+        if datasetType not in ['locResults','locMetadata','widefieldImage']:
+            raise DatasetError(datasetType)        
+        
+        # Convert Path objects to strings
+        if isinstance(filename, pathlib.PurePath):
+            filename = str(filename.name)
+            
+        if datasetType == 'locResults':
+            parsedData = self._parseLocResults(filename)
+            super(MMParser, self).__init__(*parsedData, datasetType)
+        
+    def _parseLocResults(self, filename):
+        """Parse a localization results file.
+        
+        Parameters
+        ----------
+        filename : str
+            The filename for the current file to parse.
         
         """
-        """PROTOTYPE
-        self.MM_Channels
-        self.MM_ChColors
-        self.MM_ChContrastMax
-        self.MM_ChContrastMin
-        self.MM_ChNames
-        self.MM_Comment
-        self.MM_ComputerName
-        self.MM_Date
-        self.MM_Depth
-        self.MM_Directory
-        self.MM_Frames
-        self.MM_GridColumn
-        self.MM_GridRow
-        self.MM_Height
-        self.MM_IJType
-        self.MM_Interval
-        self.MM_KeepShutterOpenChannels
-        self.MM_KeepShutterOpenSlices
-        self.MM_MetadataVersion
-        self.MM_PixelAspect
-        self.MM_PixelSize_um
-        self.MM_PixelType
-        self.MM_PositionIndex
-        self.MM_Positions
-        self.MM_Prefix
-        self.MM_Slices
-        self.MM_SlicesFirst
-        self.MM_Source
-        self.MM_Time
-        self.MM_TimeFirst
-        self.MM_UserName
-        self.MM_UUID
-        self.MM_Width
-        self.MM_z-step_um
-        """
-        pass
+        # Split the string at 'MMStack'
+        prefixRaw, suffixRaw = filename.split('_MMStack_')
+        
+        # Obtain the acquisition ID and prefix
+        prefixRawParts = prefixRaw.split('_')
+        acqID          = int(prefixRawParts[-1])
+        # Extract any channel identifiers if present. See channelIdentifer dict
+        prefix         = '_'.join(prefixRawParts[:-1])
+        channelID = [channel for channel in channelIdentifier.keys() if channel in prefix]
+        assert (len(channelID) <= 1), channelID
+        try:
+            channelID = channelID[0]
+        except IndexError:
+            # When there is no channel identifier found, set it to None
+            channelID = None
+        
+        # Obtain the position ID using regular expressions
+        # First, extract strings like 'Pos0' or 'Pos_003_002
+        positionRaw = re.search(r'Pos\_\d{1,3}\_\d{1,3}|Pos\d{1,}', suffixRaw)
+        # Next, extract the digits and convert them to a tuple
+        indexes = re.findall(r'\d{1,}', positionRaw.group(0))
+        posID   = tuple([int(index) for index in indexes])
+        
+        return  acqID, channelID, posID, prefix
 
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
@@ -121,3 +150,40 @@ class DatasetError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
+        
+"""PROTOTYPE
+self.MM_Channels
+self.MM_ChColors
+self.MM_ChContrastMax
+self.MM_ChContrastMin
+self.MM_ChNames
+self.MM_Comment
+self.MM_ComputerName
+self.MM_Date
+self.MM_Depth
+self.MM_Directory
+self.MM_Frames
+self.MM_GridColumn
+self.MM_GridRow
+self.MM_Height
+self.MM_IJType
+self.MM_Interval
+self.MM_KeepShutterOpenChannels
+self.MM_KeepShutterOpenSlices
+self.MM_MetadataVersion
+self.MM_PixelAspect
+self.MM_PixelSize_um
+self.MM_PixelType
+self.MM_PositionIndex
+self.MM_Positions
+self.MM_Prefix
+self.MM_Slices
+self.MM_SlicesFirst
+self.MM_Source
+self.MM_Time
+self.MM_TimeFirst
+self.MM_UserName
+self.MM_UUID
+self.MM_Width
+self.MM_z-step_um
+"""
