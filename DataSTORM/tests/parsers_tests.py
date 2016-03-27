@@ -68,7 +68,7 @@ def test_MMParser_Attributes():
     assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Channel_Underscores():
-    """Will MMParser extract the prefix with weird underscores?
+    """Will MMParser extract the prefix and channel with weird underscores?
     
     """
     inputFilename   = ['Cos7_Microtubules_Cy5_3_MMStack_Pos0_locResults.dat',

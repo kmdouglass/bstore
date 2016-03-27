@@ -112,6 +112,13 @@ class MMParser(Parser):
         ----------
         filename : str
             The filename for the current file to parse.
+            
+        Returns
+        -------
+        acqID     : int
+        channelID : str
+        posID     : (int,) or (int, int)
+        prefix    : str
         
         """
         # Split the string at 'MMStack'
@@ -147,6 +154,24 @@ class MMParser(Parser):
         posID   = tuple([int(index) for index in indexes])
         
         return  acqID, channelID, posID, prefix
+        
+    def _parseLocMetadata(self):
+        """Parse a localization metadata file.
+        
+        Parameters
+        ----------
+        filename : str
+            The filename for the current file to parse.
+            
+        Returns
+        -------
+        acqID     : int
+        channelID : str
+        posID     : (int,) or (int, int)
+        prefix    : str
+        
+        """
+        pass
 
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
