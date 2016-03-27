@@ -124,11 +124,17 @@ class MMParser(Parser):
         # Obtain the channel ID and prefix
         # Extract any channel identifiers if present. See channelIdentifer dict
         prefix    = '_'.join(prefixRawParts[:-1])
+        prefix    = re.sub(r'\_\_+', '_', prefix) # Remove repeats of '_'
         channelID = [channel for channel in channelIdentifier.keys() if channel in prefix]
         assert (len(channelID) <= 1), channelID
         try:
-            channelID = channelID[0]
-            prefix = prefix.replace('_' + channelID, '')
+            channelID       = channelID[0]
+            channelIDString = re.search(r'((\_' + channelID +           \
+                                            ')$)|((^\_)?' + channelID + \
+                                            '(\_)?)',
+                                        prefix)
+            prefix = prefix.replace(channelIDString.group(), '')
+                      
         except IndexError:
             # When there is no channel identifier found, set it to None
             channelID = None

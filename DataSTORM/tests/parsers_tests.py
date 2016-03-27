@@ -67,6 +67,28 @@ def test_MMParser_Attributes():
     assert_equal(mmParser.prefix,           'Cos7_Microtubules')
     assert_equal(mmParser.datasetType,             'locResults')
     
+def test_MMParser_Channel_Underscores():
+    """Will MMParser extract the prefix with weird underscores?
+    
+    """
+    inputFilename   = ['Cos7_Microtubules_Cy5_3_MMStack_Pos0_locResults.dat',
+                       '_Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
+                       'Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
+                       'Cos7_Cy5_Microtubules_3_MMStack_Pos0_locResults.dat',
+                       'Cos7_MicrotubulesCy5_3_MMStack_Pos0_locResults.dat',
+                       'Cos7_Microtubules__Cy5_3_MMStack_Pos0_locResults.dat',
+                       'Cos7___Microtubules__Cy5_3_MMStack_Pos0_locResults.dat']
+    datasetType     = 'locResults'
+    
+    mmParser = parsers.MMParser()
+    for currFilename in inputFilename:
+        mmParser.parseFilename(currFilename, datasetType)
+        assert_equal(mmParser.acqID,                              3)
+        assert_equal(mmParser.channelID,                      'Cy5')
+        assert_equal(mmParser.posID,                           (0,))
+        assert_equal(mmParser.prefix,           'Cos7_Microtubules')
+        assert_equal(mmParser.datasetType,             'locResults')
+    
 def test_MMParser_Attributes_NoChannel():
     """Will MMParser extract the acquisition info w/o a channel identifier?
     
@@ -102,7 +124,8 @@ def test_MMParser_Path_Input():
     """Will MMParser properly convert Path inputs to strings?
     
     """
-    inputFile   = Path('results/Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
+    inputFile = \
+        Path('results/Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
     datasetType = 'locResults'
     
     mmParser = parsers.MMParser()
