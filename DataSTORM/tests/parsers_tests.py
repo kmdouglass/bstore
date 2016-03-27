@@ -104,6 +104,21 @@ def test_MMParser_Attributes_NoChannel():
     assert_equal(mmParser.prefix,      'Cos7_Microtubules')
     assert_equal(mmParser.datasetType,        'locResults')
     
+def test_MMParser_Attributes_NoPosition():
+    """Will MMParser extract the acquisition info w/o a path identifier?
+    
+    """
+    inputFilename   = 'Cos7_Microtubules_12_MMStack_locResults.dat'
+    datasetType     = 'locResults'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFilename, datasetType)
+    assert_equal(mmParser.acqID,                        12)
+    assert_equal(mmParser.channelID,                  None)
+    assert_equal(mmParser.posID,                      None)
+    assert_equal(mmParser.prefix,      'Cos7_Microtubules')
+    assert_equal(mmParser.datasetType,        'locResults')
+    
 def test_MMParser_Attributes_MultipleXY():
     """Will MMParser extract multiple xy positions?
     
@@ -137,7 +152,7 @@ def test_MMParser_Path_Input():
     assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Metadata():
-    """Will MMParser properly read a metadata file?
+    """Will MMParser properly read a metadata file with double position info?
     
     """
     f = 'bacteria_HaloInduced_A647_1_MMStack_1-Pos_002_002_locMetadata.json'
@@ -153,3 +168,39 @@ def test_MMParser_Metadata():
     assert_equal(mmParser.datasetType,                          'locMetadata')
     assert_equal(mmParser.metadata['InitialPositionList']['Label'],
                                                               '1-Pos_002_002')
+                                                              
+def test_MMParser_Metadata_NoPosition_Metadata():
+    """Will MMParser properly read a metadata file with empty position info?
+    
+    """
+    # Note that the json entry for position information is empty in this file!
+    f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
+    inputFile = Path('tests') / Path(f)
+    datasetType = 'locMetadata'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    assert_equal(mmParser.acqID,                                            1)
+    assert_equal(mmParser.channelID,                                   'A750')
+    assert_equal(mmParser.posID,                                         (0,))
+    assert_equal(mmParser.prefix,                              'HeLa_Control')
+    assert_equal(mmParser.datasetType,                          'locMetadata')
+    assert_equal(mmParser.metadata['InitialPositionList'],               None)
+    
+def test_MMParser_Metadata_SinglePosition():
+    """Will MMParser properly read a metadata file with a single position?
+    
+    """
+    # Note that the json entry for position information is empty in this file!
+    f = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
+    inputFile = Path('tests') / Path(f)
+    datasetType = 'locMetadata'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    assert_equal(mmParser.acqID,                                            2)
+    assert_equal(mmParser.channelID,                                   'A750')
+    assert_equal(mmParser.posID,                                         (0,))
+    assert_equal(mmParser.prefix,                              'HeLa_Control')
+    assert_equal(mmParser.datasetType,                          'locMetadata')
+    assert_equal(mmParser.metadata['InitialPositionList']['Label'],    'Pos0')

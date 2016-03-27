@@ -74,6 +74,11 @@ class Parser:
 class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
     
+    Attributes
+    ----------
+    metadata : dict or None
+        Dictionary containing decoded json metadata.
+    
     """
     def __init__(self):
         # Overload the parent's __init__ to prevent automatically calling it.
@@ -152,13 +157,16 @@ class MMParser(Parser):
         except IndexError:
             # When there is no channel identifier found, set it to None
             channelID = None
-        
+    
         # Obtain the position ID using regular expressions
         # First, extract strings like 'Pos0' or 'Pos_003_002
         positionRaw = re.search(r'Pos\_\d{1,3}\_\d{1,3}|Pos\d{1,}', suffixRaw)
-        # Next, extract the digits and convert them to a tuple
-        indexes = re.findall(r'\d{1,}', positionRaw.group(0))
-        posID   = tuple([int(index) for index in indexes])
+        if positionRaw == None:
+            posID = None
+        else:
+            # Next, extract the digits and convert them to a tuple
+            indexes = re.findall(r'\d{1,}', positionRaw.group(0))
+            posID   = tuple([int(index) for index in indexes])
         
         return acqID, channelID, posID, prefix
         
@@ -186,11 +194,20 @@ class MMParser(Parser):
         acqID, channelID, posID, prefix = self._parseLocResults(filename)
         
         # Remove non-matching position information from the metadata
-        pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
-        newPosList= [currPos for currPos in metadata['InitialPositionList'] \
-                     if pos in currPos['Label']]
-        assert len(newPosList) <= 1, 'Multiple positions found in metadata.'
-        metadata['InitialPositionList'] = newPosList[0]
+        if len(posID) == 2:
+            pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
+        else:
+            pos = 'Pos{0:d}'.format(posID[0])
+        
+        try:      
+            newPosList= [currPos \
+                         for currPos in metadata['InitialPositionList'] \
+                         if pos in currPos['Label']]
+            assert len(newPosList) <= 1,\
+                'Multiple positions found in metadata.'
+            metadata['InitialPositionList'] = newPosList[0]
+        except TypeError:
+            metadata['InitialPositionList'] = None
 
         return acqID, channelID, posID, prefix, metadata
         
