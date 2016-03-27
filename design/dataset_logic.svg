@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="682.91901"
+   height="935.1181"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="dataset_logic.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Send"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Send"
+       style="overflow:visible">
+      <path
+         id="path3863"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.2,0,0,-0.2,-1.2,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="511.92169"
+     inkscape:cy="555.44798"
+     inkscape:document-units="mm"
+     inkscape:current-layer="g5590"
+     showgrid="false"
+     units="mm"
+     inkscape:window-width="1366"
+     inkscape:window-height="715"
+     inkscape:window-x="0"
+     inkscape:window-y="31"
+     inkscape:window-maximized="1"
+     inkscape:snap-midpoints="true"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:snap-global="true"
+     fit-margin-top="5"
+     fit-margin-left="5"
+     fit-margin-right="5"
+     fit-margin-bottom="5" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-8.6846403,-121.04357)">
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3755"
+       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+       transform="translate(0,2.5390623e-6)"><flowRegion
+         id="flowRegion3757"><rect
+           id="rect3759"
+           width="106.06602"
+           height="41.416256"
+           x="87.88327"
+           y="178.58023" /></flowRegion><flowPara
+         id="flowPara3761"></flowPara></flowRoot>    <g
+       id="g3816"
+       transform="translate(18.881326,0.66854858)">
+      <rect
+         y="138.97739"
+         x="54.85981"
+         height="84.991287"
+         width="166.49165"
+         id="rect2985"
+         style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3763"
+         y="176.55994"
+         x="137.91667"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         xml:space="preserve"><tspan
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           y="176.55994"
+           x="137.91667"
+           id="tspan3765"
+           sodipodi:role="line">Tabulated</tspan><tspan
+           id="tspan3767"
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           y="199.05994"
+           x="137.91667"
+           sodipodi:role="line">localization data</tspan></text>
+    </g>
+    <g
+       id="g3822"
+       transform="translate(-8.2254244,1.6787109)">
+      <rect
+         style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25984252, 1.77165354;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect3773"
+         width="166.49165"
+         height="84.991287"
+         x="275.25705"
+         y="137.96722" />
+      <text
+         xml:space="preserve"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         x="359.14008"
+         y="175.54979"
+         id="text3775"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           x="359.14008"
+           y="175.54979"
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           id="tspan3779">Acquisition</tspan><tspan
+           id="tspan3783"
+           sodipodi:role="line"
+           x="359.14008"
+           y="198.04979"
+           style="font-size:18px;text-align:center;text-anchor:middle">metadata</tspan></text>
+    </g>
+    <g
+       id="g3828"
+       transform="translate(-23.118674,0)">
+      <rect
+         y="139.64594"
+         x="483.44077"
+         height="84.991287"
+         width="166.49165"
+         id="rect3785"
+         style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25984252, 1.77165354;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3787"
+         y="175.54979"
+         x="567.23151"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         xml:space="preserve"><tspan
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           y="175.54979"
+           x="567.23151"
+           sodipodi:role="line"
+           id="tspan3791">Widefield</tspan><tspan
+           id="tspan3795"
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           y="198.04979"
+           x="567.23151"
+           sodipodi:role="line">images</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.54330707;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 156.98697,224.63722 0,94.35421"
+       id="path3834"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path3840"
+       d="m 350.27746,224.63722 0,94.35421"
+       style="fill:none;stroke:#000000;stroke-width:3.54330707;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.54330707;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 543.56793,224.63722 0,94.35421"
+       id="path3842"
+       inkscape:connector-curvature="0" />
+    <g
+       id="g3816-3"
+       transform="matrix(0.9845843,0,0,1,213.67019,186.00573)">
+      <rect
+         y="138.97739"
+         x="-92.873444"
+         height="84.991287"
+         width="462.96832"
+         id="rect2985-9"
+         style="color:#000000;fill:#80e5ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.78546917;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3763-7"
+         y="187.80994"
+         x="137.29704"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         xml:space="preserve"><tspan
+           id="tspan3767-8"
+           style="font-size:18.1403656px;text-align:center;text-anchor:middle"
+           y="187.80994"
+           x="137.29704"
+           sodipodi:role="line">Parser</tspan></text>
+    </g>
+    <g
+       id="g5045"
+       transform="translate(-5.5701409,14.62569)">
+      <rect
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.2598424, 1.77165353;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect5554"
+         width="645.71429"
+         height="614.28571"
+         x="32.857143"
+         y="426.64789"
+         transform="translate(0,-17.999997)" />
+    </g>
+    <g
+       id="g5590">
+      <rect
+         style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165365;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect4720"
+         width="552.80597"
+         height="288.90359"
+         x="73.741135"
+         y="444.25034"
+         transform="translate(0,17.999997)" />
+      <g
+         id="g4821"
+         transform="translate(0,64.000006)">
+        <rect
+           style="color:#000000;fill:#80e5ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165365;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           id="rect4514"
+           width="455.83228"
+           height="197.81"
+           x="122.228"
+           y="475.47552" />
+        <text
+           transform="scale(0.99226221,1.0077981)"
+           xml:space="preserve"
+           style="font-size:9.92262173px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+           x="164.17943"
+           y="491.90076"
+           id="text4516"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="164.17943"
+             y="491.90076"
+             style="font-size:18px;text-align:center;text-anchor:middle"
+             id="tspan4518">Dataset</tspan></text>
+        <g
+           id="g4867"
+           transform="translate(0,-3.8265872)">
+          <g
+             transform="translate(109.87462,372.26701)"
+             id="g4520">
+            <rect
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="rect4522"
+               width="157.67717"
+               height="28.150455"
+               x="54.859814"
+               y="138.97739" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               x="134.19498"
+               y="157.70642"
+               id="text4524"
+               sodipodi:linespacing="125%"><tspan
+                 sodipodi:role="line"
+                 x="134.19498"
+                 y="157.70642"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 id="tspan4528">Acquisition ID</tspan></text>
+          </g>
+          <g
+             transform="translate(109.87462,420.46329)"
+             id="g4554">
+            <rect
+               y="138.97739"
+               x="54.859814"
+               height="85.729149"
+               width="157.67717"
+               id="rect4542"
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text4544"
+               y="161.42047"
+               x="68.155426"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               xml:space="preserve"><tspan
+                 id="tspan4546"
+                 style="font-size:18px;text-align:start;text-anchor:start"
+                 y="161.42047"
+                 x="68.155426"
+                 sodipodi:role="line">Dataset type</tspan><tspan
+                 style="font-size:14px;text-align:start;text-anchor:start"
+                 y="179.98416"
+                 x="68.155426"
+                 sodipodi:role="line"
+                 id="tspan4813">    Localization data</tspan><tspan
+                 style="font-size:14px;text-align:start;text-anchor:start"
+                 y="197.48416"
+                 x="68.155426"
+                 sodipodi:role="line"
+                 id="tspan4890">    Metadata</tspan><tspan
+                 style="font-size:14px;text-align:start;text-anchor:start"
+                 y="214.98416"
+                 x="68.155426"
+                 sodipodi:role="line"
+                 id="tspan4817">    Widefield image</tspan><tspan
+                 style="font-size:18px;text-align:start;text-anchor:start"
+                 y="232.48416"
+                 x="68.155426"
+                 sodipodi:role="line"
+                 id="tspan4811" /></text>
+          </g>
+          <g
+             id="g4561"
+             transform="translate(323.01683,372.26701)">
+            <g
+               id="g4589">
+              <rect
+                 style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25983993, 1.77165332;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+                 id="rect4563"
+                 width="157.67717"
+                 height="28.150455"
+                 x="54.859814"
+                 y="138.97739" />
+              <text
+                 xml:space="preserve"
+                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+                 x="133.48746"
+                 y="159.38953"
+                 id="text4565"
+                 sodipodi:linespacing="125%"><tspan
+                   sodipodi:role="line"
+                   x="133.48746"
+                   y="159.38953"
+                   style="font-size:18px;text-align:center;text-anchor:middle"
+                   id="tspan4567">Position ID</tspan></text>
+            </g>
+          </g>
+          <g
+             id="g4648"
+             transform="translate(56.707614,-11.448176)">
+            <rect
+               y="570.88885"
+               x="321.16904"
+               height="28.150455"
+               width="157.67717"
+               id="rect4573"
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25983993, 1.77165332;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text4575"
+               y="591.40649"
+               x="400.04279"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               xml:space="preserve"><tspan
+                 id="tspan4577"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 y="591.40649"
+                 x="400.04279"
+                 sodipodi:role="line">Channel ID</tspan></text>
+          </g>
+        </g>
+        <path
+           inkscape:connector-curvature="0"
+           id="path4658"
+           d="m 350.14413,498.40464 0,151.95177"
+           style="fill:none;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:5.31496059, 1.77165352;stroke-dashoffset:0" />
+      </g>
+      <text
+         transform="matrix(0.99226223,0,0,1.0077981,0,17.999997)"
+         xml:space="preserve"
+         style="font-size:9.92262173px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         x="154.10144"
+         y="460.00385"
+         id="text4758"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           x="154.10144"
+           y="460.00385"
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           id="tspan4760">Acquisition Group</tspan></text>
+      <g
+         id="g4799"
+         transform="translate(67.87462,358.84028)">
+        <rect
+           style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           id="rect4801"
+           width="157.67717"
+           height="28.150455"
+           x="54.859814"
+           y="138.97739" />
+        <text
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+           x="132.99966"
+           y="159.49939"
+           id="text4803"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="132.99966"
+             y="159.49939"
+             style="font-size:18px;text-align:center;text-anchor:middle"
+             id="tspan4805">Prefix</tspan></text>
+      </g>
+      <rect
+         style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect5112"
+         width="552.80603"
+         height="230.33217"
+         x="73.741135"
+         y="768.25037" />
+      <g
+         transform="translate(0,370.00001)"
+         id="g5250">
+        <rect
+           style="color:#000000;fill:#80e5ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           id="rect5118"
+           width="188.68941"
+           height="124.95286"
+           x="122.228"
+           y="475.47552" />
+        <text
+           transform="scale(0.99226221,1.0077981)"
+           xml:space="preserve"
+           style="font-size:9.92262173px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+           x="164.17943"
+           y="491.90076"
+           id="text5120"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="164.17943"
+             y="491.90076"
+             style="font-size:18px;text-align:center;text-anchor:middle"
+             id="tspan5122">Dataset</tspan></text>
+        <g
+           id="g5124"
+           transform="translate(-30.346961,-3.8265872)">
+          <g
+             transform="translate(109.87462,372.26701)"
+             id="g5126">
+            <rect
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="rect5128"
+               width="157.67717"
+               height="28.150455"
+               x="54.859814"
+               y="138.97739" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               x="134.19498"
+               y="157.70642"
+               id="text5130"
+               sodipodi:linespacing="125%"><tspan
+                 sodipodi:role="line"
+                 x="134.19498"
+                 y="157.70642"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 id="tspan5132">Acquisition ID</tspan></text>
+          </g>
+          <g
+             transform="translate(109.87462,420.46329)"
+             id="g5134" />
+          <g
+             id="g5242"
+             transform="translate(109.87462,416.26701)">
+            <rect
+               y="138.97739"
+               x="54.859814"
+               height="28.150455"
+               width="157.67717"
+               id="rect5244"
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text5246"
+               y="157.70642"
+               x="134.19498"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               xml:space="preserve"><tspan
+                 id="tspan5248"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 y="157.70642"
+                 x="134.19498"
+                 sodipodi:role="line">Dataset type</tspan></text>
+          </g>
+        </g>
+      </g>
+      <g
+         id="g5265"
+         transform="translate(267.14287,370.00001)">
+        <rect
+           y="475.47552"
+           x="122.228"
+           height="124.95286"
+           width="188.68941"
+           id="rect5267"
+           style="color:#000000;fill:#80e5ff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165353;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text5269"
+           y="491.90076"
+           x="164.17943"
+           style="font-size:9.92262173px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+           xml:space="preserve"
+           transform="scale(0.99226221,1.0077981)"><tspan
+             id="tspan5271"
+             style="font-size:18px;text-align:center;text-anchor:middle"
+             y="491.90076"
+             x="164.17943"
+             sodipodi:role="line">Dataset</tspan></text>
+        <g
+           transform="translate(-30.346961,-3.8265872)"
+           id="g5273">
+          <g
+             id="g5275"
+             transform="translate(109.87462,372.26701)">
+            <rect
+               y="138.97739"
+               x="54.859814"
+               height="28.150455"
+               width="157.67717"
+               id="rect5277"
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text5279"
+               y="157.70642"
+               x="134.19498"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               xml:space="preserve"><tspan
+                 id="tspan5281"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 y="157.70642"
+                 x="134.19498"
+                 sodipodi:role="line">Acquisition ID</tspan></text>
+          </g>
+          <g
+             id="g5283"
+             transform="translate(109.87462,420.46329)" />
+          <g
+             transform="translate(109.87462,416.26701)"
+             id="g5285">
+            <rect
+               style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="rect5287"
+               width="157.67717"
+               height="28.150455"
+               x="54.859814"
+               y="138.97739" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+               x="134.19498"
+               y="157.70642"
+               id="text5289"
+               sodipodi:linespacing="125%"><tspan
+                 sodipodi:role="line"
+                 x="134.19498"
+                 y="157.70642"
+                 style="font-size:18px;text-align:center;text-anchor:middle"
+                 id="tspan5291">Dataset type</tspan></text>
+          </g>
+        </g>
+      </g>
+      <text
+         transform="scale(0.99226223,1.0077981)"
+         xml:space="preserve"
+         style="font-size:9.92262173px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         x="154.10144"
+         y="781.49683"
+         id="text5170"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           x="154.10144"
+           y="781.49683"
+           style="font-size:18px;text-align:center;text-anchor:middle"
+           id="tspan5172">Acquisition Group</tspan></text>
+      <g
+         id="g5174"
+         transform="translate(67.87462,664.84028)">
+        <rect
+           style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           id="rect5176"
+           width="157.67717"
+           height="28.150455"
+           x="54.859814"
+           y="138.97739" />
+        <text
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+           x="132.99966"
+           y="159.49939"
+           id="text5178"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             x="132.99966"
+             y="159.49939"
+             style="font-size:18px;text-align:center;text-anchor:middle"
+             id="tspan5180">Prefix</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+         x="34.285717"
+         y="443.79077"
+         id="text5661"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan5663"
+           x="34.285717"
+           y="443.79077"
+           style="font-size:18px">Experiment</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.54330754;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 350.14413,409.97439 0,123.00197"
+       id="path4510"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
