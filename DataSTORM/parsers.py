@@ -1,3 +1,4 @@
+import json
 import pathlib
 import re
 
@@ -101,9 +102,15 @@ class MMParser(Parser):
         if isinstance(filename, pathlib.PurePath):
             filename = str(filename.name)
             
-        if datasetType == 'locResults':
+        if   datasetType == 'locResults':
             parsedData = self._parseLocResults(filename)
             super(MMParser, self).__init__(*parsedData, datasetType)
+        elif datasetType == 'locMetadata':
+            parsedData = self._parseLocMetadata(filename)
+            (acqID, channelID, posID, prefix, metadata) = parsedData
+            super(MMParser, self).__init__(acqID, channelID, posID,
+                                           prefix, datasetType)            
+            self.metadata = metadata
         
     def _parseLocResults(self, filename):
         """Parse a localization results file.
@@ -153,9 +160,9 @@ class MMParser(Parser):
         indexes = re.findall(r'\d{1,}', positionRaw.group(0))
         posID   = tuple([int(index) for index in indexes])
         
-        return  acqID, channelID, posID, prefix
+        return acqID, channelID, posID, prefix
         
-    def _parseLocMetadata(self):
+    def _parseLocMetadata(self, filename):
         """Parse a localization metadata file.
         
         Parameters
@@ -169,10 +176,24 @@ class MMParser(Parser):
         channelID : str
         posID     : (int,) or (int, int)
         prefix    : str
+        metadata  : dict
+            A dictionary containing the metadata for this acquisition.
         
-        """
-        pass
+        """       
+        with open(filename, 'r') as file:
+            metadata = json.load(file)
+            
+        acqID, channelID, posID, prefix = self._parseLocResults(filename)
+        
+        # Remove non-matching position information from the metadata
+        pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
+        newPosList= [currPos for currPos in metadata['InitialPositionList'] \
+                     if pos in currPos['Label']]
+        assert len(newPosList) <= 1, 'Multiple positions found in metadata.'
+        metadata['InitialPositionList'] = newPosList[0]
 
+        return acqID, channelID, posID, prefix, metadata
+        
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
     

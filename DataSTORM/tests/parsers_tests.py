@@ -135,3 +135,21 @@ def test_MMParser_Path_Input():
     assert_equal(mmParser.posID,                           (0,))
     assert_equal(mmParser.prefix,           'Cos7_Microtubules')
     assert_equal(mmParser.datasetType,             'locResults')
+    
+def test_MMParser_Metadata():
+    """Will MMParser properly read a metadata file?
+    
+    """
+    f = 'bacteria_HaloInduced_A647_1_MMStack_1-Pos_002_002_locMetadata.json'
+    inputFile = Path('tests') / Path(f)
+    datasetType = 'locMetadata'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    assert_equal(mmParser.acqID,                                            1)
+    assert_equal(mmParser.channelID,                                   'A647')
+    assert_equal(mmParser.posID,                                        (2,2))
+    assert_equal(mmParser.prefix,                      'bacteria_HaloInduced')
+    assert_equal(mmParser.datasetType,                          'locMetadata')
+    assert_equal(mmParser.metadata['InitialPositionList']['Label'],
+                                                              '1-Pos_002_002')
