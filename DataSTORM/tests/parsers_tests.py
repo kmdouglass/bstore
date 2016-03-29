@@ -10,13 +10,16 @@ def test_Parser_Attributes():
     channelID   =       'A647'
     posID       =         (0,) # Note that this is a tuple!
     prefix      = 'my_dataset'
+    sliceID     =         None
     datasetType = 'locResults'
     
-    parser = parsers.Parser(acqID, channelID, posID, prefix, datasetType)
+    parser = parsers.Parser(acqID, channelID, posID,
+                            prefix, sliceID, datasetType)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
     assert_equal(parser.posID,               (0,))
     assert_equal(parser.prefix,      'my_dataset')
+    assert_equal(parser.sliceID,             None)
     assert_equal(parser.datasetType, 'locResults')
     
 def test_Parser_datasetType():
@@ -27,12 +30,16 @@ def test_Parser_datasetType():
     channelID   =       'A647'
     posID       =         (0,)
     prefix      = 'my_dataset'
+    sliceID     =         None
     datasetType = 'locRseults' # misspelled
     
     try:
-        parser = parsers.Parser(acqID, channelID, posID, prefix, datasetType)
+        parser = parsers.Parser(acqID, channelID, posID,
+                                prefix, sliceID, datasetType)
     except parsers.DatasetError:
         pass
+    else:
+        raise Exception('DatasetError not caught.')
     
 def test_Parser_getBasicInfo():
     """Will getBasicInfo return the right values?
@@ -42,14 +49,17 @@ def test_Parser_getBasicInfo():
     channelID   =        'A750'
     posID       =         (0,1)
     prefix      =        'HeLa'
-    datasetType = 'locMetadata' # misspelled
+    sliceID     =          None
+    datasetType = 'locMetadata'
     
-    parser    = parsers.Parser(acqID, channelID, posID, prefix, datasetType)
+    parser    = parsers.Parser(acqID, channelID, posID,
+                               prefix, sliceID, datasetType)
     basicInfo = parser.getBasicInfo()
     assert_equal(basicInfo['acquisition_id'],           3)
     assert_equal(basicInfo['channel_id'],          'A750')
     assert_equal(basicInfo['position_id'],          (0,1))
     assert_equal(basicInfo['prefix'],              'HeLa')
+    assert_equal(basicInfo['slice_id'],              None)
     assert_equal(basicInfo['dataset_type'], 'locMetadata')
     
 def test_MMParser_Attributes():
@@ -65,6 +75,7 @@ def test_MMParser_Attributes():
     assert_equal(mmParser.channelID,                     'A647')
     assert_equal(mmParser.posID,                           (0,))
     assert_equal(mmParser.prefix,           'Cos7_Microtubules')
+    assert_equal(mmParser.sliceID,                         None)
     assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Channel_Underscores():
@@ -87,6 +98,7 @@ def test_MMParser_Channel_Underscores():
         assert_equal(mmParser.channelID,                      'Cy5')
         assert_equal(mmParser.posID,                           (0,))
         assert_equal(mmParser.prefix,           'Cos7_Microtubules')
+        assert_equal(mmParser.sliceID,                         None)
         assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Attributes_NoChannel():
@@ -102,6 +114,7 @@ def test_MMParser_Attributes_NoChannel():
     assert_equal(mmParser.channelID,                  None)
     assert_equal(mmParser.posID,                      (1,))
     assert_equal(mmParser.prefix,      'Cos7_Microtubules')
+    assert_equal(mmParser.sliceID,                    None)
     assert_equal(mmParser.datasetType,        'locResults')
     
 def test_MMParser_Attributes_NoPosition():
@@ -117,6 +130,7 @@ def test_MMParser_Attributes_NoPosition():
     assert_equal(mmParser.channelID,                  None)
     assert_equal(mmParser.posID,                      None)
     assert_equal(mmParser.prefix,      'Cos7_Microtubules')
+    assert_equal(mmParser.sliceID,                    None)
     assert_equal(mmParser.datasetType,        'locResults')
     
 def test_MMParser_Attributes_MultipleXY():
@@ -132,6 +146,7 @@ def test_MMParser_Attributes_MultipleXY():
     assert_equal(mmParser.channelID,                  None)
     assert_equal(mmParser.posID,                    (12,3))
     assert_equal(mmParser.prefix,             'HeLa_Actin')
+    assert_equal(mmParser.sliceID,                    None)
     assert_equal(mmParser.datasetType,        'locResults')
     
   
@@ -149,6 +164,7 @@ def test_MMParser_Path_Input():
     assert_equal(mmParser.channelID,                     'A750')
     assert_equal(mmParser.posID,                           (0,))
     assert_equal(mmParser.prefix,           'Cos7_Microtubules')
+    assert_equal(mmParser.sliceID,                         None)
     assert_equal(mmParser.datasetType,             'locResults')
     
 def test_MMParser_Metadata():
@@ -165,6 +181,7 @@ def test_MMParser_Metadata():
     assert_equal(mmParser.channelID,                                   'A647')
     assert_equal(mmParser.posID,                                        (2,2))
     assert_equal(mmParser.prefix,                      'bacteria_HaloInduced')
+    assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
     assert_equal(mmParser.metadata['InitialPositionList']['Label'],
                                                               '1-Pos_002_002')
@@ -184,6 +201,7 @@ def test_MMParser_Metadata_NoPosition_Metadata():
     assert_equal(mmParser.channelID,                                   'A750')
     assert_equal(mmParser.posID,                                         (0,))
     assert_equal(mmParser.prefix,                              'HeLa_Control')
+    assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
     assert_equal(mmParser.metadata['InitialPositionList'],               None)
     
@@ -202,5 +220,6 @@ def test_MMParser_Metadata_SinglePosition():
     assert_equal(mmParser.channelID,                                   'A750')
     assert_equal(mmParser.posID,                                         (0,))
     assert_equal(mmParser.prefix,                              'HeLa_Control')
+    assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
     assert_equal(mmParser.metadata['InitialPositionList']['Label'],    'Pos0')

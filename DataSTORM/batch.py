@@ -9,6 +9,12 @@ from abc import ABCMeta, abstractproperty
 
 class Dataset(metaclass = ABCMeta):
     def __init__(self, acqID, channelID, posID, prefix, sliceID, datasetType):
+        if acqID is None:
+            raise ValueError('acqID cannot be \'None\'.')
+                
+        if datasetType is None:
+            raise ValueError('datasetType cannot be \'None\'.')
+            
         self._acqID       = acqID
         self._channelID   = channelID
         self._posID       = posID
@@ -16,7 +22,6 @@ class Dataset(metaclass = ABCMeta):
         self._slice       = sliceID
         self._datasetType = datasetType
         
-    
     @abstractproperty
     def acqID(self):
         pass
