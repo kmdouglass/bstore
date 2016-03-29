@@ -16,7 +16,9 @@ config = {
                          'trackpy',
                          'numpy',
                          'scipy',
-                         'matplotlib'],
+                         'matplotlib',
+                         'h5py'
+                        ],
     'packages'        : [],
     'scripts'         : [],
     'name'            : 'DataSTORM'
