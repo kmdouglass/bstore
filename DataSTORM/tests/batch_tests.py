@@ -6,12 +6,11 @@ def test_Dataset_CompleteSubclass():
     """Dataset instantiation correctly detects complete subclassing.
     
     """
-    class DataSTORM_Dataset(batch.Dataset):
+    class Dataset(batch.Dataset_Schema):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
-            super(DataSTORM_Dataset, self).__init__(acqID, channelID, posID,
-                                                    prefix, sliceID,
-                                                    datasetType)
+            super(Dataset, self).__init__(acqID, channelID, posID, prefix,
+                                          sliceID, datasetType)
                                                 
         @property
         def acqID(self):
@@ -37,18 +36,17 @@ def test_Dataset_CompleteSubclass():
         def datasetType(self):
             pass
     
-    myDataset = DataSTORM_Dataset(1, 'A647', (0,), 'HeLa', 1, 'locResults')
+    myDataset = Dataset(1, 'A647', (0,), 'HeLa', 1, 'locResults')
     
 def test_Dataset_IncompleteSubclass():
     """Dataset instantiation correctly detects an incomplete subclassing.
     
     """
-    class DataSTORM_Dataset(batch.Dataset):
+    class Dataset(batch.Dataset_Schema):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
-            super(DataSTORM_Dataset, self).__init__(acqID, channelID, posID,
-                                                    prefix, sliceID,
-                                                    datasetType)
+            super(Dataset, self).__init__(acqID, channelID, posID, prefix,
+                                          sliceID, datasetType)
                                                 
         @property
         def acqID(self):
@@ -76,7 +74,7 @@ def test_Dataset_IncompleteSubclass():
             pass
 
     try:
-        myDataset = DataSTORM_Dataset(1, 'A647', (0,), 'HeLa', 1, 'locResults')
+        myDataset = Dataset(1, 'A647', (0,), 'HeLa', 1, 'locResults')
     except TypeError:
         # Incomplete substantiation throws a TypeError
         pass
@@ -89,12 +87,11 @@ def test_Dataset_NoAcqID():
     """Dataset instantiation correctly detects an acqID of None.
     
     """
-    class DataSTORM_Dataset(batch.Dataset):
+    class Dataset(batch.Dataset_Schema):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
-            super(DataSTORM_Dataset, self).__init__(acqID, channelID, posID,
-                                                    prefix, sliceID,
-                                                    datasetType)
+            super(Dataset, self).__init__(acqID, channelID, posID, prefix,
+                                          sliceID, datasetType)
                                                 
         @property
         def acqID(self):
@@ -121,8 +118,7 @@ def test_Dataset_NoAcqID():
             pass
 
     try:
-        myDataset = DataSTORM_Dataset(None, 'A647', (0,),
-                                      'HeLa', 1, 'locResults')
+        myDataset = Dataset(None, 'A647', (0,), 'HeLa', 1, 'locResults')
     except ValueError:
         # acqID = None throws an error.
         pass
@@ -135,12 +131,11 @@ def test_Dataset_NoDatasetType():
     """Dataset instantiation correctly detects a datasetType of None.
     
     """
-    class DataSTORM_Dataset(batch.Dataset):
+    class Dataset(batch.Dataset_Schema):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
-            super(DataSTORM_Dataset, self).__init__(acqID, channelID, posID,
-                                                    prefix, sliceID,
-                                                    datasetType)
+            super(Dataset, self).__init__(acqID, channelID, posID, prefix,
+                                          sliceID, datasetType)
                                                 
         @property
         def acqID(self):
@@ -167,7 +162,7 @@ def test_Dataset_NoDatasetType():
             pass
 
     try:
-        myDataset = DataSTORM_Dataset(1, 'A647', (0,), 'HeLa', 1, None)
+        myDataset = Dataset(1, 'A647', (0,), 'HeLa', 1, None)
     except ValueError:
         # datasetType = None throws an error.
         pass
