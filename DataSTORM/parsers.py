@@ -156,9 +156,12 @@ class MMParser(Parser):
         sliceID   : int
         
         """
-        # Split the string at 'MMStack'
-        prefixRaw, suffixRaw = filename.split('_MMStack_')
+        # Remove any leading underscores
+        filename = filename.lstrip('_')        
         
+        # Split the string at 'MMStack'
+        prefixRaw, suffixRaw = filename.split('_MMStack_')         
+            
         # Obtain the acquisition ID
         prefixRawParts = prefixRaw.split('_')
         if extractAcqID:

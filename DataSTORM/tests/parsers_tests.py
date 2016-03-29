@@ -118,7 +118,7 @@ def test_MMParser_Attributes_NoChannel():
     assert_equal(mmParser.datasetType,        'locResults')
     
 def test_MMParser_Attributes_NoPosition():
-    """Will MMParser extract the acquisition info w/o a path identifier?
+    """Will MMParser extract the acquisition info w/o a position identifier?
     
     """
     inputFilename   = 'Cos7_Microtubules_12_MMStack_locResults.dat'
@@ -275,3 +275,18 @@ def test_MMParser_Widefield_NoChannel():
         assert_equal(mmParser.prefix,                           'HeLa_Control')
         assert_equal(mmParser.sliceID,                                    None)
         assert_equal(mmParser.datasetType,                    'widefieldImage')
+        
+def test_MMParser_Widefield_Bizarre_Underscores():
+    """Will MMParser correctly parse this name with bizarre underscores?
+    
+    """
+    filename = '__HeLa_Control__FISH___WF__173_MMStack_Pos0.ome.tif'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(filename, 'widefieldImage')
+    assert_equal(mmParser.acqID,                                           173)
+    assert_equal(mmParser.channelID,                                      None)
+    assert_equal(mmParser.posID,                                          (0,))
+    assert_equal(mmParser.prefix,                          'HeLa_Control_FISH')
+    assert_equal(mmParser.sliceID,                                        None)
+    assert_equal(mmParser.datasetType,                        'widefieldImage')
