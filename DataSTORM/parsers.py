@@ -1,6 +1,7 @@
 import json
 import pathlib
 import re
+import warnings
 
 class Parser:
     """Creates machine-readable data structures with acquisition info.
@@ -127,8 +128,11 @@ class MMParser(Parser):
             parsedData = self._parseLocMetadata(filename)
             (acqID, channelID, posID, prefix, sliceID, metadata) = parsedData
             super(MMParser, self).__init__(acqID, channelID, posID,
-                                           prefix, sliceID, datasetType)            
+                                           prefix, sliceID, datasetType)           
             self.metadata = metadata
+        elif datasetType == 'widefieldImage':
+            parsedData = self._parseWidefieldImage(filename)
+            super(MMParser, self).__init__(*parsedData, datasetType)
         
     def _parseLocResults(self, filename, extractAcqID = True):
         """Parse a localization results file.
@@ -159,24 +163,31 @@ class MMParser(Parser):
         prefixRawParts = prefixRaw.split('_')
         if extractAcqID:
             acqID          = int(prefixRawParts[-1])
+            prefix    = '_'.join(prefixRawParts[:-1])
         else:
-            acqID = None
+            # This must be set elsewhere, such as by a widefield image
+            # tag. Not setting it results in an error when instantiating
+            # a Dataset instance.
+            acqID  = None
+            
+            # Cannot simply use prefixRaw because spurious underscores
+            # will survive through into prefix
+            prefix = '_'.join(prefixRawParts)
         
         # Obtain the channel ID and prefix
-        # Extract any channel identifiers if present. See channelIdentifer dict
-        prefix    = '_'.join(prefixRawParts[:-1])
+        # Extract any channel identifiers if present using
+        # channelIdentifer dict
         prefix    = re.sub(r'\_\_+', '_', prefix) # Remove repeats of '_'
         channelID = [channel for channel in self.channelIdentifier.keys()
                      if channel in prefix]
         assert (len(channelID) <= 1), channelID
         try:
             channelID       = channelID[0]
-            channelIDString = re.search(r'((\_' + channelID +           \
-                                            ')$)|((^\_)?' + channelID + \
+            channelIDString = re.search(r'((\_' + channelID +              \
+                                            ')\_?$)|((^\_)?' + channelID + \
                                             '(\_)?)',
                                         prefix)
             prefix = prefix.replace(channelIDString.group(), '')
-                      
         except IndexError:
             # When there is no channel identifier found, set it to None
             channelID = None
@@ -210,6 +221,7 @@ class MMParser(Parser):
         channelID : str
         posID     : (int,) or (int, int)
         prefix    : str
+        sliceID   : int
         metadata  : dict
             A dictionary containing the metadata for this acquisition.
         
@@ -249,11 +261,42 @@ class MMParser(Parser):
         filename : str
             The filename for the current file to parse.
             
+        Returns
+        -------
+        acqID     : int
+        channelID : str
+        posID     : (int,) or (int, int)
+        prefix    : str
+        sliceID   : int
+            
         """
-        # Split the string at 'MMStack'
-        prefixRaw, suffixRaw = filename.split('_MMStack_')
-        
-        
+        acqID, channelID, posID, prefix, sliceID = \
+                        self._parseLocResults(filename, extractAcqID = False)
+                        
+        # Extract the widefield image identifier from prefix and use it
+        # to set the acquisition ID. See the widefieldIdentifier dict.
+        wfID = [wfFlag for wfFlag in self.widefieldIdentifier
+                if wfFlag in prefix]
+        assert (len(wfID) <= 1), wfID
+        try:
+            wfID       = wfID[0]
+            wfIDString = re.search(r'((\_' + wfID +                \
+                                   '\_?\d+)\_?$)|((^\_)?' + wfID + \
+                                   '\_*\d+(\_?))', prefix)
+            prefix = prefix.replace(wfIDString.group(), '')
+        except IndexError:
+            # When there is no widefield identifier found, set
+            # acqID to None
+            warnings.warn(
+                'Warning: No widefield ID detected in {0:s}.'.format(prefix)
+                )
+            acqID = None
+        else:
+            acqID = re.findall(r'\d+', wfIDString.group())
+            assert len(acqID) == 1, 'Error: found multiple acqID\'s.'
+            acqID = int(acqID[0])
+            
+        return acqID, channelID, posID, prefix, sliceID     
         
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.

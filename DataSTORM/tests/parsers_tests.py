@@ -62,7 +62,7 @@ def test_Parser_getBasicInfo():
     assert_equal(basicInfo['slice_id'],              None)
     assert_equal(basicInfo['dataset_type'], 'locMetadata')
     
-def test_MMParser_Attributes():
+def test_MMParser_LocResults_Attributes():
     """Will MMParser properly extract the acquisition information?
     
     """
@@ -223,3 +223,55 @@ def test_MMParser_Metadata_SinglePosition():
     assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
     assert_equal(mmParser.metadata['InitialPositionList']['Label'],    'Pos0')
+    
+def test_MMParser_Widefield_Attributes():
+    """Will MMParser properly extract information from a widefield image?
+    
+    """
+    f = [
+        'HeLa_Control_A647_WF13_MMStack_Pos0.ome.tif',
+        'HeLa_WF13_Control_A647_MMStack_Pos0.ome.tif',
+         'WF13_HeLa_Control_A647_MMStack_Pos0.ome.tif',
+        'HeLa_Control_A647_WF13__MMStack_Pos0.ome.tif',
+        '_WF13_HeLa_Control_A647_MMStack_Pos0.ome.tif',
+        '_WF13_HeLa_Control_A647_MMStack_Pos0.ome.tif',
+        'HeLa_Control_A647_WF13_MMStack_Pos0.ome.tif',
+        'HeLa_Control_A647_WF_13_MMStack_Pos0.ome.tif',
+        'HeLa_WF__13_Control_A647_MMStack_Pos0.ome.tif'
+    ]    
+    
+    mmParser = parsers.MMParser()
+    for filename in f:
+        mmParser.parseFilename(filename, 'widefieldImage')
+        assert_equal(mmParser.acqID,                                        13)
+        assert_equal(mmParser.channelID,                                'A647')
+        assert_equal(mmParser.posID,                                      (0,))
+        assert_equal(mmParser.prefix,                           'HeLa_Control')
+        assert_equal(mmParser.sliceID,                                    None)
+        assert_equal(mmParser.datasetType,                    'widefieldImage')
+    
+def test_MMParser_Widefield_NoChannel():
+    """Will MMParser properly extract widefield info w/o a channel?
+    
+    """
+    f = [
+        'HeLa_Control_WF13_MMStack_Pos0.ome.tif',
+        'HeLa_WF13_Control_MMStack_Pos0.ome.tif',
+         'WF13_HeLa_Control_MMStack_Pos0.ome.tif',
+        'HeLa_Control_WF13__MMStack_Pos0.ome.tif',
+        '_WF13_HeLa_Control_MMStack_Pos0.ome.tif',
+        '_WF13_HeLa_Control_MMStack_Pos0.ome.tif',
+        'HeLa_Control_WF13_MMStack_Pos0.ome.tif',
+        'HeLa_Control_WF_13_MMStack_Pos0.ome.tif',
+        'HeLa_WF__13_Control_MMStack_Pos0.ome.tif'
+    ]    
+    
+    mmParser = parsers.MMParser()
+    for filename in f:
+        mmParser.parseFilename(filename, 'widefieldImage')
+        assert_equal(mmParser.acqID,                                        13)
+        assert_equal(mmParser.channelID,                                  None)
+        assert_equal(mmParser.posID,                                      (0,))
+        assert_equal(mmParser.prefix,                           'HeLa_Control')
+        assert_equal(mmParser.sliceID,                                    None)
+        assert_equal(mmParser.datasetType,                    'widefieldImage')
