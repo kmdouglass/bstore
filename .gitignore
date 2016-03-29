@@ -1,0 +1,5 @@
+test-data/*
+DataSTORM.egg-info/
+DataSTORM/__pycache__/
+examples/.ipynb_checkpoints/
+playground/.ipynb_checkpoints/
