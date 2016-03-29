@@ -5,6 +5,41 @@ import trackpy as tp
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
+from abc import ABCMeta, abstractproperty
+
+class Dataset(metaclass = ABCMeta):
+    def __init__(self, acqID, channelID, posID, prefix, sliceID, datasetType):
+        self._acqID       = acqID
+        self._channelID   = channelID
+        self._posID       = posID
+        self._prefix      = prefix
+        self._slice       = sliceID
+        self._datasetType = datasetType
+        
+    
+    @abstractproperty
+    def acqID(self):
+        pass
+    
+    @abstractproperty
+    def channelID(self):
+        pass
+    
+    @abstractproperty
+    def posID(self):
+        pass
+    
+    @abstractproperty
+    def prefix(self):
+        pass
+    
+    @abstractproperty
+    def sliceID(self):
+        pass
+    
+    @abstractproperty
+    def datasetType(self):
+        pass
 
 class BatchProcessor:
     """Base class for processing and saving single-molecule microscopy data.
