@@ -1,12 +1,12 @@
 from nose.tools import *
-from DataSTORM  import batch
+from DataSTORM  import database
 from pathlib    import Path
     
 def test_Dataset_CompleteSubclass():
     """Dataset instantiation correctly detects complete subclassing.
     
     """
-    class Dataset(batch.Dataset_Schema):
+    class Dataset(database.DatabaseAtom):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
             super(Dataset, self).__init__(acqID, channelID, posID, prefix,
@@ -42,7 +42,7 @@ def test_Dataset_IncompleteSubclass():
     """Dataset instantiation correctly detects an incomplete subclassing.
     
     """
-    class Dataset(batch.Dataset_Schema):
+    class Dataset(database.DatabaseAtom):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
             super(Dataset, self).__init__(acqID, channelID, posID, prefix,
@@ -87,7 +87,7 @@ def test_Dataset_NoAcqID():
     """Dataset instantiation correctly detects an acqID of None.
     
     """
-    class Dataset(batch.Dataset_Schema):
+    class Dataset(database.DatabaseAtom):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
             super(Dataset, self).__init__(acqID, channelID, posID, prefix,
@@ -131,7 +131,7 @@ def test_Dataset_NoDatasetType():
     """Dataset instantiation correctly detects a datasetType of None.
     
     """
-    class Dataset(batch.Dataset_Schema):
+    class Dataset(database.DatabaseAtom):
         def __init__(self, acqID, channelID, posID,
                      prefix, sliceID, datasetType):
             super(Dataset, self).__init__(acqID, channelID, posID, prefix,
