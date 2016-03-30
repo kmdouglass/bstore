@@ -14,6 +14,10 @@ class DatabaseAtom(metaclass = ABCMeta):
         if datasetType is None:
             raise ValueError('datasetType cannot be \'None\'.')
             
+        if datasetType not in ['locResults','locMetadata','widefieldImage']:
+            raise ValueError('Invalid datasetType; \'{:s}\' provided.'.format(
+                                                                  datasetType))
+            
         self._acqID       = acqID
         self._channelID   = channelID
         self._data        = data
@@ -98,7 +102,44 @@ class Database(metaclass = ABCMeta):
         
         """
         pass
+
+class Dataset(DatabaseAtom):
+    """A concrete realization of a DatabaseAtom.
     
+    """
+    def __init__(self, acqID, channelID, data,
+                 posID, prefix, sliceID, datasetType):
+        super(Dataset, self).__init__(acqID, channelID, data, posID,
+                                      prefix, sliceID, datasetType)
+                                                
+    @property
+    def acqID(self):
+        return self._acqID
+    
+    @property
+    def channelID(self):
+        return self._channelID
+
+    @property
+    def data(self):
+        return self._data
+    
+    @property
+    def posID(self):
+        return self._posID
+
+    @property
+    def prefix(self):
+        return self._prefix
+    
+    @property
+    def sliceID(self):
+        return self._sliceID
+    
+    @property
+    def datasetType(self):
+        return self._datasetType
+
 class HDFDatabase(Database):
     """An HDFDatabase structure for managing SMLM data.
     
@@ -119,7 +160,8 @@ class HDFDatabase(Database):
         idFlag : str
         
         """
-        acqKey    = '/'.join([atom.prefix, atom.prefix]) + '_' + str(atom.acqID)
+        acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
+                    '_' + str(atom.acqID)
                                  
         otherIDs = ''
         if atom.channelID is not None:
@@ -134,21 +176,20 @@ class HDFDatabase(Database):
         if atom.sliceID is not None:
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
             
-        return acqKey + '/' + idFlag + otherIDs
+        return acqKey + '/' + atom.datasetType + otherIDs
         
     def get(self):
         raise NotImplementedError
         
-    def put(self, atom, idFlag = 'localizations'):
+    def put(self, atom, idFlag = ''):
         """Writes a single database atom into the database.
         
         Parameters
         ----------
         atom   : DatabaseAtom
         idFlag : str
-            The HDF group name prefix containing the data. This will
-            name the group container for the data. Lower level group
-            ID information is obtained from self._genKey().
+            Any additional information to place into the key of the
+            HDF dataset.
         
         """
         # The put routine varies with atom's dataset type

@@ -217,64 +217,39 @@ def test_HDFDatabase_KeyGeneration():
     """Key names are generated correctly from DatabaseAtoms.
     
     """
-    class Dataset(database.DatabaseAtom):
-        def __init__(self, acqID, channelID, data,
-                     posID, prefix, sliceID, datasetType):
-            super(Dataset, self).__init__(acqID, channelID, data, posID,
-                                          prefix, sliceID, datasetType)
-                                                
-        @property
-        def acqID(self):
-            return self._acqID
-        
-        @property
-        def channelID(self):
-            return self._channelID
-
-        @property
-        def data(self):
-            return self._data
-        
-        @property
-        def posID(self):
-            return self._posID
-
-        @property
-        def prefix(self):
-            return self._prefix
-        
-        @property
-        def sliceID(self):
-            return self._sliceID
-        
-        @property
-        def datasetType(self):
-            return self._datasetType
-    
     myDatasets = [
-                  Dataset(1, 'A647', data, (0,),
-                         'HeLa_Control', None, 'locResults'),
-                  Dataset(43, None, data, (0,),
-                          'HeLa_Control', None, 'locResults'),
-                  Dataset(6, None, data, None,
-                          'HeLa_Control', None, 'locResults'),
-                  Dataset(6, 'Cy5', data, (1,),
-                          'HeLa_Control', 3, 'locResults'),
-                  Dataset(89, 'DAPI', data, (3, 12),
-                          'HeLa_Control', 46, 'locResults')
+                  database.Dataset(1, 'A647', data, (0,),
+                                   'HeLa_Control', None, 'locResults'),
+                  database.Dataset(43, None, data, (0,),
+                                   'HeLa_Control', None, 'locResults'),
+                  database.Dataset(6, None, data, None,
+                                   'HeLa_Control', None, 'locResults'),
+                  database.Dataset(6, 'Cy5', data, (1,),
+                                   'HeLa_Control', 3, 'locResults'),
+                  database.Dataset(89, 'DAPI', data, (3, 12),
+                                  'HeLa_Control', 46, 'locResults'),
+                  database.Dataset(76, 'A750', data, (0,2),
+                                   'HeLa_Control', None, 'widefieldImage'),
+                  database.Dataset(76, 'A750', data, (0,2),
+                                   'HeLa_Control', None, 'locMetadata')
                  ]
                  
     keys       = [
-                  'HeLa_Control/HeLa_Control_1/locs_A647_Pos0',
-                  'HeLa_Control/HeLa_Control_43/locs_Pos0',
-                  'HeLa_Control/HeLa_Control_6/locs',
-                  'HeLa_Control/HeLa_Control_6/locs_Cy5_Pos1_Slice3',
-                  'HeLa_Control/HeLa_Control_89/locs_DAPI_Pos_003_012_Slice46'
+                  'HeLa_Control/HeLa_Control_1/locResults_A647_Pos0',
+                  'HeLa_Control/HeLa_Control_43/locResults_Pos0',
+                  'HeLa_Control/HeLa_Control_6/locResults',
+                  'HeLa_Control/HeLa_Control_6/locResults_Cy5_Pos1_Slice3',
+                  'HeLa_Control/HeLa_Control_89' + \
+                      '/locResults_DAPI_Pos_003_012_Slice46',
+                  'HeLa_Control/HeLa_Control_76' + \
+                      '/widefieldImage_A750_Pos_000_002',
+                  'HeLa_Control/HeLa_Control_76' + \
+                      '/locMetadata_A750_Pos_000_002'
                  ]
     
     dbName = 'myDB.h5'
     myDatabase = database.HDFDatabase(dbName)
     
     for ds, key in zip(myDatasets, keys):
-        keyString = myDatabase._genKey(ds, 'locs')
+        keyString = myDatabase._genKey(ds)
         assert_equal(keyString, key)
