@@ -71,7 +71,7 @@ class Database(metaclass = ABCMeta):
         """
         # Convert Path objects to strings
         if isinstance(dbName, PurePath):
-            dbName = str(dbName.name)
+            dbName = str(dbName)
             
         self._dbName = dbName
     
@@ -156,7 +156,7 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        atoms       : DatabaseAtom
+        atoms  : DatabaseAtom
         idFlag : str
         
         """
@@ -175,6 +175,8 @@ class HDFDatabase(Database):
                                                             atom.posID[1])
         if atom.sliceID is not None:
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
+        if idFlag != '':
+            otherIDs += idFlag
             
         return acqKey + '/' + atom.datasetType + otherIDs
         

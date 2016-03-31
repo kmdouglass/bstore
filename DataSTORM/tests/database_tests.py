@@ -1,8 +1,10 @@
-from nose.tools import *
-from DataSTORM  import database
-from pathlib    import Path
-from pandas     import DataFrame
+from nose.tools   import *
+from DataSTORM    import database
+from pathlib      import Path
+from pandas       import DataFrame
 from numpy.random import rand
+from os           import remove
+import h5py
   
 # Test data
 data = DataFrame(rand(10,2))
@@ -253,3 +255,30 @@ def test_HDFDatabase_KeyGeneration():
     for ds, key in zip(myDatasets, keys):
         keyString = myDatabase._genKey(ds)
         assert_equal(keyString, key)
+        
+def test_HDFDatabase_Put():
+    """Database creates an HDF file with the right keys.
+    
+    """
+    dbName = Path('./test_files/myDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    
+    myDB  = database.HDFDatabase(dbName)
+    myDS  = database.Dataset(1, 'A647', data, (0,),
+                             'Cos7', None, 'locResults')
+    myDS2 = database.Dataset(1, 'A647', data, (1,),
+                             'Cos7', None, 'locResults')
+    
+    myDB.put(myDS)
+    myDB.put(myDS2)
+    assert_true(dbName.exists())
+    
+    # Check keys
+    with h5py.File(str(dbName), 'r') as f:
+        keys = sorted(list(f['Cos7/Cos7_1'].keys()))
+        
+    assert_equal(keys[0], 'locResults_A647_Pos0')
+    assert_equal(keys[1], 'locResults_A647_Pos1')
+    # Data not being saved to hdf!    
+    raise

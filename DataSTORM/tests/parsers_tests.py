@@ -3,7 +3,7 @@ from DataSTORM  import parsers
 from pathlib    import Path
 
 def test_Parser_Attributes():
-    """Will Paraser accept and assign parameters to class attributes correctly?
+    """Will Parser accept and assign parameters to class attributes correctly?
     
     """
     acqID       =            1
