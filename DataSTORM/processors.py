@@ -79,7 +79,9 @@ class CleanUp:
             
         procdf.replace([np.inf, -np.inf], np.nan, inplace = True)
         procdf.dropna(inplace = True)
-        procdf.reindex()
+        procdf.index = np.arange(procdf.shape[0])
+        
+        #procdf.reindex(newIndex)
         
         return procdf
 
@@ -353,7 +355,7 @@ class FiducialDriftCorrect:
                                            'xMax' : None,
                                            'yMin' : None,
                                            'yMax' : None}],
-                 noFiducialSearch      = False,
+                 doFiducialSearch      = True,
                  noLinking             = False,
                  noClustering          = False,
                  removeFiducials       = True,
@@ -384,7 +386,7 @@ class FiducialDriftCorrect:
         searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials.
             Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
-        noFiducialSearch      : bool
+        doFiducialSearch      : bool
             Should this processor only correct a localization DataFrame, or
             should it also be used to search for fiducials?
         noLinking             : bool
@@ -415,7 +417,7 @@ class FiducialDriftCorrect:
         self.neighborRadius        = neighborRadius
         self.interactiveSearch     = interactiveSearch
         self.searchRegions         = searchRegions
-        self.noFiducialSearch      = noFiducialSearch
+        self.doFiducialSearch      = doFiducialSearch
         self.noLinking             = noLinking
         self.noClustering          = noClustering
         self.removeFiducials       = removeFiducials
@@ -455,11 +457,11 @@ class FiducialDriftCorrect:
         else:
             renamedCols = False        
         
-        # If noFiducialSearch is True, this processor will only correct a
-        # DataFrame with its existing fiducial information. If it is False,
+        # If doFiducialSearch is False, this processor will only correct a
+        # DataFrame with its existing fiducial information. If it is True,
         # Fiducials will also be searched for, either manually or
         # automatically.
-        if not self.noFiducialSearch:
+        if self.doFiducialSearch:
             # Visually find areas where fiducials are likely to be present
             if self.interactiveSearch:        
                 self.iSearch(copydf)
@@ -471,8 +473,8 @@ class FiducialDriftCorrect:
             self.fiducialTrajectories = []        
             self.detectFiducials(fidRegionsdf)
             
-            # Drop the fiducials from the full dataset
-            if self.removeFiducials:
+        # Drop the fiducials from the full dataset
+        if self.removeFiducials:
             copydf = self.dropFiducials(copydf)
         
         # Check whether fiducial trajectories are empty
@@ -686,29 +688,30 @@ class FiducialDriftCorrect:
         print('{0:d} fiducial(s) detected.'.format(
                                                len(self.fiducialTrajectories)))
     
-    def dropBadTrajectories(self, badTrajIndexes):
+    def dropTrajectories(self, trajIndexes):
         """Drop bad trajectories from the list of trajectories.
         
         Parameters
         ----------
-        badTrajIndexes : list of int
+        trajIndexes : list of int
             List of integers marking the trajectorties to be dropped.
         
         """
         # Check that all the input indexes are valid
         validIndex = [index in range(len(self.fiducialTrajectories))
-                      for index in badTrajIndexes]
+                      for index in trajIndexes]
         if not all(validIndex):
             raise ValueError('Invalid list of trajectory indexes supplied.')
             
         self.fiducialTrajectories = \
             [keepTraj
              for goodIndex, keepTraj in enumerate(self.fiducialTrajectories)
-             if goodIndex not in badTrajIndexes]:
-                 
-        # Do the same for splines!
+             if goodIndex not in trajIndexes]
         
-        # Recompute average spline.
+        # Recompute the splines and their average         
+        self.fitSplines()
+        self.combineSplines(pd.DataFrame(self.avgSpline.index,
+                                         columns = ['frame']))
                  
     def dropFiducials(self, df):
         """Drop rows belonging to fiducial localizations from the dataset.
