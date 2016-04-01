@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import sys
 
-def test_DriftCorrection_Processor():
+def test_DriftCorrection():
     """Drift correction is properly applied to all localizations.
     
     """
@@ -51,8 +51,8 @@ def test_DriftCorrection_Processor():
     # fiducials are removed.
     assert_equal(corrLocs.shape[0], 20000)
     
-    # Was the correct drift trajectory applied? x + dx and y + dy
-    # in corrdf should be in x and y of locs
+    # Was the correct drift trajectory applied? The original locs
+    # should be in x + dx and y + dy of corrdf
     # round() avoids rounding errors when making comparisons
     checkx = (corrLocs['x [nm]'] + corrLocs['dx [nm]']).round(2).isin(
                                            locs['x [nm]'].round(2).as_matrix())
@@ -60,3 +60,13 @@ def test_DriftCorrection_Processor():
                                            locs['y [nm]'].round(2).as_matrix())
     ok_(checkx.all())
     ok_(checky.all())
+    
+    # dx and dy should equal the avgSpline
+    fidTraj_x = corrLocs[['dx [nm]', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dx [nm]'].round(2).as_matrix()
+    fidTraj_y = corrLocs[['dy [nm]', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dy [nm]'].round(2).as_matrix()
+    spline_x  = dc.avgSpline['xS'].round(2).as_matrix()
+    spline_y  = dc.avgSpline['yS'].round(2).as_matrix()
+    ok_(all(fidTraj_x == spline_x))
+    ok_(all(fidTraj_y == spline_y))
