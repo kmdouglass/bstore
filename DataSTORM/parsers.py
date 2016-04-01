@@ -115,17 +115,24 @@ class MMParser(Parser):
             
         """
         if datasetType not in ['locResults','locMetadata','widefieldImage']:
-            raise DatasetError(datasetType)        
+            raise DatasetError(datasetType)           
         
         # Convert Path objects to strings
         if isinstance(filename, pathlib.PurePath):
+            fullPath = filename
             filename = str(filename.name)
+        elif isinstance(filename, str):
+            fullPath = pathlib.Path(filename)
+            filename = str(fullPath.name)
+        else:
+            raise TypeError('Unrecognized type for filename.')
+            
             
         if datasetType == 'locResults':
             parsedData = self._parseLocResults(filename)
             super(MMParser, self).__init__(*parsedData, datasetType)
         elif datasetType == 'locMetadata':
-            parsedData = self._parseLocMetadata(filename)
+            parsedData = self._parseLocMetadata(fullPath)
             (acqID, channelID, posID, prefix, sliceID, metadata) = parsedData
             super(MMParser, self).__init__(acqID, channelID, posID,
                                            prefix, sliceID, datasetType)           
@@ -210,13 +217,13 @@ class MMParser(Parser):
         
         return acqID, channelID, posID, prefix, sliceID
         
-    def _parseLocMetadata(self, filename):
+    def _parseLocMetadata(self, fullPath):
         """Parse a localization metadata file.
         
         Parameters
         ----------
-        filename : str
-            The filename for the current file to parse.
+        fullPath : Path
+            pathlib Path object to the metadata file.
             
         Returns
         -------
@@ -229,8 +236,10 @@ class MMParser(Parser):
             A dictionary containing the metadata for this acquisition.
         
         """       
-        with open(filename, 'r') as file:
+        with open(str(fullPath), 'r') as file:
             metadata = json.load(file)
+        
+        filename = str(fullPath.name)
             
         acqID, channelID, posID, prefix, sliceID = \
                                             self._parseLocResults(filename)

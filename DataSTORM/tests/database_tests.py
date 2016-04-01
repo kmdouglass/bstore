@@ -1,3 +1,14 @@
+"""Unit tests for the database module.
+
+Notes
+-----
+nosetests should be run in the directory just above the `tests` folder.
+
+"""
+ 
+__author__ = 'Kyle M. Douglass'
+__email__ = 'kyle.m.douglass@gmail.com'
+
 from nose.tools   import *
 from DataSTORM    import database
 from pathlib      import Path
@@ -5,7 +16,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
-  
+
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
   
@@ -260,7 +271,7 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
     """Database creates an HDF file with the right keys and atomic metadata.
     
     """
-    dbName = Path('./test_files/myDB.h5')
+    dbName = Path('./tests/test_files/myDB.h5')
     if dbName.exists():
         remove(str(dbName))
     
@@ -296,3 +307,4 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString1].attrs['SMLM_prefix'],                'Cos7')
         assert_equal(f[keyString1].attrs['SMLM_sliceID'],               'None')
         assert_equal(f[keyString1].attrs['SMLM_datasetType'],     'locResults')
+        f.close()

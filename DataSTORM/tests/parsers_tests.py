@@ -1,3 +1,14 @@
+"""Unit tests for the parsers module.
+
+Notes
+-----
+nosetests should be run in the directory just above the `tests` folder.
+ 
+"""
+
+__author__ = 'Kyle M. Douglass'
+__email__ = 'kyle.m.douglass@gmail.com' 
+
 from nose.tools import *
 from DataSTORM  import parsers
 from pathlib    import Path
@@ -172,7 +183,7 @@ def test_MMParser_Metadata():
     
     """
     f = 'bacteria_HaloInduced_A647_1_MMStack_1-Pos_002_002_locMetadata.json'
-    inputFile = Path('tests') / Path(f)
+    inputFile = Path('tests') / Path('test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -192,7 +203,7 @@ def test_MMParser_Metadata_NoPosition_Metadata():
     """
     # Note that the json entry for position information is empty in this file!
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path(f)
+    inputFile = Path('tests') / Path('test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -211,7 +222,7 @@ def test_MMParser_Metadata_SinglePosition():
     """
     # Note that the json entry for position information is empty in this file!
     f = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path(f)
+    inputFile = Path('tests') / Path('test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
