@@ -7,7 +7,7 @@ from os           import remove
 import h5py
   
 # Test data
-data = DataFrame(rand(10,2))
+data = DataFrame(rand(5,2), columns = ['x', 'y'])
   
 def test_Dataset_CompleteSubclass():
     """Dataset instantiation correctly detects complete subclassing.
@@ -256,8 +256,8 @@ def test_HDFDatabase_KeyGeneration():
         keyString = myDatabase._genKey(ds)
         assert_equal(keyString, key)
         
-def test_HDFDatabase_Put():
-    """Database creates an HDF file with the right keys.
+def test_HDFDatabase_Put_Keys_AtomicMetadata():
+    """Database creates an HDF file with the right keys and atomic metadata.
     
     """
     dbName = Path('./test_files/myDB.h5')
@@ -267,18 +267,32 @@ def test_HDFDatabase_Put():
     myDB  = database.HDFDatabase(dbName)
     myDS  = database.Dataset(1, 'A647', data, (0,),
                              'Cos7', None, 'locResults')
-    myDS2 = database.Dataset(1, 'A647', data, (1,),
+    myDS2 = database.Dataset(1, 'A647', data, (1,2),
                              'Cos7', None, 'locResults')
     
     myDB.put(myDS)
     myDB.put(myDS2)
     assert_true(dbName.exists())
     
-    # Check keys
+    # Get keys and attributes
     with h5py.File(str(dbName), 'r') as f:
         keys = sorted(list(f['Cos7/Cos7_1'].keys()))
+        assert_equal(keys[0], 'locResults_A647_Pos0')
+        assert_equal(keys[1], 'locResults_A647_Pos_001_002')
+    
+        keyString0 = 'Cos7/Cos7_1/' + keys[0]
+        assert_equal(f[keyString0].attrs['SMLM_acqID'],                      1)
+        assert_equal(f[keyString0].attrs['SMLM_channelID'],             'A647')
+        assert_equal(f[keyString0].attrs['SMLM_posID'],                      0)
+        assert_equal(f[keyString0].attrs['SMLM_prefix'],                'Cos7')
+        assert_equal(f[keyString0].attrs['SMLM_sliceID'],               'None')
+        assert_equal(f[keyString0].attrs['SMLM_datasetType'],     'locResults')
         
-    assert_equal(keys[0], 'locResults_A647_Pos0')
-    assert_equal(keys[1], 'locResults_A647_Pos1')
-    # Data not being saved to hdf!    
-    raise
+        keyString1 = 'Cos7/Cos7_1/' + keys[1]
+        assert_equal(f[keyString1].attrs['SMLM_acqID'],                      1)
+        assert_equal(f[keyString1].attrs['SMLM_channelID'],             'A647')
+        assert_equal(f[keyString1].attrs['SMLM_posID'][0],                   1)
+        assert_equal(f[keyString1].attrs['SMLM_posID'][1],                   2)
+        assert_equal(f[keyString1].attrs['SMLM_prefix'],                'Cos7')
+        assert_equal(f[keyString1].attrs['SMLM_sliceID'],               'None')
+        assert_equal(f[keyString1].attrs['SMLM_datasetType'],     'locResults')

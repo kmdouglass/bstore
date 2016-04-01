@@ -1,6 +1,7 @@
 from pathlib import PurePath, Path
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore
+import h5py
 
 class DatabaseAtom(metaclass = ABCMeta):
     """Represents one organizational unit in the database.
@@ -202,5 +203,23 @@ class HDFDatabase(Database):
                 hdf = HDFStore(self._dbName)
                 hdf.put(key, atom.data, format = 'table',
                         data_columns = True, index = False)
+            except:
+                hdf.close()
+                
+            # Write the attributes to the dataset;
+            # h5py can't convert None values natively
+            # Reopening the file just to write attributes is awkward;
+            # Can attributes be written through the HDFStore interface?
+            try:
+                hdf = h5py.File(self._dbName, mode = 'a')
+                hdf[key].attrs['SMLM_acqID']       = atom.acqID
+                hdf[key].attrs['SMLM_channelID']   = \
+                    'None' if atom.channelID is None else atom.channelID
+                hdf[key].attrs['SMLM_posID']       = \
+                    'None' if atom.posID is None else atom.posID
+                hdf[key].attrs['SMLM_prefix']      = atom.prefix
+                hdf[key].attrs['SMLM_sliceID']     = \
+                    'None' if atom.sliceID is None else atom.sliceID
+                hdf[key].attrs['SMLM_datasetType'] = atom.datasetType
             except:
                 hdf.close()
