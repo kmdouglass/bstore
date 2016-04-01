@@ -181,7 +181,21 @@ class HDFDatabase(Database):
             
         return acqKey + '/' + atom.datasetType + otherIDs
         
-    def get(self):
+    def get(self, datasetID):
+        """Returns an atomic dataset matching datasetID from the database.
+        
+        Parameters
+        ----------
+        datasetID  : dict or DatabaseAtom
+            Either key-value pairs uniquely identifying the dataset in
+            the database or a DatabaseAtom with a possibly empty 'data'
+            field that may be used to identify the dataset.
+            
+        Returns
+        -------
+        returnAtom : DatabaseAtom
+        
+        """
         raise NotImplementedError
         
     def put(self, atom, idFlag = ''):
