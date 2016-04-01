@@ -738,9 +738,14 @@ class FiducialDriftCorrect:
         
         for fid in self.fiducialTrajectories:
             procdf = pd.concat([procdf, fid], ignore_index = True)
-            procdf.drop_duplicates(subset = ['x', 'y', 'frame'],
-                                   keep = False,
-                                   inplace = True)
+            # drop_duplicates has problems with precision and rounding errors
+            #procdf.drop_duplicates(subset = ['x', 'y', 'frame'],
+            #                       keep = False,
+            #                       inplace = True)
+            procdf = procdf[(procdf['x'] < fid['x'].min())
+                          | (procdf['x'] > fid['x'].max())
+                          | (procdf['y'] < fid['y'].min())
+                          | (procdf['y'] > fid['y'].max())]
             
         try:
             del procdf['particle']
