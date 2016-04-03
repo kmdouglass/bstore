@@ -16,6 +16,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
+import sys
 
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
@@ -59,7 +60,8 @@ def test_Dataset_CompleteSubclass():
             pass
     
     myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, 'locResults')
-    
+
+@raises(TypeError)    
 def test_Dataset_IncompleteSubclass():
     """Dataset instantiation correctly detects an incomplete subclassing.
     
@@ -99,16 +101,10 @@ def test_Dataset_IncompleteSubclass():
         def datasetType(self):
             pass
 
-    try:
-        myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, 'locResults')
-    except TypeError:
-        # Incomplete substantiation throws a TypeError
-        pass
-    else:
-        # Raise an exception because no error was detected,
-        # even though a TypeError should have been raised.
-        raise Exception('TypeError was not thrown.')
+    # Should raise a TypeError because posID is not defined.
+    myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, 'locResults')
 
+@raises(ValueError)
 def test_Dataset_NoAcqID():
     """Dataset instantiation correctly detects an acqID of None.
     
@@ -147,15 +143,8 @@ def test_Dataset_NoAcqID():
         def datasetType(self):
             pass
 
-    try:
-        myDataset = Dataset(None, 'A647', data, (0,), 'HeLa', 1, 'locResults')
-    except ValueError:
-        # acqID = None throws an error.
-        pass
-    else:
-        # Raise an exception because no error was detected,
-        # even though a ValueError should have been raised.
-        raise Exception('ValueError was not thrown.')
+    # Should raise ValueError because acqID is None.
+    myDataset = Dataset(None, 'A647', data, (0,), 'HeLa', 1, 'locResults')
         
 def test_Dataset_NoDatasetType():
     """Dataset instantiation correctly detects a datasetType of None.
@@ -308,3 +297,62 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString1].attrs['SMLM_sliceID'],               'None')
         assert_equal(f[keyString1].attrs['SMLM_datasetType'],     'locResults')
         f.close()
+        
+def test_HDFDatabase_Get():
+    """HDFDatabase.get() returns the correct Dataset.
+    
+    """
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+     
+    # Create an ID with empty data for retrieving the dataset     
+    myDSID   = database.Dataset(1, 'A647', None, (0,),
+                                'Cos7', None, 'locResults')
+    
+    # Get the data from the database and compare it to the input data
+    retrievedDataset = myDB.get(myDSID)
+    ok_((data['x'] == retrievedDataset.data['x']).all())
+    ok_((data['y'] == retrievedDataset.data['y']).all())
+    
+def test_HDFDatabase_Get_Dict():
+    """HDFDatabase.get() works when a dict is supplied.
+    
+    """
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+     
+    # Create a dict of IDs for retrieving the dataset     
+    myDSID   = {
+                'acqID'       : 1,
+                'channelID'   : 'A647',
+                'posID'       : (0,),
+                'prefix'      : 'Cos7',
+                'sliceID'     : None,
+                'datasetType' : 'locResults'
+                }
+    
+    # Get the data from the database and compare it to the input data
+    retrievedDataset = myDB.get(myDSID)
+    ok_((data['x'] == retrievedDataset.data['x']).all())
+    ok_((data['y'] == retrievedDataset.data['y']).all())
+
+@raises(KeyError)    
+def test_HDFDatabase_Get_Dict_KeyError():
+    """HDFDatabase.get() displays the correct information when KeyError raised.
+    
+    """
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+     
+    # Create a dict of IDs for retrieving the dataset     
+    myDSID   = {
+                'acqID'       : 1,
+                'channelID'   : 'A647',
+                'posID'       : (0,),
+                'prefix'      : 'Cos7',
+                #'sliceID'     : None,
+                'datasetType' : 'locResults'
+                }
+    
+    # Should raise a key error because sliceID is not defined in myDSID
+    retrievedDataset = myDB.get(myDSID)

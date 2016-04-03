@@ -1,6 +1,6 @@
 from pathlib import PurePath, Path
 from abc import ABCMeta, abstractmethod, abstractproperty
-from pandas import HDFStore
+from pandas import HDFStore, read_hdf
 import h5py
 
 class DatabaseAtom(metaclass = ABCMeta):
@@ -26,6 +26,13 @@ class DatabaseAtom(metaclass = ABCMeta):
         self._prefix      = prefix
         self._sliceID     = sliceID
         self._datasetType = datasetType
+        
+    def getInfo(self):
+        """Returns the dataset information (without the data) as a tuple.
+        
+        """
+        return self._acqID, self._channelID, self._posID, \
+               self._prefix, self._sliceID, self._datasetType
         
     @abstractproperty
     def acqID(self):
@@ -125,6 +132,10 @@ class Dataset(DatabaseAtom):
     def data(self):
         return self._data
     
+    @data.setter
+    def data(self, value):
+        self._data = value
+    
     @property
     def posID(self):
         return self._posID
@@ -181,22 +192,47 @@ class HDFDatabase(Database):
             
         return acqKey + '/' + atom.datasetType + otherIDs
         
-    def get(self, datasetID):
-        """Returns an atomic dataset matching datasetID from the database.
+    def get(self, dsID):
+        """Returns an atomic dataset matching dsID from the database.
         
         Parameters
         ----------
-        datasetID  : dict or DatabaseAtom
+        dsID  : dict or DatabaseAtom
             Either key-value pairs uniquely identifying the dataset in
             the database or a DatabaseAtom with a possibly empty 'data'
             field that may be used to identify the dataset.
             
         Returns
         -------
-        returnAtom : DatabaseAtom
+        returnDS : Dataset
         
         """
-        raise NotImplementedError
+        if not isinstance(dsID, DatabaseAtom):
+            try:
+                acqID       = dsID['acqID']
+                channelID   = dsID['channelID']
+                posID       = dsID['posID']
+                prefix      = dsID['prefix']
+                sliceID     = dsID['sliceID']
+                datasetType = dsID['datasetType']
+            except KeyError as e:
+                print(('There is an error with the dict supplied to get(). '
+                       'Were the following keys supplied?'))
+                print(e.args)
+                raise
+        else:
+            acqID, channelID, posID, prefix, sliceID, datasetType = \
+                                                                 dsID.getInfo()
+            
+        # Use returnAtom to get the key pointing to the dataset
+        returnDS = Dataset(acqID, channelID, None, posID,
+                           prefix, sliceID, datasetType)
+        hdfKey   = self._genKey(returnDS)
+        
+        if datasetType == 'locResults':
+            returnDS.data = read_hdf(self._dbName, key = hdfKey)
+            
+        return returnDS
         
     def put(self, atom, idFlag = ''):
         """Writes a single database atom into the database.
