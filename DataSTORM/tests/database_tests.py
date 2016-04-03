@@ -317,3 +317,23 @@ def test_HDFDatabase_Get_Dict_KeyError():
     
     # Should raise a key error because sliceID is not defined in myDSID
     retrievedDataset = myDB.get(myDSID)
+    
+def test_HDFDatabase_Put_LocMetadata():
+    """HDFDatabase correctly places metadata into the database.
+    
+    """
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+    # Create a dict of IDs for retrieving the dataset     
+    myDSID   = {
+                'acqID'       : 1,
+                'channelID'   : 'A647',
+                'posID'       : (0,),
+                'prefix'      : 'Cos7',
+                'sliceID'     : None,
+                'datasetType' : 'locMetadata'
+                }
+    # Create a dataset and load it with json metadata
+    # Write the metadata into the database
+                
+    raise NotImplementedError
