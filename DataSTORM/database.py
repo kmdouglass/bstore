@@ -3,6 +3,26 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
 import h5py
 
+typesOfAtoms = (
+                'locResults',
+                'locMetadata',
+                'widefieldImage'
+               )
+
+def _checkType(typeString):
+    if typeString not in typesOfAtoms:
+        raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
+                                                                  datasetType))
+
+class DatasetError(Exception):
+    """Error raised when a bad datasetType is passed.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 class DatabaseAtom(metaclass = ABCMeta):
     """Represents one organizational unit in the database.
     
@@ -15,9 +35,7 @@ class DatabaseAtom(metaclass = ABCMeta):
         if datasetType is None:
             raise ValueError('datasetType cannot be \'None\'.')
             
-        if datasetType not in ['locResults','locMetadata','widefieldImage']:
-            raise ValueError('Invalid datasetType; \'{:s}\' provided.'.format(
-                                                                  datasetType))
+        _checkType(datasetType)
             
         self._acqID       = acqID
         self._channelID   = channelID
@@ -273,3 +291,17 @@ class HDFDatabase(Database):
                 hdf[key].attrs['SMLM_datasetType'] = atom.datasetType
             except:
                 hdf.close()
+        elif atom.datasetType == 'locMetadata':
+            self._putLocMetadata(atom)
+        elif atom.datasetType == 'widefieldImage':
+            pass
+    
+    def _putLocMetadata(self, atom):
+        """Writes localization metadata into the database.
+        
+        Parameters
+        ----------
+        atom   : DatabaseAtom
+            
+        """
+        raise NotImplementedError

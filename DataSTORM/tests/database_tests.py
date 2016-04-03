@@ -16,7 +16,6 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
-import sys
 
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
@@ -24,42 +23,9 @@ data = DataFrame(rand(5,2), columns = ['x', 'y'])
 def test_Dataset_CompleteSubclass():
     """Dataset instantiation correctly detects complete subclassing.
     
-    """
-    class Dataset(database.DatabaseAtom):
-        def __init__(self, acqID, channelID, data,
-                     posID, prefix, sliceID, datasetType):
-            super(Dataset, self).__init__(acqID, channelID, data, posID,
-                                          prefix, sliceID, datasetType)
-                                                
-        @property
-        def acqID(self):
-            pass
-        
-        @property
-        def channelID(self):
-            pass
-
-        @property
-        def data(self):
-            pass
-        
-        @property
-        def posID(self):
-            pass
-
-        @property
-        def prefix(self):
-            pass
-        
-        @property
-        def sliceID(self):
-            pass
-        
-        @property
-        def datasetType(self):
-            pass
-    
-    myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, 'locResults')
+    """    
+    myDataset = database.Dataset(1, 'A647', data, (0,),
+                                 'HeLa', 1, 'locResults')
 
 @raises(TypeError)    
 def test_Dataset_IncompleteSubclass():
@@ -145,7 +111,8 @@ def test_Dataset_NoAcqID():
 
     # Should raise ValueError because acqID is None.
     myDataset = Dataset(None, 'A647', data, (0,), 'HeLa', 1, 'locResults')
-        
+
+@raises(ValueError)
 def test_Dataset_NoDatasetType():
     """Dataset instantiation correctly detects a datasetType of None.
     
@@ -184,15 +151,9 @@ def test_Dataset_NoDatasetType():
         def datasetType(self):
             pass
 
-    try:
-        myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, None)
-    except ValueError:
-        # datasetType = None throws an error.
-        pass
-    else:
-        # Raise an exception because no error was detected,
-        # even though a ValueError should have been raised.
-        raise Exception('ValueError was not thrown.')
+    # Should throw ValueError because datasetType is None.
+    myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, None)
+
         
 def test_Database_CompleteSubclass():
     """Database instantiation is complete.
