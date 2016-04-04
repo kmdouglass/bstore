@@ -151,3 +151,19 @@ def test_ClusterStats():
     data.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'}, inplace = True)
     
     stats = statProc(data)
+    
+    # Cluster ID 0: symmetric about center
+    assert_equal(stats['x_center'].iloc[0],                                  0)
+    assert_equal(stats['y_center'].iloc[0],                                  0)
+    assert_equal(stats['number_of_localizations'].iloc[0],                   5)
+    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.77)
+    assert_equal(stats['eccentricity'].iloc[0].round(2),                     1)
+    assert_equal(stats['convex_hull_area'].iloc[0].round(2),                 1)
+    
+    # Cluster ID 1: longer in x than in y
+    assert_equal(stats['x_center'].iloc[1],                                 10)
+    assert_equal(stats['y_center'].iloc[1],                                  2)
+    assert_equal(stats['number_of_localizations'].iloc[1],                   5)
+    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
+    assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
+    assert_equal(stats['convex_hull_area'].iloc[1].round(2),                 8)

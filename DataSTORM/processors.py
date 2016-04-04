@@ -179,6 +179,7 @@ class ComputeClusterStats:
                                         'y' : 'mean'})
         tempResultsRg     = groups.apply(self._radiusOfGyration, ['x', 'y'])
         tempResultsEcc    = groups.apply(self._eccentricity,     ['x', 'y'])
+        tempResultsCHull  = groups.apply(self._convexHull,       ['x', 'y'])
         tempResultsLength = pd.Series(groups.size())
         
         # Create a column that determines whether to reject the cluster
@@ -193,6 +194,7 @@ class ComputeClusterStats:
                               inplace = True)
         tempResultsRg.name     = 'radius_of_gyration'
         tempResultsEcc.name    = 'eccentricity'
+        tempResultsCHull.name  = 'convex_hull_area'
         tempResultsLength.name = 'number_of_localizations'
         
         # Create the merged DataFrame
@@ -200,6 +202,7 @@ class ComputeClusterStats:
                       tempResultsLength,
                       tempResultsRg,
                       tempResultsEcc,
+                      tempResultsCHull,
                       tempResultsKeep)
         procdf = pd.concat(dataToJoin, axis = 1)
                                                      
@@ -219,7 +222,7 @@ class ComputeClusterStats:
             The radius of gyration of the group of localizations.
         
         """
-        variances = group[coordinates].var()
+        variances = group[coordinates].var(ddof = 0)
         
         # sqrt(3/2) makes the radius of gyration comparable to a 3D cluster        
         Rg = np.sqrt(3 * variances.sum() / 2)
