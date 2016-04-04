@@ -2,6 +2,7 @@ import pandas            as pd
 import trackpy           as tp
 import numpy             as np
 import matplotlib.pyplot as plt
+import re
 
 from pathlib            import Path
 from sklearn.cluster    import DBSCAN
@@ -10,6 +11,7 @@ from scipy.signal       import gaussian
 from scipy.ndimage      import filters
 from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
+from pyhull             import qconvex
 
 class AddColumn:
     """Adds a column to a DataFrame.
@@ -144,11 +146,12 @@ class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
     """
-    def __init__(self, idLabel = 'cluster_id', coordCols = ['x', 'y']):
+    def __init__(self, idLabel = 'cluster_id'):
         """Set the column name for the cluster ID numbers.
         
         """
-        self._idLabel = idLabel
+        # TO IMPLEMENT: coordCols = ['x', 'y']
+        self._idLabel   = idLabel
     
     def __call__(self, df):
         """Compute the statistics for each cluster of localizations.
@@ -245,6 +248,31 @@ class ComputeClusterStats:
         
         ecc = np.max(eigs) / min(eigs)
         return ecc
+        
+    def _convexHull(self, group, coordinates):
+        """Computes the volume of the cluster's complex hull.
+        
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations. 
+        
+        Returns
+        -------
+        volume : float or np.nan
+        
+        """
+        points = group[coordinates].as_matrix()
+        output = qconvex('FA', points)
+    
+        # Find output volume
+        try:
+            volume = [vol for vol in output if 'Total volume:' in vol][0]
+            volume = float(re.findall(r'[-+]?[0-9]*\.?[0-9]+', volume)[0])
+        except:
+            volume = np.nan
+            
+        return volume
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.

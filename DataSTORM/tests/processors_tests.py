@@ -5,7 +5,7 @@ import numpy as np
 import sys
 
 # Load localization + fiducial ground truth test set
-locs = pd.read_csv('test_files/test_localizations_with_fiducials.csv')
+locs = pd.read_csv('tests/test_files/test_localizations_with_fiducials.csv')
 
 def test_DriftCorrection():
     """Drift correction is properly applied to all localizations.
@@ -139,3 +139,15 @@ def test_DriftCorrection_dropTrajectories():
     spline_y  = dc.avgSpline['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
+    
+def test_ClusterStats():
+    """Cluster statistics are computed correctly.
+    
+    """
+    statProc = proc.ComputeClusterStats()
+    data     = pd.read_csv('tests/test_files/test_cluster_stats.csv')
+    
+    # Rename columns to work with ComputeClusterStats
+    data.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'}, inplace = True)
+    
+    stats = statProc(data)
