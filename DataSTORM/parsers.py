@@ -2,8 +2,11 @@ import json
 import pathlib
 import re
 import warnings
+from DataSTORM import database
+import pandas as pd
+from abc import ABCMeta, abstractproperty
 
-class Parser:
+class Parser(metaclass = ABCMeta):
     """Creates machine-readable data structures with acquisition info.
     
     Attributes
@@ -48,7 +51,7 @@ class Parser:
             'locResults', 'locMetadata', or 'widefieldImage'.
         
         """
-        if datasetType not in ['locResults','locMetadata','widefieldImage']:
+        if datasetType not in database.typesOfAtoms:
             raise DatasetError(datasetType)
         
         # These are the essential pieces of information to identify a dataset.
@@ -56,21 +59,27 @@ class Parser:
         self.channelID   =   channelID
         self.posID       =       posID
         self.prefix      =      prefix
-        self.sliceID     =      sliceID
+        self.sliceID     =     sliceID
         self.datasetType = datasetType
         
     def getBasicInfo(self):
         """Return a dictionary containing the basic dataset information.
         
         """
-        basicInfo = {'acqID'         :       self.acqID,
+        basicInfo = {
+                     'acqID'         :       self.acqID,
                      'channelID'     :   self.channelID,
                      'posID'         :       self.posID,
                      'prefix'        :      self.prefix,
                      'sliceID'       :     self.sliceID,
-                     'datasetType'   : self.datasetType}
+                     'datasetType'   : self.datasetType
+                     }
                      
         return basicInfo
+        
+    @abstractproperty
+    def data(self):
+        pass
 
 class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
@@ -79,8 +88,7 @@ class MMParser(Parser):
     ----------
     channelIdentifier : dict
         All of the channel identifiers that the MMParser recognizes.
-    metadata : dict or None
-        Dictionary containing decoded json metadata.
+    data              : The actual data that will be returned when called.
     
     """
     
@@ -96,7 +104,25 @@ class MMParser(Parser):
     
     def __init__(self):
         # Overload the parent's __init__ to prevent automatically calling it.
-        pass
+        self._filename = None
+    
+    @property
+    def data(self):
+        if self._filename is None:
+            raise ParserNotInitializedError(('Error: this parser has not yet'
+                                             ' been initialized.'))
+        
+        if self.datasetType == 'locResults':
+            # Loading the csv file when data() is called reduces the
+            # chance that large DataFrames do not needlessly
+            # remain in memory.
+            with open(self._filename, 'r') as file:            
+                return pd.read_csv(file)
+        elif self.datasetType == 'locMetadata':
+            # self._metadata is set by self._parseLocMetadata
+            return self._metadata
+        elif self.datasetType == 'widefieldImage':
+            return None
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Parse the filename to extract the acquisition information.
@@ -126,7 +152,9 @@ class MMParser(Parser):
             filename = str(fullPath.name)
         else:
             raise TypeError('Unrecognized type for filename.')
-            
+        
+        # Used to access data
+        self._filename = filename
             
         if datasetType == 'locResults':
             parsedData = self._parseLocResults(filename)
@@ -136,7 +164,7 @@ class MMParser(Parser):
             (acqID, channelID, posID, prefix, sliceID, metadata) = parsedData
             super(MMParser, self).__init__(acqID, channelID, posID,
                                            prefix, sliceID, datasetType)           
-            self.metadata = metadata
+            self._metadata = metadata
         elif datasetType == 'widefieldImage':
             parsedData = self._parseWidefieldImage(filename)
             super(MMParser, self).__init__(*parsedData, datasetType)
@@ -318,6 +346,15 @@ class HDFParser(Parser):
 
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed to Parser.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class ParserNotInitializedError(Exception):
+    """ Raised when Parser is requested to return data but is not initialized.
     
     """
     def __init__(self, value):

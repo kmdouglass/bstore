@@ -13,6 +13,11 @@ from nose.tools import *
 from DataSTORM  import parsers
 from pathlib    import Path
 
+class TestParser(parsers.Parser):
+    @property
+    def data(self):
+        pass
+
 def test_Parser_Attributes():
     """Will Parser accept and assign parameters to class attributes correctly?
     
@@ -22,10 +27,10 @@ def test_Parser_Attributes():
     posID       =         (0,) # Note that this is a tuple!
     prefix      = 'my_dataset'
     sliceID     =         None
-    datasetType = 'locResults'
+    datasetType = 'locResults'    
     
-    parser = parsers.Parser(acqID, channelID, posID,
-                            prefix, sliceID, datasetType)
+    parser = TestParser(acqID, channelID, posID,
+                        prefix, sliceID, datasetType)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
     assert_equal(parser.posID,               (0,))
@@ -45,8 +50,8 @@ def test_Parser_datasetType():
     datasetType = 'locRseults' # misspelled
     
     try:
-        parser = parsers.Parser(acqID, channelID, posID,
-                                prefix, sliceID, datasetType)
+        parser = TestParser(acqID, channelID, posID,
+                            prefix, sliceID, datasetType)
     except parsers.DatasetError:
         pass
     else:
@@ -63,8 +68,8 @@ def test_Parser_getBasicInfo():
     sliceID     =          None
     datasetType = 'locMetadata'
     
-    parser    = parsers.Parser(acqID, channelID, posID,
-                               prefix, sliceID, datasetType)
+    parser    = TestParser(acqID, channelID, posID,
+                           prefix, sliceID, datasetType)
     basicInfo = parser.getBasicInfo()
     assert_equal(basicInfo['acqID'],                    3)
     assert_equal(basicInfo['channelID'],           'A750')
@@ -194,7 +199,7 @@ def test_MMParser_Metadata():
     assert_equal(mmParser.prefix,                      'bacteria_HaloInduced')
     assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.metadata['InitialPositionList']['Label'],
+    assert_equal(mmParser.data['InitialPositionList']['Label'],
                                                               '1-Pos_002_002')
                                                               
 def test_MMParser_Metadata_NoPosition_Metadata():
@@ -214,7 +219,7 @@ def test_MMParser_Metadata_NoPosition_Metadata():
     assert_equal(mmParser.prefix,                              'HeLa_Control')
     assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.metadata['InitialPositionList'],               None)
+    assert_equal(mmParser.data['InitialPositionList'],                   None)
     
 def test_MMParser_Metadata_SinglePosition():
     """Will MMParser properly read a metadata file with a single position?
@@ -233,7 +238,7 @@ def test_MMParser_Metadata_SinglePosition():
     assert_equal(mmParser.prefix,                              'HeLa_Control')
     assert_equal(mmParser.sliceID,                                       None)
     assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.metadata['InitialPositionList']['Label'],    'Pos0')
+    assert_equal(mmParser.data['InitialPositionList']['Label'],        'Pos0')
     
 def test_MMParser_Widefield_Attributes():
     """Will MMParser properly extract information from a widefield image?

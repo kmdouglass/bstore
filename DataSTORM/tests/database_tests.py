@@ -334,7 +334,7 @@ def test_HDFDatabase_Put_LocMetadata():
     
     # Create the dataset
     ds = database.Dataset(mmParser.acqID, mmParser.channelID,
-                          mmParser.metadata, mmParser.posID, mmParser.prefix,
+                          mmParser.data, mmParser.posID, mmParser.prefix,
                           mmParser.sliceID, mmParser.datasetType)
                           
     # Write the metadata into the database
