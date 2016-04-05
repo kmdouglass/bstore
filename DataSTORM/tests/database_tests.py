@@ -10,7 +10,7 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools   import *
-from DataSTORM    import database
+from DataSTORM    import database, parsers
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
@@ -324,16 +324,21 @@ def test_HDFDatabase_Put_LocMetadata():
     """
     dbName   = Path('./tests/test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'posID'       : (0,),
-                'prefix'      : 'Cos7',
-                'sliceID'     : None,
-                'datasetType' : 'locMetadata'
-                }
-    # Create a dataset and load it with json metadata
+
+    # Load a json metadata file
+    f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
+    inputFile   = Path('tests/test_files') / Path(f)
+    datasetType = 'locMetadata'
+    mmParser    = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Create the dataset
+    ds = database.Dataset(mmParser.acqID, mmParser.channelID,
+                          mmParser.metadata, mmParser.posID, mmParser.prefix,
+                          mmParser.sliceID, mmParser.datasetType)
+                          
     # Write the metadata into the database
-                
+    myDB.put(ds)
+    
+    # Need to check that inputs are correct
     raise NotImplementedError

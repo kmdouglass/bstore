@@ -66,12 +66,12 @@ def test_Parser_getBasicInfo():
     parser    = parsers.Parser(acqID, channelID, posID,
                                prefix, sliceID, datasetType)
     basicInfo = parser.getBasicInfo()
-    assert_equal(basicInfo['acquisition_id'],           3)
-    assert_equal(basicInfo['channel_id'],          'A750')
-    assert_equal(basicInfo['position_id'],          (0,1))
+    assert_equal(basicInfo['acqID'],                    3)
+    assert_equal(basicInfo['channelID'],           'A750')
+    assert_equal(basicInfo['posID'],                (0,1))
     assert_equal(basicInfo['prefix'],              'HeLa')
-    assert_equal(basicInfo['slice_id'],              None)
-    assert_equal(basicInfo['dataset_type'], 'locMetadata')
+    assert_equal(basicInfo['sliceID'],               None)
+    assert_equal(basicInfo['datasetType'],  'locMetadata')
     
 def test_MMParser_LocResults_Attributes():
     """Will MMParser properly extract the acquisition information?

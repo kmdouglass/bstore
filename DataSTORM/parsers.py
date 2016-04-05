@@ -63,12 +63,12 @@ class Parser:
         """Return a dictionary containing the basic dataset information.
         
         """
-        basicInfo = {'acquisition_id' :       self.acqID,
-                     'channel_id'     :   self.channelID,
-                     'position_id'    :       self.posID,
-                     'prefix'         :      self.prefix,
-                     'slice_id'       :     self.sliceID,
-                     'dataset_type'   : self.datasetType}
+        basicInfo = {'acqID'         :       self.acqID,
+                     'channelID'     :   self.channelID,
+                     'posID'         :       self.posID,
+                     'prefix'        :      self.prefix,
+                     'sliceID'       :     self.sliceID,
+                     'datasetType'   : self.datasetType}
                      
         return basicInfo
 

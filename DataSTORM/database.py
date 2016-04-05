@@ -304,4 +304,14 @@ class HDFDatabase(Database):
         atom   : DatabaseAtom
             
         """
+        key = self._genKey(atom)
+        
+        try:
+                hdf = h5py.File(self._dbName, mode = 'a')
+                
+                # Loop through meta data and write each attribute to the key
+                # TODO
+        except: hdf.close()
+                
+        
         raise NotImplementedError
