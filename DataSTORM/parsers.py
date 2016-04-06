@@ -4,7 +4,7 @@ import re
 import warnings
 from DataSTORM import database
 import pandas as pd
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractmethod, abstractproperty
 
 class Parser(metaclass = ABCMeta):
     """Creates machine-readable data structures with acquisition info.
@@ -79,10 +79,25 @@ class Parser(metaclass = ABCMeta):
         
     @abstractproperty
     def data(self):
+        """Loads the data into memory and maps it to the correct format.
+        
+        """
         pass
     
-    @abstractproperty
+    @abstractmethod
     def getDatabaseAtom(self):
+        """Returns one atomic unit for insertion into the Database.
+        
+        """
+        pass
+    
+    @abstractmethod
+    def _uninitialize(self):
+        """Removes all dataset information from a Parser.
+        
+        This method helps ensure that a Parser never holds onto partial
+        information about a Dataset.
+        """
         pass
 
 class MMParser(Parser):
@@ -109,11 +124,13 @@ class MMParser(Parser):
     def __init__(self):
         self._filename      = None
         self._metadata      = None
+        
+        # Start uninitialized because paraseFilename has not yet been called
         self._uninitialized = True
     
     @property
     def data(self):
-        if self._filename is None:
+        if self._uninitialized:
             raise ParserNotInitializedError(('Error: this parser has not yet'
                                              ' been initialized.'))
         
@@ -380,14 +397,15 @@ class MMParser(Parser):
         the Database.
         
         """
-        self._filename   = None
-        self._metadata   = None
-        self.acqID       = None
-        self.channelID   = None
-        self.posID       = None
-        self.prefix      = None
-        self.sliceID     = None
-        self.datasetType = None
+        self._filename      = None
+        self._metadata      = None
+        self._uninitialized = True
+        self.acqID          = None
+        self.channelID      = None
+        self.posID          = None
+        self.prefix         = None
+        self.sliceID        = None
+        self.datasetType    = None
         
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
