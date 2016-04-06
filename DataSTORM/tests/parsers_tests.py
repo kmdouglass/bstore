@@ -338,3 +338,27 @@ def test_MMParser_DatabaseAtom():
     assert_equal(dbAtom.data['InitialPositionList'],                      None)
     assert_equal(dbAtom.data['PixelType'],                             'GRAY8')
     assert_equal(dbAtom.data['Positions'],                                   1)
+
+@raises(parsers.ParserNotInitializedError)    
+def test_MMParser_Uninitialized():
+    """Will MMParser throw an error when getDatabaseAtom is prematurely run?
+    
+    """
+    mmParser = parsers.MMParser()
+    mmParser.getDatabaseAtom()
+    
+@raises(parsers.ParserNotInitializedError)    
+def test_MMParser_Uninitialized_After_Use():
+    """Will MMParser throw an error if getDatabaseAtom is run after uninit'ing?
+    
+    """
+    f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
+    inputFile = Path('tests') / Path('test_files') / Path(f)
+    datasetType = 'locMetadata'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    mmParser.getDatabaseAtom()
+    
+    mmParser._uninitialize()
+    mmParser.getDatabaseAtom()

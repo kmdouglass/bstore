@@ -107,8 +107,9 @@ class MMParser(Parser):
     widefieldIdentifier = ['WF']
     
     def __init__(self):
-        self._filename = None
-        self._metadata = None
+        self._filename      = None
+        self._metadata      = None
+        self._uninitialized = True
     
     @property
     def data(self):
@@ -137,6 +138,10 @@ class MMParser(Parser):
             One atomic unit for insertion into the database.
         
         """
+        if self._uninitialized:
+            raise ParserNotInitializedError(('Error: Parser has not yet '
+                                             'been initialized.'))
+        
         ids = self.getBasicInfo()
         dba = database.Dataset(ids['acqID'], ids['channelID'],
                                    self.data, ids['posID'], ids['prefix'],
@@ -145,6 +150,9 @@ class MMParser(Parser):
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Parse the filename to extract the acquisition information.
+        
+        Running this method will reset the parser to an uninitialized state
+        before initializing it with the new data.
         
         Parameters
         ----------
@@ -159,7 +167,10 @@ class MMParser(Parser):
             The parsed acquisition information.
             
         """
-        if datasetType not in ['locResults','locMetadata','widefieldImage']:
+        # Reset the parser
+        self._uninitialize()       
+        
+        if datasetType not in database.typesOfAtoms:
             raise DatasetError(datasetType)           
         
         # Convert Path objects to strings
@@ -187,6 +198,9 @@ class MMParser(Parser):
         elif datasetType == 'widefieldImage':
             parsedData = self._parseWidefieldImage(filename)
             super(MMParser, self).__init__(*parsedData, datasetType)
+            
+        # Parser is now set and initialized.
+        self._uninitialized = False
         
     def _parseLocResults(self, filename, extractAcqID = True):
         """Parse a localization results file.
@@ -355,7 +369,25 @@ class MMParser(Parser):
             assert len(acqID) == 1, 'Error: found multiple acqID\'s.'
             acqID = int(acqID[0])
             
-        return acqID, channelID, posID, prefix, sliceID     
+        return acqID, channelID, posID, prefix, sliceID
+        
+    def _uninitialize(self):
+        """Resets the parser to an uninitalized state.
+        
+        This method is called every time the Parser attempts to read a new
+        file. By calling it, we can better ensure that we make no
+        attemps to insert datasets without all the proper IDs into
+        the Database.
+        
+        """
+        self._filename   = None
+        self._metadata   = None
+        self.acqID       = None
+        self.channelID   = None
+        self.posID       = None
+        self.prefix      = None
+        self.sliceID     = None
+        self.datasetType = None
         
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
