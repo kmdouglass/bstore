@@ -80,6 +80,10 @@ class Parser(metaclass = ABCMeta):
     @abstractproperty
     def data(self):
         pass
+    
+    @abstractproperty
+    def getDatabaseAtom(self):
+        pass
 
 class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
@@ -103,8 +107,8 @@ class MMParser(Parser):
     widefieldIdentifier = ['WF']
     
     def __init__(self):
-        # Overload the parent's __init__ to prevent automatically calling it.
         self._filename = None
+        self._metadata = None
     
     @property
     def data(self):
@@ -123,6 +127,21 @@ class MMParser(Parser):
             return self._metadata
         elif self.datasetType == 'widefieldImage':
             return None
+            
+    def getDatabaseAtom(self):
+        """Returns an object capable of insertion into a SMLM database.
+        
+        Returns 
+        -------
+        dba : DatabaseAtom
+            One atomic unit for insertion into the database.
+        
+        """
+        ids = self.getBasicInfo()
+        dba = database.Dataset(ids['acqID'], ids['channelID'],
+                                   self.data, ids['posID'], ids['prefix'],
+                                   ids['sliceID'], ids['datasetType'])
+        return dba
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Parse the filename to extract the acquisition information.

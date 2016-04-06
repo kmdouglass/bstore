@@ -10,12 +10,16 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com' 
 
 from nose.tools import *
-from DataSTORM  import parsers
+from DataSTORM  import parsers, database
 from pathlib    import Path
 
 class TestParser(parsers.Parser):
     @property
     def data(self):
+        pass
+    
+    @property
+    def getDatabaseAtom(self):
         pass
 
 def test_Parser_Attributes():
@@ -306,3 +310,31 @@ def test_MMParser_Widefield_Bizarre_Underscores():
     assert_equal(mmParser.prefix,                          'HeLa_Control_FISH')
     assert_equal(mmParser.sliceID,                                        None)
     assert_equal(mmParser.datasetType,                        'widefieldImage')
+    
+def test_MMParser_DatabaseAtom():
+    """MMParser returns the correct DatabaseAtom.
+    
+    """
+    f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
+    inputFile = Path('tests') / Path('test_files') / Path(f)
+    datasetType = 'locMetadata'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    dbAtom   = mmParser.getDatabaseAtom()
+    
+    ok_(isinstance(dbAtom, database.DatabaseAtom), ('Wrong type returned. '
+                                                    'dbAtom should be a '
+                                                    'DatabaseAtom.'))
+    assert_equal(dbAtom.acqID,                                               1)
+    assert_equal(dbAtom.channelID,                                      'A750')
+    assert_equal(dbAtom.posID,                                            (0,))
+    assert_equal(dbAtom.prefix,                                 'HeLa_Control')
+    assert_equal(dbAtom.sliceID,                                          None)
+    assert_equal(dbAtom.datasetType,                             'locMetadata')
+    
+    # Test a few metadata entries    
+    assert_equal(dbAtom.data['Slices'],                                      1)
+    assert_equal(dbAtom.data['InitialPositionList'],                      None)
+    assert_equal(dbAtom.data['PixelType'],                             'GRAY8')
+    assert_equal(dbAtom.data['Positions'],                                   1)
