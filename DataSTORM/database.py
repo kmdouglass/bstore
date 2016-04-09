@@ -2,6 +2,7 @@ from pathlib import PurePath, Path
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
 import h5py
+import json
 
 typesOfAtoms = (
                 'locResults',
@@ -207,8 +208,12 @@ class HDFDatabase(Database):
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
         if idFlag != '':
             otherIDs += idFlag
-            
-        return acqKey + '/' + atom.datasetType + otherIDs
+        
+        # locMetadata should be appended to a key starting with locResults
+        if atom.datasetType != 'locMetadata':        
+            return acqKey + '/' + atom.datasetType + otherIDs
+        else:
+            return acqKey + '/locResults' + otherIDs
         
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -304,14 +309,17 @@ class HDFDatabase(Database):
         atom   : DatabaseAtom
             
         """
-        key = self._genKey(atom)
+        assert atom.datasetType == 'locMetadata', \
+            'Error: atom\'s datasetType is not \'locMetadata\''
+        dataset = self._genKey(atom)
         
         try:
-                hdf = h5py.File(self._dbName, mode = 'a')
+            hdf = h5py.File(self._dbName, mode = 'a')
                 
-                # Loop through meta data and write each attribute to the key
-                # TODO
-        except: hdf.close()
-                
-        
-        raise NotImplementedError
+            # Loop through metadata and write each attribute to the key
+            for currKey in atom.data.keys():
+                attrKey = 'SMLM_{0:s}'.format(currKey)
+                attrVal = json.dumps(atom.data[currKey])
+                hdf[dataset].attrs[attrKey] = attrVal
+        finally:
+            hdf.close()

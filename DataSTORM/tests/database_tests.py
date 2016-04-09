@@ -196,7 +196,9 @@ def test_HDFDatabase_KeyGeneration():
                   database.Dataset(76, 'A750', data, (0,2),
                                    'HeLa_Control', None, 'locMetadata')
                  ]
-                 
+     
+    # The last one should be locResults and not locMetadata because
+    # metadata gets appended to locResults            
     keys       = [
                   'HeLa_Control/HeLa_Control_1/locResults_A647_Pos0',
                   'HeLa_Control/HeLa_Control_43/locResults_Pos0',
@@ -207,7 +209,7 @@ def test_HDFDatabase_KeyGeneration():
                   'HeLa_Control/HeLa_Control_76' + \
                       '/widefieldImage_A750_Pos_000_002',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/locMetadata_A750_Pos_000_002'
+                      '/locResults_A750_Pos_000_002'
                  ]
     
     dbName = 'myDB.h5'
@@ -333,12 +335,21 @@ def test_HDFDatabase_Put_LocMetadata():
     mmParser.parseFilename(inputFile, datasetType)
     
     # Create the dataset
-    ds = database.Dataset(mmParser.acqID, mmParser.channelID,
-                          mmParser.data, mmParser.posID, mmParser.prefix,
-                          mmParser.sliceID, mmParser.datasetType)
+    dsLocs = database.Dataset(mmParser.acqID, mmParser.channelID,
+                              data, mmParser.posID, mmParser.prefix,
+                              mmParser.sliceID, 'locResults')
+    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
+                              mmParser.data, mmParser.posID, mmParser.prefix,
+                              mmParser.sliceID, mmParser.datasetType)
                           
     # Write the metadata into the database
-    myDB.put(ds)
+    myDB.put(dsLocs)
+    myDB.put(dsMeta)
     
-    # Need to check that inputs are correct
-    raise NotImplementedError
+    # Read a few of the attributes to ensure they were put correctly
+    hdf = h5py.File(str(dbName), 'r')
+    putKey = 'HeLa_Control/HeLa_Control_2/locResults_A750_Pos0'
+    assert_equal(hdf[putKey].attrs['SMLM_MetadataVersion'],               '10')
+    assert_equal(hdf[putKey].attrs['SMLM_Height'],                       '512')
+    assert_equal(hdf[putKey].attrs['SMLM_Frames'],                       '100')
+    
