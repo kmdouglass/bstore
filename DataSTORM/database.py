@@ -321,5 +321,19 @@ class HDFDatabase(Database):
                 attrKey = 'SMLM_{0:s}'.format(currKey)
                 attrVal = json.dumps(atom.data[currKey])
                 hdf[dataset].attrs[attrKey] = attrVal
+        except KeyError:
+            # Raised when the hdf5 key does not exist in the database.
+            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
+                                        'No localization results exist with '
+                                        'these atomic IDs.'))
         finally:
             hdf.close()
+            
+class LocResultsDoNotExist(Exception):
+    """Attempting to attach locMetadata to non-existing locResults.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)

@@ -353,3 +353,27 @@ def test_HDFDatabase_Put_LocMetadata():
     assert_equal(hdf[putKey].attrs['SMLM_Height'],                       '512')
     assert_equal(hdf[putKey].attrs['SMLM_Frames'],                       '100')
     
+@raises(database.LocResultsDoNotExist)
+def test_HDF_Database_Put_LocMetadata_Without_LocResults():
+    """locMetadata atom cannot be put if localization data doesn't exist."""
+    dbName = Path('./tests/test_files/myEmptyDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
+        
+    dbName   = Path('./tests/test_files/myEmptyDB.h5')
+    myEmptyDB     = database.HDFDatabase(dbName)
+
+    # Load a json metadata file
+    f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
+    inputFile   = Path('tests/test_files') / Path(f)
+    datasetType = 'locMetadata'
+    mmParser    = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Create the dataset
+    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
+                              mmParser.data, mmParser.posID, mmParser.prefix,
+                              mmParser.sliceID, mmParser.datasetType)
+                          
+    # Write the metadata into the database; should raise LocResultsDoNotExist
+    myEmptyDB.put(dsMeta)
