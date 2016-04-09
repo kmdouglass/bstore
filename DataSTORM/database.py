@@ -1,8 +1,9 @@
-from pathlib import PurePath, Path
+from pathlib import PurePath
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
 import h5py
 import json
+import DataSTORM.config as config
 
 typesOfAtoms = (
                 'locResults',
@@ -294,6 +295,9 @@ class HDFDatabase(Database):
                 hdf[key].attrs['SMLM_sliceID']     = \
                     'None' if atom.sliceID is None else atom.sliceID
                 hdf[key].attrs['SMLM_datasetType'] = atom.datasetType
+                
+                # Current version of this software
+                hdf[key].attrs['SMLM_Version'] = config.__DataSTORM_Version__
             except:
                 hdf.close()
         elif atom.datasetType == 'locMetadata':
