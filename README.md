@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/kmdouglass/DataSTORM.svg?token=wpszvKaNd7qmZqYsAqpT&branch=master)](https://travis-ci.com/kmdouglass/DataSTORM)
+
 # DataSTORM
 Analysis routines for single-molecule microscopy data.
 
