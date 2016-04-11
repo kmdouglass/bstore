@@ -9,7 +9,7 @@ config = {
     'url'             : 'https://github.com/kmdouglass/DataSTORM',
     'download_url'    : 'https://github.com/kmdouglass/DataSTORM',
     'author_email'    : 'kyle.m.douglass@gmail.com',
-    'version'         : '0.1',
+    'version'         : '0.1.0a',
     'install_requires': ['nose',
                          'scikit-learn',
                          'pandas',
@@ -17,8 +17,8 @@ config = {
                          'numpy',
                          'scipy',
                          'matplotlib',
-                         'h5py'
-                        ],
+                         'pyhull',
+                         'h5py'],
     'packages'        : [],
     'scripts'         : [],
     'name'            : 'DataSTORM'

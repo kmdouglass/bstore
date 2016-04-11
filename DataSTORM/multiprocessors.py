@@ -127,6 +127,13 @@ class OverlayClusters:
             """Handles user input.
             
             """
+            if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']:
+                # Add a numeric label to the cluster
+                stats.loc[self.currentCluster, self._switchColumn] = \
+                                                                 int(event.key)
+                self._currentClusterIndex += 1
+                self._drawCurrentCluster(locs)
+            
             if event.key in ['b', 'B']:
                 # Go back one cluster.
                 if self._currentClusterIndex != 0:
