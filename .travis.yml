@@ -20,8 +20,9 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib scikit-learn pandas trackpy h5py
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib scikit-learn pandas h5py
   - source activate test-environment
+  - conda install -c soft-matter trackpy
 
   # Install convex hull software
   - easy_install pyhull
@@ -29,4 +30,4 @@ install:
   # Install this library
   - python setup.py install
 
-script: nosetests
+script: nosetests -w DataSTORM
