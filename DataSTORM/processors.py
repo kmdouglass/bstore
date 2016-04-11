@@ -2,6 +2,7 @@ import pandas            as pd
 import trackpy           as tp
 import numpy             as np
 import matplotlib.pyplot as plt
+import re
 
 from pathlib            import Path
 from sklearn.cluster    import DBSCAN
@@ -10,6 +11,7 @@ from scipy.signal       import gaussian
 from scipy.ndimage      import filters
 from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
+from pyhull             import qconvex
 
 class AddColumn:
     """Adds a column to a DataFrame.
@@ -79,7 +81,11 @@ class CleanUp:
             
         procdf.replace([np.inf, -np.inf], np.nan, inplace = True)
         procdf.dropna(inplace = True)
-        procdf.reindex()
+        
+        # DO NOT USE procdf.reindex() because it will not
+        # automatically reorder an index correctly. It is
+        # used for other purposes.
+        procdf.index = np.arange(procdf.shape[0])
         
         return procdf
 
@@ -140,11 +146,12 @@ class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
     """
-    def __init__(self, idLabel = 'cluster_id', coordCols = ['x', 'y']):
+    def __init__(self, idLabel = 'cluster_id'):
         """Set the column name for the cluster ID numbers.
         
         """
-        self._idLabel = idLabel
+        # TO IMPLEMENT: coordCols = ['x', 'y']
+        self._idLabel   = idLabel
     
     def __call__(self, df):
         """Compute the statistics for each cluster of localizations.
@@ -172,6 +179,7 @@ class ComputeClusterStats:
                                         'y' : 'mean'})
         tempResultsRg     = groups.apply(self._radiusOfGyration, ['x', 'y'])
         tempResultsEcc    = groups.apply(self._eccentricity,     ['x', 'y'])
+        tempResultsCHull  = groups.apply(self._convexHull,       ['x', 'y'])
         tempResultsLength = pd.Series(groups.size())
         
         # Create a column that determines whether to reject the cluster
@@ -186,6 +194,7 @@ class ComputeClusterStats:
                               inplace = True)
         tempResultsRg.name     = 'radius_of_gyration'
         tempResultsEcc.name    = 'eccentricity'
+        tempResultsCHull.name  = 'convex_hull_area'
         tempResultsLength.name = 'number_of_localizations'
         
         # Create the merged DataFrame
@@ -193,6 +202,7 @@ class ComputeClusterStats:
                       tempResultsLength,
                       tempResultsRg,
                       tempResultsEcc,
+                      tempResultsCHull,
                       tempResultsKeep)
         procdf = pd.concat(dataToJoin, axis = 1)
                                                      
@@ -212,7 +222,7 @@ class ComputeClusterStats:
             The radius of gyration of the group of localizations.
         
         """
-        variances = group[coordinates].var()
+        variances = group[coordinates].var(ddof = 0)
         
         # sqrt(3/2) makes the radius of gyration comparable to a 3D cluster        
         Rg = np.sqrt(3 * variances.sum() / 2)
@@ -241,6 +251,31 @@ class ComputeClusterStats:
         
         ecc = np.max(eigs) / min(eigs)
         return ecc
+        
+    def _convexHull(self, group, coordinates):
+        """Computes the volume of the cluster's complex hull.
+        
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations. 
+        
+        Returns
+        -------
+        volume : float or np.nan
+        
+        """
+        points = group[coordinates].as_matrix()
+        output = qconvex('FA', points)
+    
+        # Find output volume
+        try:
+            volume = [vol for vol in output if 'Total volume:' in vol][0]
+            volume = float(re.findall(r'[-+]?[0-9]*\.?[0-9]+', volume)[0])
+        except:
+            volume = np.nan
+            
+        return volume
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
@@ -353,6 +388,7 @@ class FiducialDriftCorrect:
                                            'xMax' : None,
                                            'yMin' : None,
                                            'yMax' : None}],
+                 doFiducialSearch      = True,
                  noLinking             = False,
                  noClustering          = False,
                  removeFiducials       = True,
@@ -383,6 +419,9 @@ class FiducialDriftCorrect:
         searchRegions         : list of dict of float
             Non-overlapping subregions of the data to search for fiducials.
             Dict keys are 'xMin', 'xMax', 'yMin', and 'yMax'.
+        doFiducialSearch      : bool
+            Should this processor only correct a localization DataFrame, or
+            should it also be used to search for fiducials?
         noLinking             : bool
             Determines whether or not localizations should be linked in time.
             This step can be computationally expensive for large/long datasets.
@@ -411,6 +450,7 @@ class FiducialDriftCorrect:
         self.neighborRadius        = neighborRadius
         self.interactiveSearch     = interactiveSearch
         self.searchRegions         = searchRegions
+        self.doFiducialSearch      = doFiducialSearch
         self.noLinking             = noLinking
         self.noClustering          = noClustering
         self.removeFiducials       = removeFiducials
@@ -450,24 +490,29 @@ class FiducialDriftCorrect:
         else:
             renamedCols = False        
         
-        # Visually find areas where fiducials are likely to be present
-        if self.interactiveSearch:        
-            self.iSearch(copydf)
+        # If doFiducialSearch is False, this processor will only correct a
+        # DataFrame with its existing fiducial information. If it is True,
+        # Fiducials will also be searched for, either manually or
+        # automatically.
+        if self.doFiducialSearch:
+            # Visually find areas where fiducials are likely to be present
+            if self.interactiveSearch:        
+                self.iSearch(copydf)
+                
+            # Extract subregions to search for fiducials
+            fidRegionsdf = self.reduceSearchArea(copydf)
             
-        # Extract subregions to search for fiducials
-        fidRegionsdf = self.reduceSearchArea(copydf)
-        
-        # Reset the fiducial trajectories and find the fiducials
-        self.fiducialTrajectories = []        
-        self.detectFiducials(fidRegionsdf)
-        
-        # Check whether fiducial trajectories are empty
-        if not self.fiducialTrajectories:
-            return df
+            # Reset the fiducial trajectories and find the fiducials
+            self.fiducialTrajectories = []        
+            self.detectFiducials(fidRegionsdf)
             
         # Drop the fiducials from the full dataset
         if self.removeFiducials:
             copydf = self.dropFiducials(copydf)
+        
+        # Check whether fiducial trajectories are empty
+        if not self.fiducialTrajectories:
+            return df
         
         # Perform spline fits on fiducial tracks
         self.fitSplines()
@@ -650,10 +695,11 @@ class FiducialDriftCorrect:
             numFiducials   = len(nonNoiseLabels)
             try:
                 if numFiducials < 1:
-                    raise ZeroFiducialsFound(numFiducials)
-            except ZeroFiducialsFound as excp:
+                    raise ZeroFiducials(numFiducials)
+            except ZeroFiducials as excp:
                 print(
-                '{0} fiducials found. Returning original dataframe.'.format(excp))
+                '{0} fiducials found. Returning original dataframe.'.format(
+                                                                         excp))
             
             # Extract localizations as a list of dataframes for each fiducial
             # (-1 denotes unclustered localizations)
@@ -675,9 +721,34 @@ class FiducialDriftCorrect:
                                              
         print('{0:d} fiducial(s) detected.'.format(
                                                len(self.fiducialTrajectories)))
-                                               
+    
+    def dropTrajectories(self, trajIndexes):
+        """Drop bad trajectories from the list of trajectories.
+        
+        Parameters
+        ----------
+        trajIndexes : list of int
+            List of integers marking the trajectorties to be dropped.
+        
+        """
+        # Check that all the input indexes are valid
+        validIndex = [index in range(len(self.fiducialTrajectories))
+                      for index in trajIndexes]
+        if not all(validIndex):
+            raise ValueError('Invalid list of trajectory indexes supplied.')
+            
+        self.fiducialTrajectories = \
+            [keepTraj
+             for goodIndex, keepTraj in enumerate(self.fiducialTrajectories)
+             if goodIndex not in trajIndexes]
+        
+        # Recompute the splines and their average         
+        self.fitSplines()
+        self.combineSplines(pd.DataFrame(self.avgSpline.index,
+                                         columns = ['frame']))
+                 
     def dropFiducials(self, df):
-        """Drop rows belong to fiducial localizations from the dataset.
+        """Drop rows belonging to fiducial localizations from the dataset.
         
         Notes
         -----
@@ -698,9 +769,14 @@ class FiducialDriftCorrect:
         
         for fid in self.fiducialTrajectories:
             procdf = pd.concat([procdf, fid], ignore_index = True)
-            procdf.drop_duplicates(subset = ['x', 'y', 'frame'],
-                                   keep = False,
-                                   inplace = True)
+            # drop_duplicates has problems with precision and rounding errors
+            #procdf.drop_duplicates(subset = ['x', 'y', 'frame'],
+            #                       keep = False,
+            #                       inplace = True)
+            procdf = procdf[(procdf['x'] < fid['x'].min())
+                          | (procdf['x'] > fid['x'].max())
+                          | (procdf['y'] < fid['y'].min())
+                          | (procdf['y'] > fid['y'].max())]
             
         try:
             del procdf['particle']
@@ -858,6 +934,10 @@ class FiducialDriftCorrect:
             Index of the spline to plot. (0-index)
         
         """
+        if len(self.fiducialTrajectories) == 0:
+            raise ZeroFiducials(
+                'Zero fiducials are currently saved with this processor.')
+        
         if not splineNumber:
             # Plot all trajectories and splines
             startIndex = 0
@@ -1279,8 +1359,8 @@ class Merge:
                
         return wAvg
         
-class ZeroFiducialsFound(Exception):
-    """Exception raised when zero fiducials are found during drift correction.
+class ZeroFiducials(Exception):
+    """Raised when zero fiducials are present during drift correction.
     
     """
     def __init__(self, value):
