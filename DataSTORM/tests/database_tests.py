@@ -260,7 +260,7 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString1].attrs['SMLM_sliceID'],               'None')
         assert_equal(f[keyString1].attrs['SMLM_datasetType'],     'locResults')
         f.close()
-        
+
 def test_HDFDatabase_Get():
     """HDFDatabase.get() returns the correct Dataset.
     
@@ -301,7 +301,7 @@ def test_HDFDatabase_Get_Dict():
 
 @raises(KeyError)    
 def test_HDFDatabase_Get_Dict_KeyError():
-    """HDFDatabase.get() displays the correct information when KeyError raised.
+    """HDFDatabase.get() detects when KeyError raised.
     
     """
     dbName   = Path('./tests/test_files/myDB.h5')
@@ -334,7 +334,7 @@ def test_HDFDatabase_Put_LocMetadata():
     mmParser    = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
     
-    # Create the dataset
+    # Create the dataset; locMetadata needs locResults, so put those first
     dsLocs = database.Dataset(mmParser.acqID, mmParser.channelID,
                               data, mmParser.posID, mmParser.prefix,
                               mmParser.sliceID, 'locResults')
@@ -353,9 +353,31 @@ def test_HDFDatabase_Put_LocMetadata():
     assert_equal(hdf[putKey].attrs['SMLM_Height'],                       '512')
     assert_equal(hdf[putKey].attrs['SMLM_Frames'],                       '100')
     
+def test_HDF_Database_Get_LocMetadata():
+    """The database can return localization metadata with get().
+    
+    """
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+    
+    # Create a dict of IDs for retrieving the dataset     
+    myDSID   = {
+                'acqID'       : 2,
+                'channelID'   : 'A750',
+                'posID'       : (0,),
+                'prefix'      : 'HeLa_Control',
+                'sliceID'     : None,
+                'datasetType' : 'locMetadata'
+                }
+    
+    raise NotImplementedError
+    md = myDB.get(myDSID)
+    
 @raises(database.LocResultsDoNotExist)
 def test_HDF_Database_Put_LocMetadata_Without_LocResults():
-    """locMetadata atom cannot be put if localization data doesn't exist."""
+    """locMetadata atom cannot be put if localization data doesn't exist.
+    
+    """
     dbName = Path('./tests/test_files/myEmptyDB.h5')
     if dbName.exists():
         remove(str(dbName))

@@ -4,6 +4,7 @@ from pandas import HDFStore, read_hdf
 import h5py
 import json
 import DataSTORM.config as config
+import sys
 
 typesOfAtoms = (
                 'locResults',
@@ -215,6 +216,70 @@ class HDFDatabase(Database):
             return acqKey + '/' + atom.datasetType + otherIDs
         else:
             return acqKey + '/locResults' + otherIDs
+            
+    def _getLocMetadata(self, hdfKey):
+        """Returns the primary dataset ID's used by DataSTORM.
+        
+        Parameters
+        ----------
+        hdfKey : str
+            The key in the hdf file containing the dataset.
+        
+        Returns
+        -------
+        # TODO: Add return   
+        """
+        try:
+            # Open the HDF file and get the dataset's attributes
+            hdf   = h5py.File(self._dbName, mode = 'r')
+            attrs = hdf.attrs.items()
+            
+            # Filter out attributes that are not SMLM metadata
+            attrID = config.__attrPrefix__
+            
+            # XXX: Currently raises error when attributes are empty.
+            # See https://github.com/h5py/h5py/issues/279
+            md = [currAttr for currAttr in attrs if attrID[:len(attrID)] == \
+                                                                        attrID]
+            md = dict(md)   
+            
+            print(md)
+            sys.stdout.flush
+                        
+            # TODO: Check that SMLM Metadata matches key.
+            # TODO: Add except clause to return None when there is no metadata.
+        finally:
+            hdf.close()
+            
+        return md
+    
+    def _putLocMetadata(self, atom):
+        """Writes localization metadata into the database.
+        
+        Parameters
+        ----------
+        atom   : DatabaseAtom
+            
+        """
+        assert atom.datasetType == 'locMetadata', \
+            'Error: atom\'s datasetType is not \'locMetadata\''
+        dataset = self._genKey(atom)
+        
+        try:
+            hdf = h5py.File(self._dbName, mode = 'a')
+                
+            # Loop through metadata and write each attribute to the key
+            for currKey in atom.data.keys():
+                attrKey = 'SMLM_{0:s}'.format(currKey)
+                attrVal = json.dumps(atom.data[currKey])
+                hdf[dataset].attrs[attrKey] = attrVal
+        except KeyError:
+            # Raised when the hdf5 key does not exist in the database.
+            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
+                                        'No localization results exist with '
+                                        'these atomic IDs.'))
+        finally:
+            hdf.close()
         
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -241,7 +306,7 @@ class HDFDatabase(Database):
                 datasetType = dsID['datasetType']
             except KeyError as e:
                 print(('There is an error with the dict supplied to get(). '
-                       'Were the following keys supplied?'))
+                       'The following keys may be incorrect:'))
                 print(e.args)
                 raise
         else:
@@ -253,8 +318,12 @@ class HDFDatabase(Database):
                            prefix, sliceID, datasetType)
         hdfKey   = self._genKey(returnDS)
         
+        # TODO: ENSURE ERROR CHECKING FOR KEY'S EXISTENCE IN THESE FUNCS
+        
         if datasetType == 'locResults':
             returnDS.data = read_hdf(self._dbName, key = hdfKey)
+        if datasetType == 'locMetadata':
+            returnDS.data = self._getLocMetadata(hdfKey)
             
         return returnDS
         
@@ -304,34 +373,6 @@ class HDFDatabase(Database):
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
             pass
-    
-    def _putLocMetadata(self, atom):
-        """Writes localization metadata into the database.
-        
-        Parameters
-        ----------
-        atom   : DatabaseAtom
-            
-        """
-        assert atom.datasetType == 'locMetadata', \
-            'Error: atom\'s datasetType is not \'locMetadata\''
-        dataset = self._genKey(atom)
-        
-        try:
-            hdf = h5py.File(self._dbName, mode = 'a')
-                
-            # Loop through metadata and write each attribute to the key
-            for currKey in atom.data.keys():
-                attrKey = 'SMLM_{0:s}'.format(currKey)
-                attrVal = json.dumps(atom.data[currKey])
-                hdf[dataset].attrs[attrKey] = attrVal
-        except KeyError:
-            # Raised when the hdf5 key does not exist in the database.
-            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
-                                        'No localization results exist with '
-                                        'these atomic IDs.'))
-        finally:
-            hdf.close()
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
