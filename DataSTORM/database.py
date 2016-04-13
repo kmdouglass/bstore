@@ -277,7 +277,7 @@ class HDFDatabase(Database):
                 hdf = HDFStore(self._dbName)
                 hdf.put(key, atom.data, format = 'table',
                         data_columns = True, index = False)
-            except:
+            finally:
                 hdf.close()
                 
             # Write the attributes to the dataset;
@@ -298,7 +298,7 @@ class HDFDatabase(Database):
                 
                 # Current version of this software
                 hdf[key].attrs['SMLM_Version'] = config.__DataSTORM_Version__
-            except:
+            finally:
                 hdf.close()
         elif atom.datasetType == 'locMetadata':
             self._putLocMetadata(atom)
