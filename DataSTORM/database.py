@@ -224,30 +224,41 @@ class HDFDatabase(Database):
         ----------
         hdfKey : str
             The key in the hdf file containing the dataset.
+
         
         Returns
         -------
-        # TODO: Add return   
+        md     : dict
+            Metadata as key value pairs. All values are strings compatible
+            with Python's JSON's dump.
         """
         try:
             # Open the HDF file and get the dataset's attributes
-            hdf   = h5py.File(self._dbName, mode = 'r')
-            attrs = hdf.attrs.items()
+            hdf      = h5py.File(self._dbName, mode = 'r')
+            attrKeys = hdf[hdfKey].attrs.keys()
+            attrID   = config.__HDF_Metadata_Prefix__
+            md = {}            
             
-            # Filter out attributes that are not SMLM metadata
-            attrID = config.__attrPrefix__
-            
-            # XXX: Currently raises error when attributes are empty.
+            # Currently h5py raises IOError when attributes are empty.
             # See https://github.com/h5py/h5py/issues/279
-            md = [currAttr for currAttr in attrs if attrID[:len(attrID)] == \
-                                                                        attrID]
-            md = dict(md)   
-            
-            print(md)
-            sys.stdout.flush
+            # For this reason, I can't use a simple list comprehension
+            # with a filter over attrs.items() to get the metadata.
+            for currAttr in attrKeys:
+                try:
+                    # Filter out attributes irrelevant to the database.
+                    # Also remove the database's attribute flag.
+                    if currAttr[:len(attrID)] == attrID:
+                        print(currAttr)
+                        sys.stdout.flush()
+                        md[currAttr[len(attrID):]] = \
+                                        json.loads(hdf[hdfKey].attrs[currAttr])
+                except IOError:
+                    # Ignore attirbutes that are empty.
+                    # See above comment.
+                    pass
                         
             # TODO: Check that SMLM Metadata matches key.
-            # TODO: Add except clause to return None when there is no metadata.
+                        
         finally:
             hdf.close()
             
@@ -261,6 +272,8 @@ class HDFDatabase(Database):
         atom   : DatabaseAtom
             
         """
+        mdFlag = config.__HDF_Metadata_Prefix__
+        
         assert atom.datasetType == 'locMetadata', \
             'Error: atom\'s datasetType is not \'locMetadata\''
         dataset = self._genKey(atom)
@@ -270,7 +283,7 @@ class HDFDatabase(Database):
                 
             # Loop through metadata and write each attribute to the key
             for currKey in atom.data.keys():
-                attrKey = 'SMLM_{0:s}'.format(currKey)
+                attrKey = '{0:s}{1:s}'.format(mdFlag, currKey)
                 attrVal = json.dumps(atom.data[currKey])
                 hdf[dataset].attrs[attrKey] = attrVal
         except KeyError:
@@ -313,7 +326,7 @@ class HDFDatabase(Database):
             acqID, channelID, posID, prefix, sliceID, datasetType = \
                                                                  dsID.getInfo()
             
-        # Use returnAtom to get the key pointing to the dataset
+        # Use returnDS to get the key pointing to the dataset
         returnDS = Dataset(acqID, channelID, None, posID,
                            prefix, sliceID, datasetType)
         hdfKey   = self._genKey(returnDS)
@@ -339,6 +352,7 @@ class HDFDatabase(Database):
         
         """
         # The put routine varies with atom's dataset type
+        # TODO: Check the input DataFrame's columns for compatibility.
         if atom.datasetType == 'locResults':
             key = self._genKey(atom, idFlag)
             

@@ -10,12 +10,15 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools   import *
-from DataSTORM    import database, parsers
+from DataSTORM    import database, parsers, config
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
+
+# Flag identifying localization metadata
+mdPre = config.__HDF_Metadata_Prefix__
 
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
@@ -349,9 +352,9 @@ def test_HDFDatabase_Put_LocMetadata():
     # Read a few of the attributes to ensure they were put correctly
     hdf = h5py.File(str(dbName), 'r')
     putKey = 'HeLa_Control/HeLa_Control_2/locResults_A750_Pos0'
-    assert_equal(hdf[putKey].attrs['SMLM_MetadataVersion'],               '10')
-    assert_equal(hdf[putKey].attrs['SMLM_Height'],                       '512')
-    assert_equal(hdf[putKey].attrs['SMLM_Frames'],                       '100')
+    assert_equal(hdf[putKey].attrs[mdPre + 'MetadataVersion'],            '10')
+    assert_equal(hdf[putKey].attrs[mdPre + 'Height'],                    '512')
+    assert_equal(hdf[putKey].attrs[mdPre + 'Frames'],                    '100')
     
 def test_HDF_Database_Get_LocMetadata():
     """The database can return localization metadata with get().
@@ -370,8 +373,25 @@ def test_HDF_Database_Get_LocMetadata():
                 'datasetType' : 'locMetadata'
                 }
     
-    raise NotImplementedError
     md = myDB.get(myDSID)
+    
+    # Check that the basic ID information is correct.
+    assert_equal(md.acqID,                   2)
+    assert_equal(md.channelID,          'A750')
+    assert_equal(md.posID,                (0,))
+    assert_equal(md.prefix,     'HeLa_Control')
+    assert_equal(md.sliceID,              None)
+    assert_equal(md.datasetType, 'locMetadata')
+    
+    # Check a few of the metadata tags
+    assert_equal(md.data['BitDepth'], 8)
+    assert_equal(md.data['KeepShutterOpenChannels'], False)
+    assert_equal(md.data['InitialPositionList'], \
+                                        {"Label": "Pos0",
+                                         "GridRowIndex": 0,
+                                         "DeviceCoordinatesUm": {"Z": [0],
+                                                                 "XY": [0, 0]},
+                                         "GridColumnIndex": 0})
     
 @raises(database.LocResultsDoNotExist)
 def test_HDF_Database_Put_LocMetadata_Without_LocResults():
