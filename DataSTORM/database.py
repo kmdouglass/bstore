@@ -6,6 +6,7 @@ import json
 import DataSTORM.config as config
 import sys
 
+# TODO: Move this to config.py
 typesOfAtoms = (
                 'locResults',
                 'locMetadata',
@@ -177,6 +178,10 @@ class HDFDatabase(Database):
     """An HDFDatabase structure for managing SMLM data.
     
     """
+    @property
+    def atomPrefix(self):
+        return config.__HDF_AtomID_Prefix__
+    
     def append(self):
         raise NotImplementedError
     
@@ -368,19 +373,22 @@ class HDFDatabase(Database):
             # Reopening the file just to write attributes is awkward;
             # Can attributes be written through the HDFStore interface?
             try:
-                hdf = h5py.File(self._dbName, mode = 'a')
-                hdf[key].attrs['SMLM_acqID']       = atom.acqID
-                hdf[key].attrs['SMLM_channelID']   = \
+                atomPrefix = self.atomPrefix
+                hdf        = h5py.File(self._dbName, mode = 'a')
+                
+                hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
+                hdf[key].attrs[atomPrefix + 'channelID']   = \
                     'None' if atom.channelID is None else atom.channelID
-                hdf[key].attrs['SMLM_posID']       = \
+                hdf[key].attrs[atomPrefix + 'posID']       = \
                     'None' if atom.posID is None else atom.posID
-                hdf[key].attrs['SMLM_prefix']      = atom.prefix
-                hdf[key].attrs['SMLM_sliceID']     = \
+                hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
+                hdf[key].attrs[atomPrefix + 'sliceID']     = \
                     'None' if atom.sliceID is None else atom.sliceID
-                hdf[key].attrs['SMLM_datasetType'] = atom.datasetType
+                hdf[key].attrs[atomPrefix + 'datasetType'] = atom.datasetType
                 
                 # Current version of this software
-                hdf[key].attrs['SMLM_Version'] = config.__DataSTORM_Version__
+                hdf[key].attrs[atomPrefix +'Version'] = \
+                                                   config.__DataSTORM_Version__
             finally:
                 hdf.close()
         elif atom.datasetType == 'locMetadata':

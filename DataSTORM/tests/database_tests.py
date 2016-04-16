@@ -17,6 +17,9 @@ from numpy.random import rand
 from os           import remove
 import h5py
 
+# Flag identifying atomic ID prefix
+atomPre = config.__HDF_AtomID_Prefix__
+
 # Flag identifying localization metadata
 mdPre = config.__HDF_Metadata_Prefix__
 
@@ -247,21 +250,21 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(keys[1], 'locResults_A647_Pos_001_002')
     
         keyString0 = 'Cos7/Cos7_1/' + keys[0]
-        assert_equal(f[keyString0].attrs['SMLM_acqID'],                      1)
-        assert_equal(f[keyString0].attrs['SMLM_channelID'],             'A647')
-        assert_equal(f[keyString0].attrs['SMLM_posID'],                      0)
-        assert_equal(f[keyString0].attrs['SMLM_prefix'],                'Cos7')
-        assert_equal(f[keyString0].attrs['SMLM_sliceID'],               'None')
-        assert_equal(f[keyString0].attrs['SMLM_datasetType'],     'locResults')
+        assert_equal(f[keyString0].attrs[atomPre + 'acqID'],                 1)
+        assert_equal(f[keyString0].attrs[atomPre + 'channelID'],        'A647')
+        assert_equal(f[keyString0].attrs[atomPre + 'posID'],                 0)
+        assert_equal(f[keyString0].attrs[atomPre + 'prefix'],           'Cos7')
+        assert_equal(f[keyString0].attrs[atomPre + 'sliceID'],          'None')
+        assert_equal(f[keyString0].attrs[atomPre + 'datasetType'],'locResults')
         
         keyString1 = 'Cos7/Cos7_1/' + keys[1]
-        assert_equal(f[keyString1].attrs['SMLM_acqID'],                      1)
-        assert_equal(f[keyString1].attrs['SMLM_channelID'],             'A647')
-        assert_equal(f[keyString1].attrs['SMLM_posID'][0],                   1)
-        assert_equal(f[keyString1].attrs['SMLM_posID'][1],                   2)
-        assert_equal(f[keyString1].attrs['SMLM_prefix'],                'Cos7')
-        assert_equal(f[keyString1].attrs['SMLM_sliceID'],               'None')
-        assert_equal(f[keyString1].attrs['SMLM_datasetType'],     'locResults')
+        assert_equal(f[keyString1].attrs[atomPre + 'acqID'],                 1)
+        assert_equal(f[keyString1].attrs[atomPre + 'channelID'],        'A647')
+        assert_equal(f[keyString1].attrs[atomPre + 'posID'][0],              1)
+        assert_equal(f[keyString1].attrs[atomPre + 'posID'][1],              2)
+        assert_equal(f[keyString1].attrs[atomPre + 'prefix'],           'Cos7')
+        assert_equal(f[keyString1].attrs[atomPre + 'sliceID'],          'None')
+        assert_equal(f[keyString1].attrs[atomPre + 'datasetType'],'locResults')
         f.close()
 
 def test_HDFDatabase_Get():
