@@ -16,7 +16,24 @@ typesOfAtoms = (
 def _checkType(typeString):
     if typeString not in typesOfAtoms:
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
-                                                                  datasetType))
+                                                                   typeString))
+                                                                  
+import os
+def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+    """Implements UNIX touch routine.
+    
+    touch() is used to create an empty HDF database or update its timestamps.
+    
+    References
+    ----------
+    http://stackoverflow.com/questions/1158076/implement-touch-using-python
+    
+    """
+    # TODO: Test this on Windows
+    flags = os.O_CREAT | os.O_APPEND
+    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed.
@@ -188,6 +205,24 @@ class HDFDatabase(Database):
     def build(self):
         # Should call self.put() repeatedly for a list of atomic inputs.
         raise NotImplementedError
+        
+    def _checkKeyExistence(self, atom):
+        """Checks for the existence of a key.
+        
+        """
+        raise NotImplementedError
+        
+        # TODO: If Database file doesn't exist, return without checking
+        
+        with h5py.File(self._dbName, mode = 'r') as dbFile:
+            if key in dbFile and atom.datasetType != 'locMetadata':
+                # locMetadata doesn't have its own key
+                raise HDF5KeyExists(('Error: '
+                                     '{0:s} already exists.'.format(key)))
+            elif key in dbFile and atom.datasetType == 'locMetadata':
+                # TODO: Check for metadata tags in dataset
+                                     
+        # TODO: write test case for a key collision
 
     def _genKey(self, atom, idFlag = ''):
         """Generate a key name for a dataset atom.
@@ -198,6 +233,7 @@ class HDFDatabase(Database):
         idFlag : str
         
         """
+        # TODO: Remove idFlag
         acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
                     '_' + str(atom.acqID)
                                  
@@ -378,11 +414,13 @@ class HDFDatabase(Database):
             HDF dataset.
         
         """
+        key = self._genKey(atom)
+        self._checkKeyExistence(key)
+        
         # The put routine varies with atom's dataset type
+        # TODO: Remove idFlag.
         # TODO: Check the input DataFrame's columns for compatibility.
         if atom.datasetType == 'locResults':
-            key = self._genKey(atom, idFlag)
-            
             try:
                 hdf = HDFStore(self._dbName)
                 hdf.put(key, atom.data, format = 'table',
@@ -420,6 +458,15 @@ class HDFDatabase(Database):
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class HDF5KeyExists(Exception):
+    """Attempting to write to an existing key in the database.
     
     """
     def __init__(self, value):
