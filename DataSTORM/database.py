@@ -298,6 +298,15 @@ class HDFDatabase(Database):
                                         'these atomic IDs.'))
         finally:
             hdf.close()
+            
+    def _putWidefieldImage(self, atom):
+        """Writes a widefield image into the database.
+        
+        Parameters
+        ----------
+        atom   : DatabaseAtom
+        """
+        raise NotImplementedError
         
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -342,6 +351,8 @@ class HDFDatabase(Database):
             returnDS.data = read_hdf(self._dbName, key = hdfKey)
         if datasetType == 'locMetadata':
             returnDS.data = self._getLocMetadata(hdfKey)
+        if datasetType == 'widefieldImage':
+            raise NotImplementedError
             
         return returnDS
         
@@ -394,7 +405,7 @@ class HDFDatabase(Database):
         elif atom.datasetType == 'locMetadata':
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
-            pass
+            raise NotImplementedError
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.

@@ -12,6 +12,7 @@ __email__ = 'kyle.m.douglass@gmail.com'
 from nose.tools import *
 from DataSTORM  import parsers, database
 from pathlib    import Path
+import sys
 
 class TestParser(parsers.Parser):
     @property
@@ -365,3 +366,19 @@ def test_MMParser_Uninitialized_After_Use():
     
     mmParser._uninitialize()
     mmParser.getDatabaseAtom()
+    
+def test_MMParser_Widefield_Data():
+    """MMParser correctly loads widefield image data.
+    
+    """
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = Path('tests') / Path('test_files/Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    ds = mmParser.getDatabaseAtom()    
+    
+    #print(mmParser.getBasicInfo())
+    #sys.stdout.flush()
+    #raise

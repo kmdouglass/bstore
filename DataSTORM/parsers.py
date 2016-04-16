@@ -5,6 +5,7 @@ import warnings
 from DataSTORM import database
 import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
+from matplotlib.pyplot import imread
 
 class Parser(metaclass = ABCMeta):
     """Creates machine-readable data structures with acquisition info.
@@ -99,6 +100,8 @@ class Parser(metaclass = ABCMeta):
         information about a Dataset.
         """
         pass
+    
+    # TODO: Remove _unitialize and make _uninitialized and abstract property
 
 class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
@@ -113,7 +116,8 @@ class MMParser(Parser):
     
     # This dictionary contains all the channel identifiers MMParser
     # knows natively
-    channelIdentifier = {'A647' : 'AlexaFluor 647',
+    channelIdentifier = {'A488' : 'AlexaFluor 488',
+                         'A647' : 'AlexaFluor 647',
                          'A750' : 'AlexaFluor 750',
                          'DAPI' : 'DAPI',
                          'Cy5'  : 'Cy5'} 
@@ -122,8 +126,15 @@ class MMParser(Parser):
     widefieldIdentifier = ['WF']
     
     def __init__(self):
+        self._fullPath      = None
         self._filename      = None
         self._metadata      = None
+        self.acqID          = None
+        self.channelID      = None
+        self.posID          = None
+        self.prefix         = None
+        self.sliceID        = None
+        self.datasetType    = None
         
         # Start uninitialized because paraseFilename has not yet been called
         self._uninitialized = True
@@ -144,7 +155,8 @@ class MMParser(Parser):
             # self._metadata is set by self._parseLocMetadata
             return self._metadata
         elif self.datasetType == 'widefieldImage':
-            return None
+            # Load the image data only when called
+            return imread(str(self._fullPath)) 
             
     def getDatabaseAtom(self):
         """Returns an object capable of insertion into a SMLM database.
@@ -185,7 +197,7 @@ class MMParser(Parser):
             
         """
         # Reset the parser
-        self._uninitialize()       
+        self.__init__()      
         
         if datasetType not in database.typesOfAtoms:
             raise DatasetError(datasetType)           
@@ -202,6 +214,7 @@ class MMParser(Parser):
         
         # Used to access data
         self._filename = filename
+        self._fullPath = fullPath
             
         if datasetType == 'locResults':
             parsedData = self._parseLocResults(filename)
@@ -339,7 +352,7 @@ class MMParser(Parser):
             metadata['InitialPositionList'] = None
             
         # FUTURE IMPLEMENTATION
-        # Isolate slice position from and chance metadata accordingly
+        # Isolate slice position from and change metadata accordingly
 
         return acqID, channelID, posID, prefix, sliceID, metadata
         
@@ -397,15 +410,7 @@ class MMParser(Parser):
         the Database.
         
         """
-        self._filename      = None
-        self._metadata      = None
-        self._uninitialized = True
-        self.acqID          = None
-        self.channelID      = None
-        self.posID          = None
-        self.prefix         = None
-        self.sliceID        = None
-        self.datasetType    = None
+        self.__init__()
         
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.
