@@ -422,3 +422,27 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
                           
     # Write the metadata into the database; should raise LocResultsDoNotExist
     myEmptyDB.put(dsMeta)
+    
+def test_HDF_Database_Put_WidefieldImage():
+    """The HDF database puts widefield images with the correct key.
+    
+    """
+    # Load the database
+    dbName   = Path('./tests/test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+    
+    # Load the widefield image and convert it to an atom
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = Path('tests') / Path('test_files/Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Put the widefield image into the database
+    myDB.put(mmParser.getDatabaseAtom())
+    
+    # Check that the data was put correctly
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/widefield_A647'
+    with h5py.File(myDB._dbName, mode = 'r') as dbFile:
+        ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
+    

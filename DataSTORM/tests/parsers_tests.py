@@ -23,7 +23,8 @@ class TestParser(parsers.Parser):
     def getDatabaseAtom(self):
         pass
     
-    def _uninitialize(self):
+    @property
+    def uninitialized(self):
         pass
 
 def test_Parser_Attributes():
@@ -364,7 +365,7 @@ def test_MMParser_Uninitialized_After_Use():
     mmParser.parseFilename(inputFile, datasetType)
     mmParser.getDatabaseAtom()
     
-    mmParser._uninitialize()
+    mmParser.uninitialized = True
     mmParser.getDatabaseAtom()
     
 def test_MMParser_Widefield_Data():
@@ -379,6 +380,4 @@ def test_MMParser_Widefield_Data():
     mmParser.parseFilename(inputFile, datasetType)
     ds = mmParser.getDatabaseAtom()    
     
-    #print(mmParser.getBasicInfo())
-    #sys.stdout.flush()
-    #raise
+    assert_equal(ds.data.shape, (512, 512))

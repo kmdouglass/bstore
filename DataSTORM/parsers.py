@@ -92,11 +92,11 @@ class Parser(metaclass = ABCMeta):
         """
         pass
     
-    @abstractmethod
-    def _uninitialize(self):
-        """Removes all dataset information from a Parser.
+    @abstractproperty
+    def uninitialized(self):
+        """Indicates that all dataset information has been removed.
         
-        This method helps ensure that a Parser never holds onto partial
+        This property helps ensure that a Parser never holds onto partial
         information about a Dataset.
         """
         pass
@@ -126,18 +126,8 @@ class MMParser(Parser):
     widefieldIdentifier = ['WF']
     
     def __init__(self):
-        self._fullPath      = None
-        self._filename      = None
-        self._metadata      = None
-        self.acqID          = None
-        self.channelID      = None
-        self.posID          = None
-        self.prefix         = None
-        self.sliceID        = None
-        self.datasetType    = None
-        
         # Start uninitialized because paraseFilename has not yet been called
-        self._uninitialized = True
+        self.uninitialized = True
     
     @property
     def data(self):
@@ -156,7 +146,35 @@ class MMParser(Parser):
             return self._metadata
         elif self.datasetType == 'widefieldImage':
             # Load the image data only when called
-            return imread(str(self._fullPath)) 
+            return imread(str(self._fullPath))
+            
+    @property
+    def uninitialized(self):
+        return self._uninitialized
+        
+    @uninitialized.setter
+    def uninitialized(self, value):
+        """Resets the Parser an uninitialized state if True is provided.
+        
+        Parameters
+        ----------
+        value : bool
+        """
+        if isinstance(value, bool):
+            self._uninitialized = value
+            
+            if value:
+                self._fullPath      = None
+                self._filename      = None
+                self._metadata      = None
+                self.acqID          = None
+                self.channelID      = None
+                self.posID          = None
+                self.prefix         = None
+                self.sliceID        = None
+                self.datasetType    = None
+        else:
+            raise ValueError('Error: _uninitialized must be a bool.')
             
     def getDatabaseAtom(self):
         """Returns an object capable of insertion into a SMLM database.
@@ -197,7 +215,7 @@ class MMParser(Parser):
             
         """
         # Reset the parser
-        self.__init__()      
+        self.uninitialized = True   
         
         if datasetType not in database.typesOfAtoms:
             raise DatasetError(datasetType)           
@@ -400,17 +418,6 @@ class MMParser(Parser):
             acqID = int(acqID[0])
             
         return acqID, channelID, posID, prefix, sliceID
-        
-    def _uninitialize(self):
-        """Resets the parser to an uninitalized state.
-        
-        This method is called every time the Parser attempts to read a new
-        file. By calling it, we can better ensure that we make no
-        attemps to insert datasets without all the proper IDs into
-        the Database.
-        
-        """
-        self.__init__()
         
 class HDFParser(Parser):
     """Parses HDF groups and datasets to extract their acquisition information.

@@ -306,7 +306,18 @@ class HDFDatabase(Database):
         ----------
         atom   : DatabaseAtom
         """
-        raise NotImplementedError
+        assert atom.datasetType == 'widefieldImage', \
+            'Error: atom\'s datasetType is not \'widefieldImage\''
+        dataset = self._genKey(atom) + '/widefield_' + atom.channelID
+        
+        try:
+            hdf = h5py.File(self._dbName, mode = 'a')
+            
+            hdf.create_dataset(dataset,
+                               atom.data.shape,
+                               data = atom.data)
+        finally:
+            hdf.close()
         
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -405,7 +416,7 @@ class HDFDatabase(Database):
         elif atom.datasetType == 'locMetadata':
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
-            raise NotImplementedError
+            self._putWidefieldImage(atom)
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
