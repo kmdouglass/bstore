@@ -445,4 +445,33 @@ def test_HDF_Database_Put_WidefieldImage():
     saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/widefield_A647'
     with h5py.File(myDB._dbName, mode = 'r') as dbFile:
         ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
+     
+@raises(database.HDF5KeyExists)
+def test_HDF_Database_Check_Key_Existence_LocResults():
+    """An error is raised if using a key that already exists for locResults.
     
+    """
+    # Remake the database
+    dbName = Path('./tests/test_files/myDB_DoubleKey.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB     = database.HDFDatabase(dbName)
+    
+    myDS  = database.Dataset(1, 'A647', data, (0,),
+                             'Cos7', None, 'locResults')
+                             
+    # Raises error on the second put because the key already exists.
+    myDB.put(myDS)
+    myDB.put(myDS)
+    
+@raises(database.HDF5KeyExists)
+def test_HDF_Database_Check_Key_Existence_LocMetadata():
+    """An error is raised if using a key that already exists for locResults.
+    
+    """
+    # Remake the database
+    dbName = Path('./tests/test_files/myDB_DoubleKey.h5')
+    myDB     = database.HDFDatabase(dbName)
+    
+    pass
+    # TODO: Finish this test case and its associated code

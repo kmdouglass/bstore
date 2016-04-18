@@ -209,20 +209,29 @@ class HDFDatabase(Database):
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
         
+        Parameters
+        ----------
+        atom : DatabaseAtom
+        
         """
-        raise NotImplementedError
+        key = self._genKey(atom)        
         
-        # TODO: If Database file doesn't exist, return without checking
-        
-        with h5py.File(self._dbName, mode = 'r') as dbFile:
-            if key in dbFile and atom.datasetType != 'locMetadata':
-                # locMetadata doesn't have its own key
-                raise HDF5KeyExists(('Error: '
-                                     '{0:s} already exists.'.format(key)))
-            elif key in dbFile and atom.datasetType == 'locMetadata':
-                # TODO: Check for metadata tags in dataset
+        # If Database file doesn't exist, return without checking
+        try:
+            with h5py.File(self._dbName, mode = 'r') as dbFile:
+                if key in dbFile and atom.datasetType != 'locMetadata':
+                    raise HDF5KeyExists(('Error: '
+                                         '{0:s} already exists.'.format(key)))
+                elif key in dbFile and atom.datasetType == 'locMetadata':
+                    # locMetadata doesn't have its own key;
+                    # Check with separate routine
+                    # TODO: Check for metadata tags in dataset
+                    pass
+        except IOError as e:
+            print('Error: Could not open file.')
+            print(e.args)
                                      
-        # TODO: write test case for a key collision
+        # TODO: write test case for a key collision for locMetadata and WFImage
 
     def _genKey(self, atom, idFlag = ''):
         """Generate a key name for a dataset atom.
@@ -414,8 +423,8 @@ class HDFDatabase(Database):
             HDF dataset.
         
         """
+        self._checkKeyExistence(atom)
         key = self._genKey(atom)
-        self._checkKeyExistence(key)
         
         # The put routine varies with atom's dataset type
         # TODO: Remove idFlag.
