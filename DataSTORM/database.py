@@ -234,19 +234,15 @@ class HDFDatabase(Database):
         except IOError as e:
             print('Error: Could not open file.')
             print(e.args)
-                                     
-        # TODO: write test case for a key collision for locMetadat
 
-    def _genKey(self, atom, idFlag = ''):
+    def _genKey(self, atom):
         """Generate a key name for a dataset atom.
         
         Parameters
         ----------
         atoms  : DatabaseAtom
-        idFlag : str
         
         """
-        # TODO: Remove idFlag
         acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
                     '_' + str(atom.acqID)
                                  
@@ -262,8 +258,6 @@ class HDFDatabase(Database):
                                                             atom.posID[1])
         if atom.sliceID is not None:
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
-        if idFlag != '':
-            otherIDs += idFlag
         
         # locMetadata should be appended to a dataset starting with locResults
         if atom.datasetType != 'locMetadata':        
@@ -404,8 +398,12 @@ class HDFDatabase(Database):
         returnDS = Dataset(acqID, channelID, None, posID,
                            prefix, sliceID, datasetType)
         hdfKey   = self._genKey(returnDS)
-        
-        # TODO: ENSURE ERROR CHECKING FOR KEY'S EXISTENCE IN THESE FUNCS
+
+        # Ensure that the key exists        
+        try:
+            self._checkKeyExistence(returnDS)
+        except HDF5KeyExists:
+            pass
         
         if datasetType == 'locResults':
             returnDS.data = read_hdf(self._dbName, key = hdfKey)
@@ -416,22 +414,18 @@ class HDFDatabase(Database):
             
         return returnDS
         
-    def put(self, atom, idFlag = ''):
+    def put(self, atom):
         """Writes a single database atom into the database.
         
         Parameters
         ----------
         atom   : DatabaseAtom
-        idFlag : str
-            Any additional information to place into the key of the
-            HDF dataset.
         
         """
         self._checkKeyExistence(atom)
         key = self._genKey(atom)
         
         # The put routine varies with atom's dataset type
-        # TODO: Remove idFlag.
         # TODO: Check the input DataFrame's columns for compatibility.
         if atom.datasetType == 'locResults':
             try:
