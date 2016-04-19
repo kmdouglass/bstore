@@ -469,9 +469,29 @@ def test_HDF_Database_Check_Key_Existence_LocMetadata():
     """An error is raised if using a key that already exists for locResults.
     
     """
-    # Remake the database
-    dbName = Path('./tests/test_files/myDB_DoubleKey.h5')
+    dbName   = Path('./tests/test_files/myDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
     myDB     = database.HDFDatabase(dbName)
+
+    # Load a json metadata file
+    f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
+    inputFile   = Path('tests/test_files') / Path(f)
+    datasetType = 'locMetadata'
+    mmParser    = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
     
-    pass
-    # TODO: Finish this test case and its associated code
+    # Create the dataset; locMetadata needs locResults, so put those first
+    dsLocs = database.Dataset(mmParser.acqID, mmParser.channelID,
+                              data, mmParser.posID, mmParser.prefix,
+                              mmParser.sliceID, 'locResults')
+    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
+                              mmParser.data, mmParser.posID, mmParser.prefix,
+                              mmParser.sliceID, mmParser.datasetType)
+                          
+    # Write the metadata into the database
+    myDB.put(dsLocs)
+    myDB.put(dsMeta)
+    
+    # Should raise error because metadata exists already
+    myDB.put(dsMeta)

@@ -223,15 +223,19 @@ class HDFDatabase(Database):
                     raise HDF5KeyExists(('Error: '
                                          '{0:s} already exists.'.format(key)))
                 elif key in dbFile and atom.datasetType == 'locMetadata':
-                    # locMetadata doesn't have its own key;
-                    # Check with separate routine
-                    # TODO: Check for metadata tags in dataset
-                    pass
+                    # Search for metadata flag presence in locResults dataset
+                    attrID = config.__HDF_Metadata_Prefix__                 
+                    mdKeys = dbFile[key].attrs.keys()
+                    for currKey in mdKeys:
+                        if attrID in currKey:
+                            raise HDF5KeyExists(('Error: '
+                                                 '{0:s} already '
+                                                 'exists.'.format(key)))                    
         except IOError as e:
             print('Error: Could not open file.')
             print(e.args)
                                      
-        # TODO: write test case for a key collision for locMetadata and WFImage
+        # TODO: write test case for a key collision for locMetadat
 
     def _genKey(self, atom, idFlag = ''):
         """Generate a key name for a dataset atom.
@@ -261,7 +265,7 @@ class HDFDatabase(Database):
         if idFlag != '':
             otherIDs += idFlag
         
-        # locMetadata should be appended to a key starting with locResults
+        # locMetadata should be appended to a dataset starting with locResults
         if atom.datasetType != 'locMetadata':        
             return acqKey + '/' + atom.datasetType + otherIDs
         else:
