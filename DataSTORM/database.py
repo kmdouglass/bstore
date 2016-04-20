@@ -202,9 +202,32 @@ class HDFDatabase(Database):
     def append(self):
         raise NotImplementedError
     
-    def build(self):
+    def build(self, parser, searchDirectory,
+              locResultsString = 'locResults.dat',
+              locMetadataString = 'locMetadata.json',
+              widefieldImageString = '*WF*.ome.tiff'):
+        """Builds a database by traversing a directory for experimental files.
+        
+        Parameters
+        ----------
+        parser               : Parser
+            Instance of a parser for converting files to DatabaseAtoms.
+        searchDirectory      : str or Path
+            This directory and all subdirectories will be traversed.
+        locResultsString     : str
+            String that identifies locResults files.
+        locMetadataString    : str
+            String that identifies locMetadata files.
+        widefieldImageString : str
+            Glob string that identifies widefield images.
+            
+        """
         # Should call self.put() repeatedly for a list of atomic inputs.
         raise NotImplementedError
+        
+        searchDirectory   = Path(searchDirectory)
+        locResultFilesGen = searchDirectory.glob('**/*{:s}'.format(locResultsString))
+        locResultFiles    = sorted(locResultFilesGen)
         
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
