@@ -495,3 +495,18 @@ def test_HDF_Database_Check_Key_Existence_LocMetadata():
     
     # Should raise error because metadata exists already
     myDB.put(dsMeta)
+
+def test_HDF_Database_Build():
+    """The database build is performed successfully.
+    
+    """
+    dbName   = Path('./tests/test_files/myDB_Build.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB = database.HDFDatabase(dbName)
+    myParser = parsers.MMParser()    
+    
+    # Directory to traverse for acquisition files
+    searchDirectory = Path('./tests/test_files/test_experiment')
+    
+    myDB.build(myParser, searchDirectory, dryRun = False)

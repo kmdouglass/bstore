@@ -21,23 +21,6 @@ def _checkType(typeString):
     if typeString not in typesOfAtoms:
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
                                                                    typeString))
-                                                                  
-import os
-def touch(fname, mode=0o666, dir_fd=None, **kwargs):
-    """Implements UNIX touch routine.
-    
-    touch() is used to create an empty HDF database or update its timestamps.
-    
-    References
-    ----------
-    http://stackoverflow.com/questions/1158076/implement-touch-using-python
-    
-    """
-    # TODO: Test this on Windows
-    flags = os.O_CREAT | os.O_APPEND
-    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
-        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
-            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed.
@@ -209,7 +192,7 @@ class HDFDatabase(Database):
     def build(self, parser, searchDirectory, dryRun = False,
               locResultsString     = 'locResults.dat',
               locMetadataString    = 'locMetadata.json',
-              widefieldImageString = '*WF*.ome.tiff'):
+              widefieldImageString = 'WF*.ome.tif'):
         """Builds a database by traversing a directory for experimental files.
         
         Parameters
@@ -227,10 +210,7 @@ class HDFDatabase(Database):
         widefieldImageString : str
             Glob string that identifies widefield images.
             
-        """
-        # Should call self.put() repeatedly for a list of atomic inputs.
-        raise NotImplementedError
-        
+        """       
         # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
         FilesGen = {}
@@ -257,11 +237,15 @@ class HDFDatabase(Database):
         
         # Place all other data into the database
         del(files['locResults'])
-        for currType, currFile in files.items():
-            pp.pprint(parser.getBasicInfo())
-            parser.parseFilename(currFile, datasetType = currType)
-            if not dryRun:
-                self.put(parser.getDatabaseAtom())
+        for currType in files.keys():
+            print(currType)  
+            
+            for currFile in files[currType]:
+                print(currFile)
+                parser.parseFilename(currFile, datasetType = currType)
+                pp.pprint(parser.getBasicInfo())
+                if not dryRun:
+                    self.put(parser.getDatabaseAtom())
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.

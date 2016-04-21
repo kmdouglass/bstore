@@ -26,6 +26,9 @@ class TestParser(parsers.Parser):
     @property
     def uninitialized(self):
         pass
+    
+    def parseFilename():
+        pass
 
 def test_Parser_Attributes():
     """Will Parser accept and assign parameters to class attributes correctly?

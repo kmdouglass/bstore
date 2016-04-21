@@ -354,12 +354,12 @@ class MMParser(Parser):
                                             self._parseLocResults(filename)
         
         # Remove non-matching position information from the metadata
-        if len(posID) == 2:
-            pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
-        else:
-            pos = 'Pos{0:d}'.format(posID[0])
-        
-        try:      
+        try:
+            if len(posID) == 2:
+                pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
+            else:
+                pos = 'Pos{0:d}'.format(posID[0])
+            
             newPosList= [currPos \
                          for currPos in metadata['InitialPositionList'] \
                          if pos in currPos['Label']]
@@ -367,9 +367,10 @@ class MMParser(Parser):
                 'Multiple positions found in metadata.'
             metadata['InitialPositionList'] = newPosList[0]
         except TypeError:
+            # When no position information is in the filename
             metadata['InitialPositionList'] = None
             
-        # FUTURE IMPLEMENTATION
+        # TODO: FUTURE IMPLEMENTATION
         # Isolate slice position from and change metadata accordingly
 
         return acqID, channelID, posID, prefix, sliceID, metadata
