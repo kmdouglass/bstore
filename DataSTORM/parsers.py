@@ -144,7 +144,7 @@ class MMParser(Parser):
             # Loading the csv file when data() is called reduces the
             # chance that large DataFrames do not needlessly
             # remain in memory.
-            with open(self._filename, 'r') as file:            
+            with open(str(self._fullPath), 'r') as file:            
                 return pd.read_csv(file)
         elif self.datasetType == 'locMetadata':
             # self._metadata is set by self._parseLocMetadata
