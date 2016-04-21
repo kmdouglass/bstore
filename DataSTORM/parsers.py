@@ -213,11 +213,6 @@ class MMParser(Parser):
         datasetType : str
             One of 'locResults', 'locMetadata', or 'widefieldImage'.
             
-        Returns
-        -------
-        self        : MMParser
-            The parsed acquisition information.
-            
         """
         # Reset the parser
         self.uninitialized = True   

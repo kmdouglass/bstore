@@ -5,8 +5,12 @@ import h5py
 import json
 import DataSTORM.config as config
 import sys
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)  
 
 # TODO: Move this to config.py
+# locMetadata MUST follow locResults
 typesOfAtoms = (
                 'locResults',
                 'locMetadata',
@@ -202,7 +206,7 @@ class HDFDatabase(Database):
     def append(self):
         raise NotImplementedError
     
-    def build(self, parser, searchDirectory,
+    def build(self, parser, searchDirectory, dryRun = False,
               locResultsString     = 'locResults.dat',
               locMetadataString    = 'locMetadata.json',
               widefieldImageString = '*WF*.ome.tiff'):
@@ -214,6 +218,8 @@ class HDFDatabase(Database):
             Instance of a parser for converting files to DatabaseAtoms.
         searchDirectory      : str or Path
             This directory and all subdirectories will be traversed.
+        dryRun               : bool
+            Test the database build without actually creating the database.
         locResultsString     : str
             String that identifies locResults files.
         locMetadataString    : str
@@ -226,22 +232,36 @@ class HDFDatabase(Database):
         raise NotImplementedError
         
         # Obtain a list of all the files to put into the database
-        searchDirectory   = Path(searchDirectory)
-        locResultFilesGen = searchDirectory.glob('**/*{:s}'.format(
+        searchDirectory = Path(searchDirectory)
+        FilesGen = {}
+        FilesGen['locResults']     = searchDirectory.glob('**/*{:s}'.format(
                                                              locResultsString))
-        locMetadataFilesGen = searchDirectory.glob('**/*{:s}'.format(
+        FilesGen['locMetadata']    = searchDirectory.glob('**/*{:s}'.format(
                                                             locMetadataString))
-        widefieldImageFilesGen = searchDirectory.glob('**/*{:s}'.format(
+        FilesGen['widefieldImage'] = searchDirectory.glob('**/*{:s}'.format(
                                                          widefieldImageString))
                                                          
-        # XXX: locResults MUST come before locMetadata. Dict is not good here.
-        files = {}
-        files['locResults']     = sorted(locResultFilesGen)
-        files['locMetadata']    = sorted(locMetadataFilesGen)
-        files['widefieldImage'] = sorted(widefieldImageFilesGen)
+        # Build the dictionary of files with keys describing
+        # their dataset type
+        files = {}                                                 
+        for datasetType in typesOfAtoms:
+            files[datasetType] = sorted(FilesGen[datasetType])
         
-        for key, value in files.items():
-            parsedFile = parser.parseFilename()
+        # Ensure that locResults get put first so the metadata has
+        # a place to go
+        for dataset in files['locResults']:
+            parser.parseFilename(dataset, datasetType = 'locResults')
+            pp.pprint(parser.getBasicInfo())
+            if not dryRun:
+                self.put(parser.getDatabaseAtom())                                              
+        
+        # Place all other data into the database
+        del(files['locResults'])
+        for currType, currFile in files.items():
+            pp.pprint(parser.getBasicInfo())
+            parser.parseFilename(currFile, datasetType = currType)
+            if not dryRun:
+                self.put(parser.getDatabaseAtom())
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
