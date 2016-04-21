@@ -1,4 +1,4 @@
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
 import h5py
@@ -203,8 +203,8 @@ class HDFDatabase(Database):
         raise NotImplementedError
     
     def build(self, parser, searchDirectory,
-              locResultsString = 'locResults.dat',
-              locMetadataString = 'locMetadata.json',
+              locResultsString     = 'locResults.dat',
+              locMetadataString    = 'locMetadata.json',
               widefieldImageString = '*WF*.ome.tiff'):
         """Builds a database by traversing a directory for experimental files.
         
@@ -225,10 +225,24 @@ class HDFDatabase(Database):
         # Should call self.put() repeatedly for a list of atomic inputs.
         raise NotImplementedError
         
+        # Obtain a list of all the files to put into the database
         searchDirectory   = Path(searchDirectory)
-        locResultFilesGen = searchDirectory.glob('**/*{:s}'.format(locResultsString))
-        locResultFiles    = sorted(locResultFilesGen)
+        locResultFilesGen = searchDirectory.glob('**/*{:s}'.format(
+                                                             locResultsString))
+        locMetadataFilesGen = searchDirectory.glob('**/*{:s}'.format(
+                                                            locMetadataString))
+        widefieldImageFilesGen = searchDirectory.glob('**/*{:s}'.format(
+                                                         widefieldImageString))
+                                                         
+        # XXX: locResults MUST come before locMetadata. Dict is not good here.
+        files = {}
+        files['locResults']     = sorted(locResultFilesGen)
+        files['locMetadata']    = sorted(locMetadataFilesGen)
+        files['widefieldImage'] = sorted(widefieldImageFilesGen)
         
+        for key, value in files.items():
+            parsedFile = parser.parseFilename()
+    
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
         

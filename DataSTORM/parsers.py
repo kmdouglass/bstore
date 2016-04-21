@@ -92,6 +92,13 @@ class Parser(metaclass = ABCMeta):
         """
         pass
     
+    @abstractmethod
+    def parseFilename(self):
+        """Parses a file for conversion to a DatabaseAtom.
+        
+        """
+        pass
+    
     @abstractproperty
     def uninitialized(self):
         """Indicates that all dataset information has been removed.
@@ -100,8 +107,6 @@ class Parser(metaclass = ABCMeta):
         information about a Dataset.
         """
         pass
-    
-    # TODO: Remove _unitialize and make _uninitialized and abstract property
 
 class MMParser(Parser):
     """Parses a Micro-Manger-based filename for the dataset's acquisition info.
