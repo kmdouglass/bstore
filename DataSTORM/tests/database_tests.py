@@ -509,4 +509,22 @@ def test_HDF_Database_Build():
     # Directory to traverse for acquisition files
     searchDirectory = Path('./tests/test_files/test_experiment')
     
+    # Build database
     myDB.build(myParser, searchDirectory, dryRun = False)
+    
+    # Test for existence of the data
+    with h5py.File(str(dbName), mode = 'r') as hdf:
+        key1 = 'HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0'
+        ok_('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0' in hdf)
+        ok_('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0' in hdf)
+        ok_(hdf[key1].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1].attrs.__contains__('SMLM_Metadata_Height'))
+        
+        key2 = 'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0'
+        ok_('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0' in hdf)
+        ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
+        ok_(hdf[key2].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key2].attrs.__contains__('SMLM_Metadata_Height'))
+    
+    # Remove test database file
+    remove(str(dbName))
