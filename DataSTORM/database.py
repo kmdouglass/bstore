@@ -313,7 +313,6 @@ class HDFDatabase(Database):
         ----------
         hdfKey : str
             The key in the hdf file containing the dataset.
-
         
         Returns
         -------
