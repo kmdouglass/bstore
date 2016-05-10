@@ -12,15 +12,26 @@ __email__ = 'kyle.m.douglass@gmail.com'
 from nose.tools import *
 from pathlib    import Path
 from DataSTORM.batch import CSVBatchProcessor
+from DataSTORM import processors as proc
+import shutil
+import pandas as pd
 
 # Update this to point towards the test data on your system or network
 pathToTestData = Path('/home/douglass/ownCloud/test-data/Telomeres_Knockdowns')
 
 # Build the test batch processors
-pipeline = []
-bp       = CSVBatchProcessor(pathToTestData, pipeline,
-                             useSameFolder = True,
-                             suffix = 'locResults.dat')
+outputDir  = Path('tests/test_files/batch_test_results/')
+if outputDir.exists():
+    shutil.rmtree(str(outputDir))
+
+cleanup    = proc.CleanUp()
+locFilter1 = proc.Filter('loglikelihood', '<', 250)
+locFilter2 = proc.Filter('sigma [nm]',    '<', 180)
+pipeline   = [cleanup, locFilter1, locFilter2]
+bp         = CSVBatchProcessor(pathToTestData, pipeline,
+                               useSameFolder   = False,
+                               suffix          = 'locResults.dat',
+                               outputDirectory = outputDir)
 
 def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.
@@ -35,4 +46,27 @@ def test_CSVBatchProcessor_DatasetParser():
                      
     for ds in bp.datasetList:
         ok_(str(ds.name) in knownDatasets,
-            'Batch processor found a file not in the known datasets.')    
+            'Batch processor found a file not in the known datasets.')
+            
+def test_CSVBatchProcessor_Pipeline():
+    """The batch processor correctly applies the pipeline to the data.
+    
+    """
+    # Execute the batch process
+    bp.go()
+    
+    # Check the results of the filtering
+    results = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults_processed.dat',
+               'HeLaS_Control_IFFISH_A647_2_MMStack_locResults_processed.dat',
+               'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults_processed.dat',
+               'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults_processed.dat']
+               
+    for currRes in results:
+        pathToCurrRes = outputDir / Path(currRes)
+        df = pd.read_csv(str(pathToCurrRes), sep = ',')
+        
+        # Verify that filters were applied during the processing
+        ok_(df['loglikelihood'].max() <= 250,
+            'Loglikelihood column has wrong values.')
+        ok_(df['sigma [nm]'].max()    <= 180,
+            'sigma [nm] column has wrong values.')

@@ -119,7 +119,12 @@ class CSVBatchProcessor(BatchProcessor):
                 
             outputFile = str(fileStem) + '_' + processedFlag + '.dat'
             
-            df.to_csv(outputFile, sep = self._delimiter, index = False)
+            # Output the results to a file.
+            # This will overwrite any existing files (mode = 'w').
+            df.to_csv(outputFile,
+                      sep   = self._delimiter,
+                      mode  = 'w',
+                      index = False)
     
     @property        
     def datasetList(self):
