@@ -165,3 +165,99 @@ class CSVBatchProcessor(BatchProcessor):
         locResultFiles    = sorted(locResultFilesGen)
         
         return locResultFiles
+        
+class HDFBatchProcessor(BatchProcessor):
+    """Automatic processing of localizations stored in a HDF database.
+    
+    """
+    def __init__(self,
+                 inputDatabase,
+                 pipeline,
+                 outputDirectory = 'processed_data',
+                 searchString    = 'locResults',
+                 delimiter       = ','):
+        """Parse the input database by finding SMLM data files.
+        
+        The constructor parses the HDF database and creates a list of Path
+        objects all pointing to localization datasets.
+        
+        Parameters
+        ----------
+        inputDirectory  : str or Path
+            A string to a directory containg SMLM data files, or a pathlib Path
+            instance to a directory.
+        pipeline        : list of Processors
+            List of Processor objects to process the data.
+        outputDirectory : str or Path (default: 'processed_data')
+            Relative path to the folder for saving the processed results.
+        searchString    : str         (default: 'locResults')
+            The suffix identifying SMLM data files.
+        delimiter       : str         (default: ',')
+            Delimiter used to separate entries in the data files.
+        
+        """
+        try:        
+            self.datasetList = self._parseDatasets(str(inputDatabase), searchString)
+            self.pipeline = pipeline
+            
+            if  not self.pipeline:
+                raise UserWarning
+            elif not self.datasetList:
+                raise ValueError(
+                   'Error: No datasets containing {:s} were found.'.format(searchString))
+        except UserWarning:
+            print('Warning: Pipeline contains no Processors.')
+        
+        self._outputDirectory = Path(outputDirectory)
+        self._searchString    = searchString
+        self._delimiter       = delimiter
+    
+    @property
+    def datasetList(self):
+        """A list of all pathlib Path objects to the datasets to process.
+        
+        """
+        return self._datasetList
+    
+    @datasetList.setter
+    def datasetList(self, paths):
+        self._datasetList = paths
+    
+    def go(self):
+        pass
+    
+    def _parseDatasets(self, inputDirectory, searchString = 'locResults'):
+        """Finds all localization datasets in an HDF database.
+        
+        Parameters
+        ----------
+        inputDirectory : str
+            String of the directory tree containing SMLM data files.
+        searchString   : str  (optional, default: '.dat')
+            Strings identifying localization results. This must be unique to
+            keys containing localization data.
+        
+        Returns
+        -------
+        locResults : list of Path
+            A list of all the localization datasets in the HDF file.
+            
+        """
+        # Open the hdf file
+        f = h5py.File(inputDirectory, 'r')
+        try:
+            # Extract all localization filesets from the HDF5 file by matching
+            # each group to the search string.
+            # ('table' not in name) excludes the subgroup inside every
+            # processed_localization parent group.
+            locResultFiles = []
+            def find_locs(name):
+                """Finds localization files matching the name pattern."""
+                if (searchString in name) and ('table' not in name):
+                    locResultFiles.append(name)
+            f.visit(find_locs)
+        finally:
+            f.close()
+        
+        locResults = list(map(Path, locResultFiles))
+        return locResults

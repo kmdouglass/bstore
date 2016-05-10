@@ -227,6 +227,9 @@ class HDFDatabase(Database):
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
         
+        # TODO: Check that the pretty printer makes sense so that
+        # the dry run is useful.        
+        
         # Ensure that locResults get put first so the metadata has
         # a place to go
         for dataset in files['locResults']:

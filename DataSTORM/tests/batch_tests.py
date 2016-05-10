@@ -11,13 +11,14 @@ __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools import *
 from pathlib    import Path
-from DataSTORM.batch import CSVBatchProcessor
+from DataSTORM.batch import CSVBatchProcessor, HDFBatchProcessor
 from DataSTORM import processors as proc
 import shutil
 import pandas as pd
 
 # Update this to point towards the test data on your system or network
 pathToTestData = Path('/home/douglass/ownCloud/test-data/Telomeres_Knockdowns')
+assert pathToTestData.exists(), 'Test data could not be found.'
 
 # Build the test batch processors
 outputDir  = Path('tests/test_files/batch_test_results/')
@@ -28,10 +29,15 @@ cleanup    = proc.CleanUp()
 locFilter1 = proc.Filter('loglikelihood', '<', 250)
 locFilter2 = proc.Filter('sigma [nm]',    '<', 180)
 pipeline   = [cleanup, locFilter1, locFilter2]
-bp         = CSVBatchProcessor(pathToTestData, pipeline,
+bpCSV      = CSVBatchProcessor(pathToTestData, pipeline,
                                useSameFolder   = False,
                                suffix          = 'locResults.dat',
                                outputDirectory = outputDir)
+
+inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
+locFilter1 = proc.Filter('loglikelihood', '<', 800)
+pipeline   = [locFilter1, locFilter2]                               
+bpHDF      = HDFBatchProcessor(inputDB, pipeline)
 
 def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.
@@ -42,9 +48,9 @@ def test_CSVBatchProcessor_DatasetParser():
                      'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults.dat',
                      'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults.dat']
                      
-    assert_equal(len(bp.datasetList), 4)
+    assert_equal(len(bpCSV.datasetList), 4)
                      
-    for ds in bp.datasetList:
+    for ds in bpCSV.datasetList:
         ok_(str(ds.name) in knownDatasets,
             'Batch processor found a file not in the known datasets.')
             
@@ -53,7 +59,7 @@ def test_CSVBatchProcessor_Pipeline():
     
     """
     # Execute the batch process
-    bp.go()
+    bpCSV.go()
     
     # Check the results of the filtering
     results = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults_processed.dat',
@@ -70,3 +76,16 @@ def test_CSVBatchProcessor_Pipeline():
             'Loglikelihood column has wrong values.')
         ok_(df['sigma [nm]'].max()    <= 180,
             'sigma [nm] column has wrong values.')
+            
+def test_HDFBatchProcessor_DatasetParser():
+    """HDFBatchProcessor correctly finds the datasets in the HDF file.
+    
+    """
+    knownDatasets = ['HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0',
+                     'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0']
+                     
+    assert_equal(len(bpHDF.datasetList), 2)
+    
+    for ds in bpHDF.datasetList:
+        ok_(str(ds) in knownDatasets,
+            'Batch processor found a dataset not in the known datasets.')
