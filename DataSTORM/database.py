@@ -470,6 +470,8 @@ class HDFDatabase(Database):
         
         # The put routine varies with atom's dataset type
         # TODO: Check the input DataFrame's columns for compatibility.
+        # TODO: Write test case for key collision when overwriting a widefield
+        # image
         if atom.datasetType == 'locResults':
             try:
                 hdf = HDFStore(self._dbName)

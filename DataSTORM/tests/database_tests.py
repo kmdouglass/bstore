@@ -466,7 +466,7 @@ def test_HDF_Database_Check_Key_Existence_LocResults():
     
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocMetadata():
-    """An error is raised if using a key that already exists for locResults.
+    """An error is raised if using a key that already exists for locMetadata.
     
     """
     dbName   = Path('./tests/test_files/myDB.h5')
