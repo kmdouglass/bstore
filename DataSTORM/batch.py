@@ -243,21 +243,5 @@ class HDFBatchProcessor(BatchProcessor):
             A list of all the localization datasets in the HDF file.
             
         """
-        # Open the hdf file
-        f = h5py.File(inputDirectory, 'r')
-        try:
-            # Extract all localization filesets from the HDF5 file by matching
-            # each group to the search string.
-            # ('table' not in name) excludes the subgroup inside every
-            # processed_localization parent group.
-            locResultFiles = []
-            def find_locs(name):
-                """Finds localization files matching the name pattern."""
-                if (searchString in name) and ('table' not in name):
-                    locResultFiles.append(name)
-            f.visit(find_locs)
-        finally:
-            f.close()
-        
-        locResults = list(map(Path, locResultFiles))
-        return locResults
+        pass
+        #TODO: Reformulate the input parameters

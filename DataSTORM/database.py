@@ -453,6 +453,7 @@ class HDFDatabase(Database):
         if datasetType == 'locMetadata':
             returnDS.data = self._getLocMetadata(hdfKey)
         if datasetType == 'widefieldImage':
+            #TODO: Implement this
             raise NotImplementedError
             
         return returnDS
@@ -506,7 +507,41 @@ class HDFDatabase(Database):
         elif atom.datasetType == 'locMetadata':
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
+            # TODO: widefield images should also have SMLM ID's attached
+            # to their parent groups (not datasets)
             self._putWidefieldImage(atom)
+            
+    def query(self, datasetType = 'locResults'):
+        """Returns a set of database atoms inside this database.
+        
+        TODO: CURRENTLY ATOMS ARE NOT RETURNED; THEY SHOULD BE
+        ALSO, DIFFERENT QUERIES COULD CONCEIVABLY BE MADE
+        
+        """
+        # TODO: Error checking for datasetType        
+        searchString = datasetType
+        
+        # Open the hdf file
+        f = h5py.File(self._dbName, 'r')
+        try:
+            # Extract all localization datasets from the HDF5 file by matching
+            # each group to the search string.
+            # ('table' not in name) excludes the subgroup inside every
+            # processed_localization parent group.
+            locResultGroups = []
+            def find_locs(name):
+                """Finds localization files matching the name pattern."""
+                if (searchString in name) and ('table' not in name):
+                    locResultGroups.append(name)
+            f.visit(find_locs)
+        finally:
+            f.close()
+        
+        # Read attributes of each key in locResultGroups for SMLM_*
+        # and convert them to a datasetAtom ID
+        
+        locResults = list(map(Path, locResultFiles))
+        return locResults
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
