@@ -13,6 +13,7 @@ from nose.tools import *
 from pathlib    import Path
 from DataSTORM.batch import CSVBatchProcessor, HDFBatchProcessor
 from DataSTORM import processors as proc
+from DataSTORM import database   as db
 import shutil
 import pandas as pd
 
@@ -35,10 +36,10 @@ bpCSV      = CSVBatchProcessor(pathToTestData, pipeline,
                                suffix          = 'locResults.dat',
                                outputDirectory = outputDir)
 
-#inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
-#locFilter1 = proc.Filter('loglikelihood', '<', 800)
-#pipeline   = [locFilter1, locFilter2]                               
-#bpHDF      = HDFBatchProcessor(inputDB, pipeline)
+inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
+locFilter1 = proc.Filter('loglikelihood', '<', 800)
+pipeline   = [locFilter1, locFilter2]                               
+bpHDF      = HDFBatchProcessor(inputDB, pipeline)
 
 def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.
@@ -82,12 +83,20 @@ def test_HDFBatchProcessor_DatasetParser():
     """HDFBatchProcessor correctly finds the datasets in the HDF file.
     
     """
-    pass
     #knownDatasets = ['HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0',
     #                 'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0']
-    #                 
-    #assert_equal(len(bpHDF.datasetList), 2)
-    #
-    #for ds in bpHDF.datasetList:
-    #    ok_(str(ds) in knownDatasets,
-    #        'Batch processor found a dataset not in the known datasets.')
+    knownDS = [db.Dataset(1, 'A647', None, (0,),
+                          'HeLaL_Control', None, 'locResults'),
+               db.Dataset(2, 'A647', None, (0,),
+                          'HeLaS_Control', None, 'locResults')]
+                    
+    assert_equal(len(bpHDF.datasetList), 2)
+    
+    # This test might fail if the lists aren't zipped in the right order
+    for currDS, currKnownDS in zip(bpHDF.datasetList, knownDS):
+        assert_equal(currDS.acqID,       currKnownDS.acqID)
+        assert_equal(currDS.channelID,   currKnownDS.channelID)
+        assert_equal(currDS.posID,       currKnownDS.posID)
+        assert_equal(currDS.prefix,      currKnownDS.prefix)
+        assert_equal(currDS.sliceID,     currKnownDS.sliceID)
+        assert_equal(currDS.datasetType, currKnownDS.datasetType)

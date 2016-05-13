@@ -574,12 +574,21 @@ class HDFDatabase(Database):
             
     def query(self, datasetType = 'locResults'):
         """Returns a set of database atoms inside this database.
+
+        Parameters
+        ----------
+        datasetType : str
+            The type of data to search for.
         
-        TODO: CURRENTLY ATOMS ARE NOT RETURNED; THEY SHOULD BE
-        ALSO, DIFFERENT QUERIES COULD CONCEIVABLY BE MADE
+        Returns
+        -------
+        atomicIDs   : list of Dataset
+            All of the atomic ids matching the datasetType
         
         """
-        # TODO: Error checking for datasetType        
+        _checkType(datasetType)
+        assert 'Metadata' not in datasetType, \
+            'Error: Queries cannot be made on metadata.'        
         searchString = datasetType
         
         # Open the hdf file
@@ -589,19 +598,21 @@ class HDFDatabase(Database):
             # each group to the search string.
             # ('table' not in name) excludes the subgroup inside every
             # processed_localization parent group.
-            locResultGroups = []
+            resultGroups = []
             def find_locs(name):
                 """Finds localization files matching the name pattern."""
                 if (searchString in name) and ('table' not in name):
-                    locResultGroups.append(name)
+                    resultGroups.append(name)
             f.visit(find_locs)
         finally:
             f.close()
         
-        # Read attributes of each key in locResultGroups for SMLM_*
+        # Read attributes of each key in resultGroups for SMLM_*
         # and convert them to a datasetAtom ID
-        locResults = list(map(Path, locResultFiles))
-        return locResults
+        resultKeys = list(map(Path, resultGroups))
+        atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
+        
+        return atomicIDs
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.

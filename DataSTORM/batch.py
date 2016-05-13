@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 from abc import ABCMeta, abstractmethod, abstractproperty
 import DataSTORM.processors as dsproc
+import DataSTORM.database   as dsdb
 import trackpy as tp
 import numpy as np
 import h5py
@@ -183,21 +184,22 @@ class HDFBatchProcessor(BatchProcessor):
         
         Parameters
         ----------
-        inputDirectory  : str or Path
-            A string to a directory containg SMLM data files, or a pathlib Path
-            instance to a directory.
+        inputDatabase  : str or Path
+            A string or Path to an HDF database.
         pipeline        : list of Processors
             List of Processor objects to process the data.
         outputDirectory : str or Path (default: 'processed_data')
             Relative path to the folder for saving the processed results.
         searchString    : str         (default: 'locResults')
-            The suffix identifying SMLM data files.
+            The suffix identifying SMLM datasets.
         delimiter       : str         (default: ',')
             Delimiter used to separate entries in the data files.
         
         """
+        # TODO: Check for file's existence
+        db = dsdb.HDFDatabase(inputDatabase)
         try:        
-            self.datasetList = self._parseDatasets(str(inputDatabase), searchString)
+            self.datasetList = db.query(searchString)
             self.pipeline = pipeline
             
             if  not self.pipeline:
@@ -211,10 +213,28 @@ class HDFBatchProcessor(BatchProcessor):
         self._outputDirectory = Path(outputDirectory)
         self._searchString    = searchString
         self._delimiter       = delimiter
+        
+    def _parseDatasets(self, database, searchString = 'locResults'):
+        """Finds all localization datasets in an HDF database.
+        
+        Parameters
+        ----------
+        database : HDFDatabase
+            HDFDatabase containing SMLM data.
+        searchString   : str
+            String identifying the dataset type.
+        
+        Returns
+        -------
+        locResults : list of Path
+            A list of all the localization datasets in the HDF file.
+            
+        """
+        pass
     
     @property
     def datasetList(self):
-        """A list of all pathlib Path objects to the datasets to process.
+        """A list of all datasets to process.
         
         """
         return self._datasetList
@@ -226,22 +246,4 @@ class HDFBatchProcessor(BatchProcessor):
     def go(self):
         pass
     
-    def _parseDatasets(self, inputDirectory, searchString = 'locResults'):
-        """Finds all localization datasets in an HDF database.
-        
-        Parameters
-        ----------
-        inputDirectory : str
-            String of the directory tree containing SMLM data files.
-        searchString   : str  (optional, default: '.dat')
-            Strings identifying localization results. This must be unique to
-            keys containing localization data.
-        
-        Returns
-        -------
-        locResults : list of Path
-            A list of all the localization datasets in the HDF file.
-            
-        """
-        pass
-        #TODO: Reformulate the input parameters
+   
