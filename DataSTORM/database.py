@@ -340,6 +340,10 @@ class HDFDatabase(Database):
         ----------
         atoms  : DatabaseAtom
         
+        Returns
+        -------
+        str
+        
         """
         acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
                     '_' + str(atom.acqID)

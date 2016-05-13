@@ -1,12 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from abc import ABCMeta, abstractmethod, abstractproperty
-import DataSTORM.processors as dsproc
 import DataSTORM.database   as dsdb
-import trackpy as tp
-import numpy as np
-import h5py
-import matplotlib.pyplot as plt
 
 class BatchProcessor(metaclass = ABCMeta):
     """Batch processor metaclass. All batch processors must inherit this.
@@ -175,8 +170,7 @@ class HDFBatchProcessor(BatchProcessor):
                  inputDatabase,
                  pipeline,
                  outputDirectory = 'processed_data',
-                 searchString    = 'locResults',
-                 delimiter       = ','):
+                 searchString    = 'locResults'):
         """Parse the input database by finding SMLM data files.
         
         The constructor parses the HDF database and creates a list of Path
@@ -188,18 +182,16 @@ class HDFBatchProcessor(BatchProcessor):
             A string or Path to an HDF database.
         pipeline        : list of Processors
             List of Processor objects to process the data.
-        outputDirectory : str or Path (default: 'processed_data')
+        outputDirectory : str or Path
             Relative path to the folder for saving the processed results.
-        searchString    : str         (default: 'locResults')
+        searchString    : str
             The suffix identifying SMLM datasets.
-        delimiter       : str         (default: ',')
-            Delimiter used to separate entries in the data files.
         
         """
         # TODO: Check for file's existence
-        db = dsdb.HDFDatabase(inputDatabase)
+        self._db = dsdb.HDFDatabase(inputDatabase)
         try:        
-            self.datasetList = db.query(searchString)
+            self.datasetList = self._db.query(searchString)
             self.pipeline = pipeline
             
             if  not self.pipeline:
@@ -212,25 +204,40 @@ class HDFBatchProcessor(BatchProcessor):
         
         self._outputDirectory = Path(outputDirectory)
         self._searchString    = searchString
-        self._delimiter       = delimiter
         
-    def _parseDatasets(self, database, searchString = 'locResults'):
-        """Finds all localization datasets in an HDF database.
+    def _genFileName(self, atom):
+        """Generate an output file name for a processed dataset atom.
         
         Parameters
         ----------
-        database : HDFDatabase
-            HDFDatabase containing SMLM data.
-        searchString   : str
-            String identifying the dataset type.
+        atoms    : DatabaseAtom
         
         Returns
         -------
-        locResults : list of Path
-            A list of all the localization datasets in the HDF file.
-            
+        fileName : Path
+        
         """
-        pass
+        acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
+                    '_' + str(atom.acqID)
+                                 
+        otherIDs = ''
+        if atom.channelID is not None:
+            otherIDs += '_' + atom.channelID
+        if atom.posID is not None:
+            if len(atom.posID) == 1:
+                posID = atom.posID[0]    
+                otherIDs += '_Pos{:d}'.format(posID)
+            else:
+                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(atom.posID[0], 
+                                                            atom.posID[1])
+        if atom.sliceID is not None:
+            otherIDs += '_Slice{:d}'.format(atom.sliceID)
+        
+        assert atom.datasetType != 'locMetadata', \
+            'Error: locMetadata is not processed in batch.'
+        fileName = acqKey + '/locResults' + otherIDs
+            
+        return Path(fileName)
     
     @property
     def datasetList(self):
@@ -244,6 +251,44 @@ class HDFBatchProcessor(BatchProcessor):
         self._datasetList = paths
     
     def go(self):
-        pass
+        if (not self._outputDirectory.exists()):
+            print('Output directory does not exist. Creating it...')
+            self._outputDirectory.mkdir()
+            print('Created folder {:s}'.format(
+                                         str(self._outputDirectory.resolve())))
+        else:
+            raise ProcessedFolderExists(('Error: the output directory already '
+                'exists. Please remove it or choose a new directory.'))
+                                         
+        # Perform batch processing on all datasets
+        for currDataset in self.datasetList:
+            
+            atom = self._db.get(currDataset)
+            df = atom.data
+            
+            # Run each processor on the DataFrame
+            for proc in self.pipeline:
+                df = proc(df)
+            
+            # Save the final DataFrame
+            outputFile = self._genFileName(atom)
+            if not outputFile.parent.exists():
+                outputFile.parent.mkdir()
+            
+            outputFileString = str(outputFile) + '.csv'
+            
+            # Output the results to a file.
+            # This will overwrite any existing files (mode = 'w').
+            df.to_csv(outputFileString,
+                      sep   = ',',
+                      mode  = 'w',
+                      index = False)
+                      
+class ProcessedFolderExists(Exception):
+    """Attempting to write processed output to an existing folder.
     
-   
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
