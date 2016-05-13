@@ -83,8 +83,6 @@ def test_HDFBatchProcessor_DatasetParser():
     """HDFBatchProcessor correctly finds the datasets in the HDF file.
     
     """
-    #knownDatasets = ['HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0',
-    #                 'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0']
     knownDS = [db.Dataset(1, 'A647', None, (0,),
                           'HeLaL_Control', None, 'locResults'),
                db.Dataset(2, 'A647', None, (0,),

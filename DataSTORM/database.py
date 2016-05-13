@@ -111,13 +111,6 @@ class Database(metaclass = ABCMeta):
         self._dbName = dbName
     
     @abstractmethod
-    def append(self):
-        """Append data to a database atom.
-        
-        """
-        pass
-    
-    @abstractmethod
     def build(self):
         """Create new database from a list of atoms.
         
@@ -134,6 +127,13 @@ class Database(metaclass = ABCMeta):
     @abstractmethod
     def put(self):
         """Place a database atom into the database.
+        
+        """
+        pass
+    
+    @abstractmethod
+    def query(self):
+        """Return a list of atoms in the database.
         
         """
         pass
@@ -186,9 +186,6 @@ class HDFDatabase(Database):
     @property
     def atomPrefix(self):
         return config.__HDF_AtomID_Prefix__
-    
-    def append(self):
-        raise NotImplementedError
     
     def build(self, parser, searchDirectory, dryRun = False,
               locResultsString     = 'locResults.dat',
@@ -310,10 +307,6 @@ class HDFDatabase(Database):
         assert (len(channelID) <= 1), channelID
         try:
             channelID       = channelID[0]
-            channelIDString = re.search(r'((\_' + channelID +              \
-                                            ')\_?$)|((^\_)?' + channelID + \
-                                            '(\_)?)',
-                                        otherIDs)
         except IndexError:
             # When there is no channel identifier found, set it to None
             channelID = None

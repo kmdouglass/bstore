@@ -166,9 +166,6 @@ def test_Database_CompleteSubclass():
     
     """
     class Database(database.Database):
-                                                
-        def append(self):
-            pass
         
         def build(self):
             pass
@@ -177,6 +174,9 @@ def test_Database_CompleteSubclass():
             pass
 
         def put(self):
+            pass
+        
+        def query(self):
             pass
     
     dbName = 'myDB.h5'
