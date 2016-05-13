@@ -6,6 +6,7 @@ import json
 import DataSTORM.config as config
 import sys
 import pprint
+import re
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -278,9 +279,69 @@ class HDFDatabase(Database):
         except IOError as e:
             print('Error: Could not open file.')
             print(e.args)
+            
+    def _genAtomicID(self, key):
+        """Generates an atomic ID from a HDF key. The inverse of _genKey.
+        
+        Parameters
+        ----------
+        key : str
+            A key pointing to a dataset in the HDF file.
+            
+        Returns
+        -------
+        returnDS : Dataset
+            The ID's of one database atom. No data is returned or read,
+            just the ID information.
+            
+        """
+        
+        # Parse key for atomic IDs
+        splitStr    = key.split(sep = '/')
+        prefix      = splitStr[0]
+        acqID       = int(splitStr[1].split(sep = '_')[-1])
+        
+        otherIDs    = splitStr[2]
+        datasetType = otherIDs.split('_')[0]
+        data        = None
+        
+        channelID = [channel for channel in config.channelIdentifier.keys()
+                             if channel in otherIDs]
+        assert (len(channelID) <= 1), channelID
+        try:
+            channelID       = channelID[0]
+            channelIDString = re.search(r'((\_' + channelID +              \
+                                            ')\_?$)|((^\_)?' + channelID + \
+                                            '(\_)?)',
+                                        otherIDs)
+        except IndexError:
+            # When there is no channel identifier found, set it to None
+            channelID = None
+        
+        # Obtain the position ID using regular expressions
+        # First, extract strings like 'Pos0' or 'Pos_003_002
+        positionRaw = re.search(r'Pos\_\d{1,3}\_\d{1,3}|Pos\d{1,}', otherIDs)
+        if positionRaw == None:
+            posID = None
+        else:
+            # Next, extract the digits and convert them to a tuple
+            indexes = re.findall(r'\d{1,}', positionRaw.group(0))
+            posID   = tuple([int(index) for index in indexes])
+        
+        # Obtain the slice ID if it exists
+        sliceRaw = re.search(r'Slice\d+', otherIDs)
+        if sliceRaw == None:
+            sliceID = None
+        else:
+            index = re.findall(r'\d+', sliceRaw.group(0))
+            sliceID = int(index[0])
+        
+        returnDS = Dataset(acqID, channelID, data, posID,
+                           prefix, sliceID, datasetType)
+        return returnDS
 
     def _genKey(self, atom):
-        """Generate a key name for a dataset atom.
+        """Generate a key name for a dataset atom. The inverse of _genAtomicID.
         
         Parameters
         ----------
@@ -410,7 +471,7 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        dsID  : dict or DatabaseAtom
+        dsID       : dict or DatabaseAtom
             Either key-value pairs uniquely identifying the dataset in
             the database or a DatabaseAtom with a possibly empty 'data'
             field that may be used to identify the dataset.
@@ -539,7 +600,6 @@ class HDFDatabase(Database):
         
         # Read attributes of each key in locResultGroups for SMLM_*
         # and convert them to a datasetAtom ID
-        
         locResults = list(map(Path, locResultFiles))
         return locResults
             

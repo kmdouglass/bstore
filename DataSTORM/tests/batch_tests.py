@@ -17,7 +17,8 @@ import shutil
 import pandas as pd
 
 # Update this to point towards the test data on your system or network
-pathToTestData = Path('/home/douglass/ownCloud/test-data/Telomeres_Knockdowns')
+pathToTestData = Path(('/home/kmdouglass/ownCloud/'
+                       'test-data/Telomeres_Knockdowns'))
 assert pathToTestData.exists(), 'Test data could not be found.'
 
 # Build the test batch processors
@@ -34,10 +35,10 @@ bpCSV      = CSVBatchProcessor(pathToTestData, pipeline,
                                suffix          = 'locResults.dat',
                                outputDirectory = outputDir)
 
-inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
-locFilter1 = proc.Filter('loglikelihood', '<', 800)
-pipeline   = [locFilter1, locFilter2]                               
-bpHDF      = HDFBatchProcessor(inputDB, pipeline)
+#inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
+#locFilter1 = proc.Filter('loglikelihood', '<', 800)
+#pipeline   = [locFilter1, locFilter2]                               
+#bpHDF      = HDFBatchProcessor(inputDB, pipeline)
 
 def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.

@@ -528,3 +528,37 @@ def test_HDF_Database_Build():
     
     # Remove test database file
     remove(str(dbName))
+    
+def test_HDF_Database_GenAtomicID():
+    """The database can generate the proper atomic IDs from input keys.
+    
+    """
+    myDB = database.HDFDatabase('')
+    
+    testKey1 = 'HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0'
+    id1      = myDB._genAtomicID(testKey1)
+    assert_equal(id1.acqID,                  1)
+    assert_equal(id1.channelID,         'A647')
+    assert_equal(id1.posID,               (0,))
+    assert_equal(id1.prefix,   'HeLaL_Control')
+    assert_equal(id1.sliceID,             None)
+    assert_equal(id1.datasetType, 'locResults')
+    
+    testKey2 = ('HeLaL_Control_WT/HeLaL_Control_WT_1/'
+                'locResults_A750_Pos_001_021_Slice23')
+    id2      = myDB._genAtomicID(testKey2)
+    assert_equal(id2.acqID,                   1)
+    assert_equal(id2.channelID,          'A750')
+    assert_equal(id2.posID,              (1,21))
+    assert_equal(id2.prefix, 'HeLaL_Control_WT')
+    assert_equal(id2.sliceID,                23)
+    assert_equal(id2.datasetType,  'locResults')
+    
+    testKey3 = 'HeLa/HeLaL_14/locResults_Slice5'
+    id3      = myDB._genAtomicID(testKey3)
+    assert_equal(id3.acqID,                 14)
+    assert_equal(id3.channelID,           None)
+    assert_equal(id3.posID,               None)
+    assert_equal(id3.prefix,            'HeLa')
+    assert_equal(id3.sliceID,                5)
+    assert_equal(id3.datasetType, 'locResults')

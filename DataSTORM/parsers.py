@@ -322,7 +322,7 @@ class MMParser(Parser):
             indexes = re.findall(r'\d{1,}', positionRaw.group(0))
             posID   = tuple([int(index) for index in indexes])
         
-        # FUTURE IMPLEMENTATION        
+        # TODO: Copy this part from database._genAtomicID and write tests       
         sliceID = None
         
         return acqID, channelID, posID, prefix, sliceID
