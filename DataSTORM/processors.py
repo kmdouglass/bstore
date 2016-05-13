@@ -1149,9 +1149,9 @@ class FormatSTORM:
         ts2leb['y [nm]']             = 'y'
         ts2leb['z [nm]']             = 'z'
         ts2leb['frame']              = 'frame'
-        ts2leb['uncertainty [nm]']   = 'precision'
+        ts2leb['uncertainty [nm]']   = 'uncertainty' # formerly precision
         ts2leb['intensity [photon]'] = 'photons'
-        ts2leb['offset [photon]']    = 'bg'
+        ts2leb['offset [photon]']    = 'offset'      # formerly bg
         ts2leb['loglikelihood']      = 'loglikelihood'
         ts2leb['sigma [nm]']         = 'sigma'
         ts2leb['dx [nm]']            = 'dx'

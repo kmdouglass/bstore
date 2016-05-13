@@ -7,6 +7,7 @@ import DataSTORM.config as config
 import sys
 import pprint
 import re
+import warnings
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -237,8 +238,7 @@ class HDFDatabase(Database):
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
         
-        # TODO: Check that the pretty printer makes sense so that
-        # the dry run is useful.        
+        # TODO: Add length of atoms to the output of the pretty printer        
         
         # Ensure that locResults get put first so the metadata has
         # a place to go
@@ -449,9 +449,9 @@ class HDFDatabase(Database):
                 hdf[dataset].attrs[attrKey] = attrVal
         except KeyError:
             # Raised when the hdf5 key does not exist in the database.
-            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
-                                        'No localization results exist with '
-                                        'these atomic IDs.'))
+            warnings.warn(('Error: Cannot not append metadata. No localization '
+                           'results exist with these atomic IDs.'))
+            warnings.warn(json.dumps(atom.getInfoDict()))
         finally:
             hdf.close()
             

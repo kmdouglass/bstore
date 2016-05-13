@@ -6,6 +6,7 @@ from DataSTORM import database
 import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
+from DataSTORM import processors as proc
 
 class Parser(metaclass = ABCMeta):
     """Creates machine-readable data structures with acquisition info.
@@ -118,7 +119,7 @@ class MMParser(Parser):
     data              : The actual data that will be returned when called.
     
     """
-    
+    # TODO: Move this to config.py
     # This dictionary contains all the channel identifiers MMParser
     # knows natively
     channelIdentifier = {'A488' : 'AlexaFluor 488',
@@ -145,8 +146,14 @@ class MMParser(Parser):
             # chance that large DataFrames do not needlessly
             # remain in memory.
             # TODO: Convert headers to LEB file format
+            # What follows is a hack and MUST be changed (it's not generic).
             with open(str(self._fullPath), 'r') as file:            
-                return pd.read_csv(file)
+                df = pd.read_csv(file)
+                cleaner = proc.CleanUp()
+                converter = proc.ConvertHeader(proc.FormatThunderSTORM(),
+                                               proc.FormatLEB())
+                procdf = converter(cleaner(df))
+                return procdf
         elif self.datasetType == 'locMetadata':
             # self._metadata is set by self._parseLocMetadata
             return self._metadata
