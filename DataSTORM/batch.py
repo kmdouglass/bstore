@@ -14,10 +14,6 @@ class BatchProcessor(metaclass = ABCMeta):
     @abstractmethod
     def go(self):
         pass
-    
-    @abstractmethod
-    def _parseDatasets(self):
-        pass
 
 class CSVBatchProcessor(BatchProcessor):
     """Batch processing and saving for SMLM data in CSV files.
@@ -270,8 +266,10 @@ class HDFBatchProcessor(BatchProcessor):
             for proc in self.pipeline:
                 df = proc(df)
             
-            # Save the final DataFrame
-            outputFile = self._genFileName(atom)
+            # Build the directory structure
+            outputFile = self._outputDirectory / self._genFileName(atom)
+            if not outputFile.parent.parent.exists():
+                outputFile.parent.parent.mkdir()
             if not outputFile.parent.exists():
                 outputFile.parent.mkdir()
             

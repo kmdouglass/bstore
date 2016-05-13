@@ -36,10 +36,16 @@ bpCSV      = CSVBatchProcessor(pathToTestData, pipeline,
                                suffix          = 'locResults.dat',
                                outputDirectory = outputDir)
 
+outputDirHDF  = outputDir / Path('HDFBatch_test_results/')
+if outputDirHDF.exists():
+    shutil.rmtree(str(outputDirHDF))
+    
 inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
 locFilter1 = proc.Filter('loglikelihood', '<', 800)
+locFilter2 = proc.Filter('sigma',         '<', 200)
 pipeline   = [locFilter1, locFilter2]                               
-bpHDF      = HDFBatchProcessor(inputDB, pipeline)
+bpHDF      = HDFBatchProcessor(inputDB, pipeline,
+                               outputDirectory = outputDirHDF)
 
 def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.
@@ -98,3 +104,23 @@ def test_HDFBatchProcessor_DatasetParser():
         assert_equal(currDS.prefix,      currKnownDS.prefix)
         assert_equal(currDS.sliceID,     currKnownDS.sliceID)
         assert_equal(currDS.datasetType, currKnownDS.datasetType)
+        
+def test_HDFBatchProcess_Go():
+    """Batch processor properly executes a pipeline.
+    
+    """
+    bpHDF.go()
+    
+    results = [outputDirHDF / \
+                Path('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0.csv'),
+               outputDirHDF / \
+                Path('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0.csv')]
+                
+    for currRes in results:
+        df = pd.read_csv(str(currRes))
+        
+         # Verify that filters were applied during the processing
+        ok_(df['loglikelihood'].max() <= 800,
+            'Loglikelihood column has wrong values.')
+        ok_(df['sigma'].max()         <= 200,
+            'sigma column has wrong values.')
