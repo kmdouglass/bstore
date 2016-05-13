@@ -1,7 +1,8 @@
 import pandas as pd
 from pathlib import Path
 from abc import ABCMeta, abstractmethod, abstractproperty
-import DataSTORM.database   as dsdb
+import DataSTORM.database as dsdb
+import json
 
 class BatchProcessor(metaclass = ABCMeta):
     """Batch processor metaclass. All batch processors must inherit this.
@@ -235,6 +236,18 @@ class HDFBatchProcessor(BatchProcessor):
             
         return Path(fileName)
     
+    def _writeAtomicIDs(self, filename, atom):
+        """Writes the atomic ID information to a text file.
+        
+        Parameters
+        ----------
+        filename : str
+        atom     : Dataset
+        """
+        atomicIDs = atom.getInfoDict()
+        with open(filename, 'w') as outfile:
+            json.dump(atomicIDs, outfile)
+    
     @property
     def datasetList(self):
         """A list of all datasets to process.
@@ -281,6 +294,10 @@ class HDFBatchProcessor(BatchProcessor):
                       sep   = ',',
                       mode  = 'w',
                       index = False)
+                      
+            # Write the database atomic IDs to the same folder
+            idFilename = str(outputFile) + '.json'
+            self._writeAtomicIDs(idFilename, currDataset)
                       
 class ProcessedFolderExists(Exception):
     """Attempting to write processed output to an existing folder.

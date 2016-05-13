@@ -16,9 +16,10 @@ from DataSTORM import processors as proc
 from DataSTORM import database   as db
 import shutil
 import pandas as pd
+import json
 
 # Update this to point towards the test data on your system or network
-pathToTestData = Path(('/home/kmdouglass/ownCloud/'
+pathToTestData = Path(('/home/douglass/ownCloud/'
                        'test-data/Telomeres_Knockdowns'))
 assert pathToTestData.exists(), 'Test data could not be found.'
 
@@ -119,8 +120,38 @@ def test_HDFBatchProcess_Go():
     for currRes in results:
         df = pd.read_csv(str(currRes))
         
-         # Verify that filters were applied during the processing
+        # Verify that filters were applied during the processing
         ok_(df['loglikelihood'].max() <= 800,
             'Loglikelihood column has wrong values.')
         ok_(df['sigma'].max()         <= 200,
             'sigma column has wrong values.')
+    
+    # Verify that the atomic ID information was written correctly        
+    atomIDs = [outputDirHDF / \
+               Path('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0.json'),
+               outputDirHDF / \
+               Path('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0.json')]
+               
+    with open(str(atomIDs[0]), 'r') as infile:        
+        info = json.load(infile)
+    
+    # This is necessary because JSON has no tuple datatype
+    info['posID'] = tuple(info['posID'])
+        
+    assert_equal(info['acqID'],                  1)
+    assert_equal(info['channelID'],         'A647')
+    assert_equal(info['posID'],               (0,))
+    assert_equal(info['prefix'],   'HeLaL_Control')
+    assert_equal(info['sliceID'],             None)
+    assert_equal(info['datasetType'], 'locResults')
+    
+    with open(str(atomIDs[1]), 'r') as infile:        
+        info = json.load(infile)
+    info['posID'] = tuple(info['posID'])
+    
+    assert_equal(info['acqID'],                  2)
+    assert_equal(info['channelID'],         'A647')
+    assert_equal(info['posID'],               (0,))
+    assert_equal(info['prefix'],   'HeLaS_Control')
+    assert_equal(info['sliceID'],             None)
+    assert_equal(info['datasetType'], 'locResults')

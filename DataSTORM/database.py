@@ -60,6 +60,18 @@ class DatabaseAtom(metaclass = ABCMeta):
         """
         return self._acqID, self._channelID, self._posID, \
                self._prefix, self._sliceID, self._datasetType
+               
+    def getInfoDict(self):
+        """Returns the dataset information (without the data) as a dict.
+        
+        """
+        atomicIDs = {'acqID'       : self._acqID,
+                     'channelID'   : self._channelID,
+                     'posID'       : self._posID,
+                     'prefix'      : self._prefix,
+                     'sliceID'     : self._sliceID,
+                     'datasetType' : self._datasetType}
+        return atomicIDs
         
     @abstractproperty
     def acqID(self):
