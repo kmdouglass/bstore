@@ -12,6 +12,7 @@ import pandas            as pd
 import numpy             as np
 import matplotlib.pyplot as plt
 import DataSTORM.batch   as bp
+import warnings
 
 class OverlayClusters:
     """Produces overlays of clustered localizations on widefield images.
@@ -26,7 +27,7 @@ class OverlayClusters:
     or reject clusters for analysis. For this, a secondary DataFrame whose
     index matches the clusters' numeric IDs is used. Typically, this DataFrame 
     will record the statistics for each cluster, such as the radius of
-    gyration.Rejecting a cluster sets the value in the 'switchColumn' of the
+    gyration. Rejecting a cluster sets the value in the 'switchColumn' of the
     new DataFrame to False. Accepting it sets it to True.
     """
     def __init__(self,
@@ -62,7 +63,8 @@ class OverlayClusters:
         self._ax1           = None
         self._clusterLocs   = None
     
-    def __call__(self, locs, wfImage = None, stats = None, numberFilter = None, columnFilter = None):
+    def __call__(self, locs, wfImage = None, stats = None,
+                 numberFilter = None, columnFilter = None):
         """Overlay the localizations onto the widefield image.
         
         This opens an interactive matplotlib window that shows the full overlay
@@ -102,9 +104,6 @@ class OverlayClusters:
             # A slice of the localization DataFrame is made here;
             # The original is not overwritten.
             stats.loc[stats['number_of_localizations'] <= numberFilter, self._switchColumn] = False
-            
-        # Ensure that the noise cluster is removed from the analysis
-        stats.loc[-1, self._switchColumn] = False
         
         # Apply the column filter, if it exists
         if columnFilter is not None:
@@ -236,14 +235,15 @@ class OverlayClusters:
         self._ax0 = ax0
         self._ax1 = ax1    
         
-        # Draw the cluster centers ([1:] excludes the noise cluster)
+        # Draw the cluster centers
         ax0.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
                    #vmin          = np.max(wfImage) / 6,
                    vmax          = np.max(wfImage) / 2)
-        ax0.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'][1:] / self._pixelSize,
-                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'][1:] / self._pixelSize,
+                   #vmax          = np.max(wfImage) / 25)
+        ax0.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'] / self._pixelSize,
+                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'] / self._pixelSize,
                     s     = 1,
                     color = 'white')
         self._clusterCenter, = ax0.plot([],
@@ -266,14 +266,16 @@ class OverlayClusters:
                    cmap          = 'inferno',
                    interpolation = 'nearest',
                    vmax          = np.max(wfImage) / 2)
+                   #vmax          = np.max(wfImage) / 25)
         # Plot unclustered localizations
         ax1.scatter(locs[locs['cluster_id'] == -1]['x'] / self._pixelSize,
                     locs[locs['cluster_id'] == -1]['y'] / self._pixelSize,
                     s = 4,
                     color = 'white')
+        
         # Plot the cluster centers
-        ax1.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'][1:] / self._pixelSize,
-                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'][1:] / self._pixelSize,
+        ax1.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'] / self._pixelSize,
+                    stats.loc[stats['keep_for_analysis'] != False, 'y_center'] / self._pixelSize,
                     s     = 30,
                     color = 'green')
         ax1.set_xlabel('x-position, pixel')

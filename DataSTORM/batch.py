@@ -110,7 +110,7 @@ class CSVBatchProcessor(BatchProcessor):
             else:
                 fileStem = self._outputDirectory / file.stem
                 
-            outputFile = str(fileStem) + '_' + processedFlag + '.dat'
+            outputFile = str(fileStem) + '_' + processedFlag + '.csv'
             
             # Output the results to a file.
             # This will overwrite any existing files (mode = 'w').

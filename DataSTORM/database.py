@@ -424,6 +424,27 @@ class HDFDatabase(Database):
             hdf.close()
             
         return md
+        
+    def _getWidefieldImage(self, hdfKey):
+        """Returns the widefield image at the specified key.
+        
+        Parameters
+        ----------
+        hdfKey : str
+            The key in the hdf file containing the image.
+        
+        Returns
+        -------
+        img    : array of int
+            The 2D image.
+        
+        """
+        try:
+            file = h5py.File(self._dbName, mode = 'r')
+            img  = file[hdfKey].value
+            return img
+        finally:
+            file.close()
     
     def _putLocMetadata(self, atom):
         """Writes localization metadata into the database.
@@ -523,8 +544,9 @@ class HDFDatabase(Database):
         if datasetType == 'locMetadata':
             returnDS.data = self._getLocMetadata(hdfKey)
         if datasetType == 'widefieldImage':
-            #TODO: Implement this
-            raise NotImplementedError
+            #TODO: Write test case for this
+            hdfKey = hdfKey + '/widefield_' + channelID
+            returnDS.data = self._getWidefieldImage(hdfKey)
             
         return returnDS
         

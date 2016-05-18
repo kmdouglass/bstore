@@ -150,7 +150,7 @@ class ComputeClusterStats:
         """Set the column name for the cluster ID numbers.
         
         """
-        # TO IMPLEMENT: coordCols = ['x', 'y']
+        # TODO: coordCols = ['x', 'y']
         self._idLabel   = idLabel
     
     def __call__(self, df):
@@ -204,7 +204,11 @@ class ComputeClusterStats:
                       tempResultsEcc,
                       tempResultsCHull,
                       tempResultsKeep)
+                      
         procdf = pd.concat(dataToJoin, axis = 1)
+        
+        # Convert the cluster_id index to a column
+        procdf.reset_index(level = ['cluster_id'], inplace = True)
                                                      
         return procdf
     
@@ -1311,7 +1315,7 @@ class Merge:
         tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
                                                      'frame'         : 'min',
                                                      'photons'       : 'sum',
-                                                     'bg'            : 'sum',
+                                                     'offset'        : 'sum',
                                                      'sigma'         : 'mean'})
         tempResultsLength      = pd.Series(particleGroups.size())
 
