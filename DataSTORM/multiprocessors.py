@@ -239,9 +239,9 @@ class OverlayClusters:
         ax0.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
-                   #vmin          = np.max(wfImage) / 6,
+                   #vmin          = np.max(wfImage) / 3,
                    vmax          = np.max(wfImage) / 2)
-                   #vmax          = np.max(wfImage) / 25)
+                   #vmax          = np.max(wfImage))
         ax0.scatter(stats.loc[stats['keep_for_analysis'] != False, 'x_center'] / self._pixelSize,
                     stats.loc[stats['keep_for_analysis'] != False, 'y_center'] / self._pixelSize,
                     s     = 1,
@@ -265,8 +265,9 @@ class OverlayClusters:
         ax1.imshow(wfImage,
                    cmap          = 'inferno',
                    interpolation = 'nearest',
+                   #vmin          = np.max(wfImage) / 3,
                    vmax          = np.max(wfImage) / 2)
-                   #vmax          = np.max(wfImage) / 25)
+                   #vmax          = np.max(wfImage))
         # Plot unclustered localizations
         ax1.scatter(locs[locs['cluster_id'] == -1]['x'] / self._pixelSize,
                     locs[locs['cluster_id'] == -1]['y'] / self._pixelSize,
