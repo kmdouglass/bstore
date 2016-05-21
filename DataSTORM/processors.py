@@ -3,7 +3,7 @@ import trackpy           as tp
 import numpy             as np
 import matplotlib.pyplot as plt
 import re
-
+from abc                import ABCMeta, abstractmethod
 from pathlib            import Path
 from sklearn.cluster    import DBSCAN
 from operator           import *
@@ -1153,15 +1153,16 @@ class FormatSTORM:
         ts2leb['y [nm]']             = 'y'
         ts2leb['z [nm]']             = 'z'
         ts2leb['frame']              = 'frame'
-        ts2leb['uncertainty [nm]']   = 'uncertainty' # formerly precision
+        ts2leb['uncertainty [nm]']   = 'precision'
         ts2leb['intensity [photon]'] = 'photons'
-        ts2leb['offset [photon]']    = 'offset'      # formerly bg
+        ts2leb['offset [photon]']    = 'background'      # formerly bg
         ts2leb['loglikelihood']      = 'loglikelihood'
         ts2leb['sigma [nm]']         = 'sigma'
         ts2leb['dx [nm]']            = 'dx'
         ts2leb['dy [nm]']            = 'dy'
         ts2leb['length [frames]']    = 'length'
         ts2leb['cluster_id']         = 'cluster_id'
+        ts2leb['particle']           = 'particle'
         ts2leb['identifier']         = 'TSLEB'
         self.ts2leb                  = ts2leb
 
@@ -1216,9 +1217,10 @@ class Merge:
     
     """
     def __init__(self,
-                 autoFindMergeRadius = True,
                  tOff                = 1,
                  mergeRadius         = 50,
+                 autoFindMergeRadius = False,
+                 statsComputer       = None,
                  precisionColumn     = 'precision'):
         """Set or calculate the merge radius and set the off time.
         
@@ -1229,7 +1231,7 @@ class Merge:
         
         Parameters
         ----------
-        autoFindMergeRadius : bool (default: True)
+        autoFindMergeRadius : bool (default: False)
             If True, this will set the merge radius to three times the mean
             localization precision in the dataset.
         tOff                : int
@@ -1238,6 +1240,12 @@ class Merge:
             The maximum distance between localizations in space for them to be
             considered as one. Units are the same as x, y, and z. This is
             ignored if autoFindMergeRadius is True.
+        statsComputer       : MergeStats
+            Instance of a concrete MergeStats class for computing the
+            merged localization statistics. statsComputer is None by default,
+            which means that only particle ID's will be appended to the
+            DataFrame and merged statistics will not be calculated. This
+            allows handling of custom DataFrame columns and statistics.
         precisionColumn     : str (default: 'precision')
             The name of the column containing the localization precision. This
             is ignored if autoFindMergeRadius is False.
@@ -1245,6 +1253,7 @@ class Merge:
         self._autoFindMergeRadius = autoFindMergeRadius
         self._tOff                = tOff
         self._mergeRadius         = mergeRadius
+        self._statsComputer       = statsComputer
         self._precisionColumn     = precisionColumn
     
     def __call__(self, df):
@@ -1265,15 +1274,6 @@ class Merge:
             A DataFrame object with the merged localizations.
         
         """
-        # Convert header if necessary
-        if 'x [nm]' in df.columns:
-            convertedHeader = True
-            
-            conv = ConvertHeader(FormatThunderSTORM(), FormatLEB())
-            df   = conv(df)
-        else:
-            convertedHeader = False
-        
         if self._autoFindMergeRadius:
             mergeRadius = 3 * df[self._precisionColumn].mean()
         else:
@@ -1282,26 +1282,67 @@ class Merge:
         # Track individual localization trajectories
         dfTracked = tp.link_df(df, mergeRadius, self._tOff)
         
-        # Group the localizations by particle track ID
-        particleGroups = dfTracked.groupby('particle')
-        
         # Compute the statistics for each group of localizations
-        procdf = self.calcGroupStats(particleGroups)
-
-        # Convert the header back to the ThunderSTORM format
-        if convertedHeader:
-            invconv = ConvertHeader(FormatLEB(), FormatThunderSTORM())
-            procdf  = invconv(procdf)
+        if self._statsComputer:
+            # Return a DataFrame containing merged statistics
+            procdf = self._statsComputer.computeStatistics(dfTracked)
+        else:
+            # Return the original DataFrame with a new particle id column
+            procdf = dfTracked
         
         return procdf
         
-    def calcGroupStats(self, particleGroups):
+class MergeStats(metaclass = ABCMeta):
+    @abstractmethod
+    def computeStatistics(self):
+        """Computes the merged molecule statistics.
+        
+        """
+        pass
+    
+    def _wAvg(self, group, coordinate, photonsCol = 'photons'):
+        """Perform a photon-weighted average over positions.
+        
+        This helper function computes the average of all numbers in the
+        'coordinate' column when applied to a Pandas GroupBy object.
+        
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations.
+        coordinate : str
+            Column label for the coordinate over which to compute the weighted
+            average for a particular group.
+        photonsCol : str
+            Column label for the photons column.
+        
+        Returns
+        -------
+        wAvg : float
+            The weighted average over the grouped data in 'coordinate',
+            weighted by the square root of values in the 'photons' column.
+        """
+        positions = group[coordinate]
+        photons   = group[photonsCol]
+        
+        wAvg = (positions * photons.apply(np.sqrt)).sum() \
+               / photons.apply(np.sqrt).sum()
+               
+        return wAvg
+        
+class MergeFang(MergeStats):
+    """Merger for localizations computed from Fang's sCMOS MLE software.
+    
+    """
+    def computeStatistics(self, df, particleCol = 'particle'):
         """Calculates the statistics of the linked trajectories.
         
         Parameters
         ----------
-        group  : Pandas GroupBy
-            The linked localizations.
+        df          : Pandas DataFrame
+            DataFrame containing linked localizations.
+        particleCol : str
+            The name of column containing the merged partice ID's.
             
         Returns
         -------
@@ -1309,16 +1350,18 @@ class Merge:
             DataFrame containing the fully merged localizations.
             
         """
+        particleGroups         = df.groupby(particleCol)        
+        
         tempResultsX           = particleGroups.apply(self._wAvg, 'x')
         tempResultsY           = particleGroups.apply(self._wAvg, 'y')
         tempResultsZ           = particleGroups.apply(self._wAvg, 'z')
         tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
                                                      'frame'         : 'min',
                                                      'photons'       : 'sum',
-                                                     'offset'        : 'sum',
+                                                     'background'    : 'sum',
                                                      'sigma'         : 'mean'})
         tempResultsLength      = pd.Series(particleGroups.size())
-
+    
         # Rename the series
         tempResultsX.name      = 'x'
         tempResultsY.name      = 'y'
@@ -1334,34 +1377,6 @@ class Merge:
         procdf = pd.concat(dataToJoin, axis = 1)
         
         return procdf
-        
-    def _wAvg(self, group, coordinate):
-        """Perform a photon-weighted average over positions.
-        
-        This helper function computes the average of all numbers in the
-        'coordinate' column when applied to a Pandas GroupBy object.
-        
-        Parameters
-        ----------
-        group : Pandas GroupBy
-            The merged localizations.
-        coordinate : str
-            Column label for the coordinate over which to compute the weighted
-            average for a particular group.
-        
-        Returns
-        -------
-        wAvg : float
-            The weighted average over the grouped data in 'coordinate',
-            weighted by the square root of values in the 'photons' column.
-        """
-        positions = group[coordinate]
-        photons   = group['photons']
-        
-        wAvg = (positions * photons.apply(np.sqrt)).sum() \
-               / photons.apply(np.sqrt).sum()
-               
-        return wAvg
         
 class ZeroFiducials(Exception):
     """Raised when zero fiducials are present during drift correction.

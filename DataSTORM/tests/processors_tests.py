@@ -1,8 +1,7 @@
 from nose.tools import *
 from DataSTORM import processors as proc
 import pandas as pd
-import numpy as np
-import sys
+from pathlib import Path
 
 # Load localization + fiducial ground truth test set
 locs = pd.read_csv('tests/test_files/test_localizations_with_fiducials.csv')
@@ -167,3 +166,21 @@ def test_ClusterStats():
     assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
     assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
     assert_equal(stats['convex_hull_area'].iloc[1].round(2),                 8)
+    
+def test_Merger_with_Stats():
+    """Merger correctly merges localizations from the same molecule.
+    
+    """
+    merger         = proc.Merge(mergeRadius = 25,
+                                tOff = 1,
+                                statsComputer = proc.MergeFang())
+    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    
+    with open(str(pathToTestData), mode = 'r') as inFile:
+        df = pd.read_csv(inFile)
+    
+    mergedDF = merger(df)
+    mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')
+    
+    # Localizations should be merged into one resulting localization
+    assert_equal(len(mergedDF), 1)
