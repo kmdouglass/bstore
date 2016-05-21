@@ -1235,7 +1235,7 @@ class Merge:
             If True, this will set the merge radius to three times the mean
             localization precision in the dataset.
         tOff                : int
-            The off time for grouping molecules into one. Units are frames.
+            The maximum time that a localization can vanish. Units are frames.
         mergeRadius         : float (default: 50)
             The maximum distance between localizations in space for them to be
             considered as one. Units are the same as x, y, and z. This is
@@ -1280,7 +1280,7 @@ class Merge:
             mergeRadius = self._mergeRadius
         
         # Track individual localization trajectories
-        dfTracked = tp.link_df(df, mergeRadius, self._tOff)
+        dfTracked = tp.link_df(df, mergeRadius, memory = self._tOff)
         
         # Compute the statistics for each group of localizations
         if self._statsComputer:

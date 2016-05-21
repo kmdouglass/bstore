@@ -2,6 +2,7 @@ from nose.tools import *
 from DataSTORM import processors as proc
 import pandas as pd
 from pathlib import Path
+import numpy as np
 
 # Load localization + fiducial ground truth test set
 locs = pd.read_csv('tests/test_files/test_localizations_with_fiducials.csv')
@@ -167,20 +168,67 @@ def test_ClusterStats():
     assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
     assert_equal(stats['convex_hull_area'].iloc[1].round(2),                 8)
     
-def test_Merger_with_Stats():
+def test_MergeFang_Stats():
     """Merger correctly merges localizations from the same molecule.
     
     """
     merger         = proc.Merge(mergeRadius = 25,
-                                tOff = 1,
+                                tOff = 2,
                                 statsComputer = proc.MergeFang())
     pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
     
     with open(str(pathToTestData), mode = 'r') as inFile:
-        df = pd.read_csv(inFile)
+        df = pd.read_csv(inFile, comment = '#')
     
     mergedDF = merger(df)
-    mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')
+    #mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')
     
-    # Localizations should be merged into one resulting localization
-    assert_equal(len(mergedDF), 1)
+    # Localizations should be merged into two resulting localization
+    assert_equal(len(mergedDF), 2)
+    
+    ok_(np.abs(mergedDF['x'].iloc[0].round(2) - 8.62) < 0.001,
+        'Merged x-coordinate is incorrect.')
+    ok_(np.abs(mergedDF['y'].iloc[0].round(2) - 10.24)< 0.001,
+        'Merged y-coordinate is incorrect.')
+    assert_equal(mergedDF['z'].iloc[0],               0)
+    assert_equal(mergedDF['photons'].iloc[0],      5500)
+    assert_equal(mergedDF['loglikelihood'].iloc[0], 100)
+    assert_equal(mergedDF['background'].iloc[0],    600)
+    assert_equal(mergedDF['frame'].iloc[0],           0)
+    assert_equal(mergedDF['length'].iloc[0],          5)
+    assert_equal(mergedDF['sigma'].iloc[0],         150)
+    
+def test_Merger():
+    """Merger returns a Data Frame with particle column attached.
+    
+    """
+    merger         = proc.Merge(mergeRadius   = 25,
+                                tOff          = 2,
+                                statsComputer = None)
+    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    
+    with open(str(pathToTestData), mode = 'r') as inFile:
+        df = pd.read_csv(inFile, comment = '#')
+        mergedDF = merger(df)
+        
+    ok_('particle' in mergedDF.columns,
+        'Error: \'particle\' is not in columns.')
+    assert_equal(mergedDF['particle'].max(), 1)
+
+def test_MergeFang_ZeroOffTime():
+    """Merger detects the off time gap and creates separate molecules.
+    
+    """
+    merger         = proc.Merge(mergeRadius   = 25,
+                                tOff          = 1,
+                                statsComputer = proc.MergeFang())
+    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    
+    with open(str(pathToTestData), mode = 'r') as inFile:
+        df = pd.read_csv(inFile, comment = '#')
+        mergedDF = merger(df)
+    
+    mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')    
+    
+    # Due to the smaller gap-time, there should be three tracks, not two
+    assert_equal(len(mergedDF), 3)
