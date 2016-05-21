@@ -226,9 +226,7 @@ def test_MergeFang_ZeroOffTime():
     
     with open(str(pathToTestData), mode = 'r') as inFile:
         df = pd.read_csv(inFile, comment = '#')
-        mergedDF = merger(df)
-    
-    mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')    
+        mergedDF = merger(df)  
     
     # Due to the smaller gap-time, there should be three tracks, not two
     assert_equal(len(mergedDF), 3)
