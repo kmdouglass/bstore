@@ -149,11 +149,13 @@ class MMParser(Parser):
             # What follows is a hack and MUST be changed (it's not generic).
             with open(str(self._fullPath), 'r') as file:            
                 df = pd.read_csv(file)
-                cleaner = proc.CleanUp()
-                converter = proc.ConvertHeader(proc.FormatThunderSTORM(),
-                                               proc.FormatLEB())
-                procdf = converter(cleaner(df))
-                return procdf
+                #cleaner = proc.CleanUp()
+                #converter = proc.ConvertHeader(proc.FormatThunderSTORM(),
+                #                               proc.FormatLEB())
+                #procdf = converter(cleaner(df))
+                #return procdf
+                return df
+                
         elif self.datasetType == 'locMetadata':
             # self._metadata is set by self._parseLocMetadata
             return self._metadata

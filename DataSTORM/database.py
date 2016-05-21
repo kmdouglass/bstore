@@ -470,9 +470,10 @@ class HDFDatabase(Database):
                 hdf[dataset].attrs[attrKey] = attrVal
         except KeyError:
             # Raised when the hdf5 key does not exist in the database.
-            warnings.warn(('Error: Cannot not append metadata. No localization '
-                           'results exist with these atomic IDs.'))
-            warnings.warn(json.dumps(atom.getInfoDict()))
+            ids = json.dumps(atom.getInfoDict())
+            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
+                                        'No localization results exist with '
+                                        'these atomic IDs: ' + ids))
         finally:
             hdf.close()
             

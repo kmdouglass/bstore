@@ -19,7 +19,7 @@ import pandas as pd
 import json
 
 # Update this to point towards the test data on your system or network
-pathToTestData = Path(('/home/douglass/ownCloud/'
+pathToTestData = Path(('/home/kmdouglass/ownCloud/'
                        'test-data/Telomeres_Knockdowns'))
 assert pathToTestData.exists(), 'Test data could not be found.'
 
@@ -71,10 +71,10 @@ def test_CSVBatchProcessor_Pipeline():
     bpCSV.go()
     
     # Check the results of the filtering
-    results = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults_processed.dat',
-               'HeLaS_Control_IFFISH_A647_2_MMStack_locResults_processed.dat',
-               'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults_processed.dat',
-               'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults_processed.dat']
+    results = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults_processed.csv',
+               'HeLaS_Control_IFFISH_A647_2_MMStack_locResults_processed.csv',
+               'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults_processed.csv',
+               'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults_processed.csv']
                
     for currRes in results:
         pathToCurrRes = outputDir / Path(currRes)
