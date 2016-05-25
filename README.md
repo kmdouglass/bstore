@@ -1,7 +1,7 @@
-# DataSTORM
-[![Build Status](https://travis-ci.com/kmdouglass/DataSTORM.svg?token=wpszvKaNd7qmZqYsAqpT&branch=master)](https://travis-ci.com/kmdouglass/DataSTORM)
+# Bstore
+[![Build Status](https://travis-ci.com/kmdouglass/bstore.svg?token=wpszvKaNd7qmZqYsAqpT&branch=master)](https://travis-ci.com/kmdouglass/bstore)
 
-Lightweight database management and analysis tools for single-molecule microscopy.
+Lightweight data management and analysis tools for single-molecule microscopy.
 
 ## Location of test data
 
