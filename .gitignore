@@ -1,6 +1,6 @@
 test-data/*
-DataSTORM.egg-info/
+bstore.egg-info/
 examples/.ipynb_checkpoints/
 playground/.ipynb_checkpoints/
-DataSTORM/tests/test_files/*
+bstore/tests/test_files/*
 *__pycache__*

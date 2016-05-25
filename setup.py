@@ -4,10 +4,10 @@ except ImportError:
     from distutils.core import setup
 
 config = {
-    'description'     : 'Data management and analysis for single molecule microscopy',
+    'description'     : 'Lightweight data management and analysis tools for single-molecule microscopy.',
     'author'          : 'Kyle M. Douglass',
-    'url'             : 'https://github.com/kmdouglass/DataSTORM',
-    'download_url'    : 'https://github.com/kmdouglass/DataSTORM',
+    'url'             : 'https://github.com/kmdouglass/bstore',
+    'download_url'    : 'https://github.com/kmdouglass/bstore',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1.0a',
     'install_requires': ['nose',
@@ -21,7 +21,7 @@ config = {
                          'h5py'],
     'packages'        : [],
     'scripts'         : [],
-    'name'            : 'DataSTORM'
+    'name'            : 'bstore'
 }
 
 setup(**config)
