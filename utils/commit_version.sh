@@ -4,6 +4,6 @@
 # Run this after a commit where the commit ID should be updated.
 CURRENT_VERSION="v0.1.0a-"
 HASH="$(git log --pretty=format:'%h' -n 1)"
-sed -i "1s/.*/__DataSTORM_Version__ = \'$CURRENT_VERSION${HASH}\'/" DataSTORM/config.py
-git add DataSTORM/config.py
+sed -i "1s/.*/__bstore_Version__ = \'$CURRENT_VERSION${HASH}\'/" bstore/config.py
+git add bstore/config.py
 git commit -m "Update git hash tracking."
