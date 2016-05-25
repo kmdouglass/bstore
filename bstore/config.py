@@ -1,4 +1,4 @@
-__bstore_Version__ = 'v0.1.0a-a934554'
+__bstore_Version__ = 'v0.1.0a-b835277'
 __HDF_AtomID_Prefix__ = 'SMLM_'
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
 channelIdentifier = {'A488' : 'AlexaFluor 488',
