@@ -230,3 +230,43 @@ def test_MergeFang_ZeroOffTime():
     
     # Due to the smaller gap-time, there should be three tracks, not two
     assert_equal(len(mergedDF), 3)
+    
+def test_ConvertHeader():
+    # Create a test dataset
+    test_data                       = {}
+    test_data['x [nm]']             = 1
+    test_data['y [nm]']             = 2
+    test_data['z [nm]']             = 3
+    test_data['frame']              = 4
+    test_data['uncertainty [nm]']   = 5
+    test_data['intensity [photon]'] = 6
+    test_data['offset [photon]']    = 7
+    test_data['loglikelihood']      = 8
+    test_data['sigma [nm]']         = 9
+    test_data['dx [nm]']            = 10
+    test_data['dy [nm]']            = 11
+    test_data['length [frames]']    = 12
+    test_data['cluster_id']         = 13
+    test_data['particle']           = 14
+    
+    # Pandas DataFrames with all scalars require an index; hence, index = [1]
+    df = pd.DataFrame(test_data, index = [1])
+    
+    # Create the header converter and convert the columns to database default
+    converter = proc.ConvertHeader()
+    conv_df   = converter(df)
+    
+    assert_equal(conv_df['x'].loc[1],             1)
+    assert_equal(conv_df['y'].loc[1],             2)
+    assert_equal(conv_df['z'].loc[1],             3)
+    assert_equal(conv_df['frame'].loc[1],         4)
+    assert_equal(conv_df['precision'].loc[1],     5)
+    assert_equal(conv_df['photons'].loc[1],       6)
+    assert_equal(conv_df['background'].loc[1],    7)
+    assert_equal(conv_df['loglikelihood'].loc[1], 8)
+    assert_equal(conv_df['sigma'].loc[1],         9)
+    assert_equal(conv_df['dx'].loc[1],           10)
+    assert_equal(conv_df['dy'].loc[1],           11)
+    assert_equal(conv_df['length'].loc[1],       12)
+    assert_equal(conv_df['cluster_id'].loc[1],   13)
+    assert_equal(conv_df['particle'].loc[1],     14)
