@@ -314,8 +314,9 @@ class HDFDatabase(Database):
         datasetType = otherIDs.split('_')[0]
         data        = None
         
-        channelID = [channel for channel in config.channelIdentifier.keys()
-                             if channel in otherIDs]
+        channelID = [channel
+                     for channel in config.__Channel_Identifier__.keys()
+                     if channel in otherIDs]
         assert (len(channelID) <= 1), channelID
         try:
             channelID       = channelID[0]

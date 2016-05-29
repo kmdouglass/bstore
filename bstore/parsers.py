@@ -2,7 +2,7 @@ import json
 import pathlib
 import re
 import warnings
-from bstore import database
+from bstore import database, config
 import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
@@ -169,14 +169,9 @@ class MMParser(Parser):
     data              : The actual data that will be returned when called.
     
     """
-    # TODO: Move this to config.py
     # This dictionary contains all the channel identifiers MMParser
     # knows natively
-    channelIdentifier = {'A488' : 'AlexaFluor 488',
-                         'A647' : 'AlexaFluor 647',
-                         'A750' : 'AlexaFluor 750',
-                         'DAPI' : 'DAPI',
-                         'Cy5'  : 'Cy5'} 
+    channelIdentifier = config.__Channel_Identifier__ 
                          
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']

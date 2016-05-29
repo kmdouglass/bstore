@@ -14,15 +14,15 @@ __HDF_AtomID_Prefix__ = 'SMLM_'
 """
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
 
-"""channelIdentifier : dict
+"""__Channel_Identifier___ : dict
        Dictionary containing shorthand names for common fluorophores.
        
 """
-channelIdentifier = {'A488' : 'AlexaFluor 488',
-                     'A647' : 'AlexaFluor 647',
-                     'A750' : 'AlexaFluor 750',
-                     'DAPI' : 'DAPI',
-                     'Cy5'  : 'Cy5'}
+__Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
+                          'A647' : 'AlexaFluor 647',
+                          'A750' : 'AlexaFluor 750',
+                          'DAPI' : 'DAPI',
+                          'Cy5'  : 'Cy5'}
 
 """FormatDefault : FormatMap
        The default mapping for converting between column header names
