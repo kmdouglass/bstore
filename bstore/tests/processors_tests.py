@@ -246,6 +246,9 @@ def test_ConvertHeader():
     test_data['dx [nm]']            = 10
     test_data['dy [nm]']            = 11
     test_data['length [frames]']    = 12
+    
+    # These two are not defined by the default format, so their names
+    # should remain unchanged
     test_data['cluster_id']         = 13
     test_data['particle']           = 14
     

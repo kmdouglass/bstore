@@ -1,8 +1,45 @@
 __bstore_Version__ = 'v0.1.0a-b835277'
+
+"""__HDF_AtomID_Prefix__ : str
+       String that precedes all attributes marking database atom
+       identifiers in an HDF database.
+
+"""
 __HDF_AtomID_Prefix__ = 'SMLM_'
+
+"""___HDF_Metadata_Prefix : str
+     String that precedes all attributes marking metadata elements in
+     an HDF database.
+
+"""
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
+
+"""channelIdentifier : dict
+       Dictionary containing shorthand names for common fluorophores.
+       
+"""
 channelIdentifier = {'A488' : 'AlexaFluor 488',
                      'A647' : 'AlexaFluor 647',
                      'A750' : 'AlexaFluor 750',
                      'DAPI' : 'DAPI',
                      'Cy5'  : 'Cy5'}
+
+"""FormatDefault : FormatMap
+       The default mapping for converting between column header names
+       when using the ConvertHeader processor.
+       
+"""
+from bstore.parsers import FormatMap
+__Format_Default__                       = FormatMap()
+__Format_Default__['x [nm]']             = 'x'
+__Format_Default__['y [nm]']             = 'y'
+__Format_Default__['z [nm]']             = 'z'
+__Format_Default__['frame']              = 'frame'
+__Format_Default__['uncertainty [nm]']   = 'precision'
+__Format_Default__['intensity [photon]'] = 'photons'
+__Format_Default__['offset [photon]']    = 'background'
+__Format_Default__['loglikelihood']      = 'loglikelihood'
+__Format_Default__['sigma [nm]']         = 'sigma'
+__Format_Default__['dx [nm]']            = 'dx'
+__Format_Default__['dy [nm]']            = 'dy'
+__Format_Default__['length [frames]']    = 'length'
