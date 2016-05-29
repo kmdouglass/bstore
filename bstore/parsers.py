@@ -166,22 +166,41 @@ class MMParser(Parser):
     ----------
     channelIdentifier : dict
         All of the channel identifiers that the MMParser recognizes.
-    data              : The actual data that will be returned when called.
+    dataGetter        : func
+        Optional function for customized reading of data.
     
     """
     # This dictionary contains all the channel identifiers MMParser
-    # knows natively
+    # knows natively.
     channelIdentifier = config.__Channel_Identifier__ 
                          
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']
     
-    def __init__(self):
-        # Start uninitialized because paraseFilename has not yet been called
+    def __init__(self, dataGetter = None):
+        # Start uninitialized because parseFilename has not yet been called
         self.uninitialized = True
+        
+        # Allows for customized reading of datasets, such as converting
+        # DataFrame column names or for reading non-csv files.
+        if dataGetter:        
+            self._dataGetter = dataGetter
+        else:
+            self._dataGetter = self._getDataDefault
     
     @property
     def data(self):
+        return self._dataGetter()
+        
+    def _getDataDefault(self):
+        """Default function used for reading the data in a database atom.
+        
+        This function defines the default behaviors for reading data.
+        It may be overriden by this Parser's constructor to allow for
+        more specialized reading, such as converting DataFrame column
+        names upon import.
+        
+        """
         if self._uninitialized:
             raise ParserNotInitializedError(('Error: this parser has not yet'
                                              ' been initialized.'))
@@ -190,20 +209,14 @@ class MMParser(Parser):
             # Loading the csv file when data() is called reduces the
             # chance that large DataFrames do not needlessly
             # remain in memory.
-            # TODO: Convert headers to LEB file format
-            # What follows is a hack and MUST be changed (it's not generic).
             with open(str(self._fullPath), 'r') as file:            
                 df = pd.read_csv(file)
-                #cleaner = proc.CleanUp()
-                #converter = proc.ConvertHeader(proc.FormatThunderSTORM(),
-                #                               proc.FormatLEB())
-                #procdf = converter(cleaner(df))
-                #return procdf
                 return df
                 
         elif self.datasetType == 'locMetadata':
             # self._metadata is set by self._parseLocMetadata
             return self._metadata
+            
         elif self.datasetType == 'widefieldImage':
             # Load the image data only when called
             return imread(str(self._fullPath))
