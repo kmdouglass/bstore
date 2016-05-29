@@ -232,6 +232,9 @@ def test_MergeFang_ZeroOffTime():
     assert_equal(len(mergedDF), 3)
     
 def test_ConvertHeader():
+    """ConvertHeader successfully applies the default mapping.
+    
+    """
     # Create a test dataset
     test_data                       = {}
     test_data['x [nm]']             = 1
@@ -273,3 +276,31 @@ def test_ConvertHeader():
     assert_equal(conv_df['length'].loc[1],       12)
     assert_equal(conv_df['cluster_id'].loc[1],   13)
     assert_equal(conv_df['particle'].loc[1],     14)
+    
+def test_ConvertHeader_Custom_Mapping():
+    """ConvertHeader successfully applies a user-defined mapping.
+    
+    """
+    # Create a test dataset
+    test_data                       = {}
+    test_data['x [nm]']             = 1
+    test_data['y [nm]']             = 2
+    test_data['z [nm]']             = 3
+    test_data['frame']              = 4
+    
+    # Pandas DataFrames with all scalars require an index; hence, index = [1]
+    df = pd.DataFrame(test_data, index = [1])
+    
+    # Create the header converter and convert the columns to database default
+    # Note that a mapping for 'frame' is not supplied, so it should not change.
+    from bstore.parsers import FormatMap
+    testMap = FormatMap({'x [nm]' : 'x',
+                         'y [nm]' : 'y',
+                         'z [nm]' : 'z'})
+    converter = proc.ConvertHeader(mapping = testMap)
+    conv_df   = converter(df)
+    
+    assert_equal(conv_df['x'].loc[1],             1)
+    assert_equal(conv_df['y'].loc[1],             2)
+    assert_equal(conv_df['z'].loc[1],             3)
+    assert_equal(conv_df['frame'].loc[1],         4)
