@@ -6,7 +6,57 @@ from bstore import database
 import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
-from bstore import processors as proc
+
+class FormatMap(dict):
+    """Two-way map for mapping one localization file format to another.
+    
+    FormatMap subclasses dict and acts like a two-way mapping between
+    key-value pairs, unlike dict which provides only a one-way relationship.
+    In the case where a key is missing, the dict returns the input key.
+    This functionality greatly assists in converting header files for which
+    no translation between column names is defined.
+    
+    To use this class, simply pass a dict to the FormatMap's constructor.
+    Alternatively, create a FormatMap, which creates an empty dict. Then add
+    fields as you wish.
+    
+    References
+    ----------
+    [1] http://stackoverflow.com/questions/1456373/two-way-reverse-map
+    
+    """
+    def __init__(self, init_dict = None):
+        super(dict, self).__init__()
+        
+        # Populate the two-way dict if supplied
+        if init_dict:
+            for key, value in init_dict.items():
+                self.__setitem__(key, value)
+    
+    def __setitem__(self, key, value):
+        if key   in self: del self[key]
+        if value in self: del self[value]
+        dict.__setitem__(self, key, value)
+        dict.__setitem__(self, value, key)
+    
+    def __getitem__(self, key):
+        try:
+            val = dict.__getitem__(self, key)
+        except KeyError:
+            # If the key doesn't exist, then return the key. This
+            # allows the use for pre-defined mappings between
+            # header columns even when not all possible mappings
+            # are defined.
+            val = key
+        
+        return  val
+        
+    def __delitem__(self, key):
+        dict.__delitem__(self, self[key])
+        dict.__delitem__(self, key)
+        
+    def __len__(self):
+        return dict.__len__(self) // 2
 
 class Parser(metaclass = ABCMeta):
     """Creates machine-readable data structures with acquisition info.

@@ -384,3 +384,43 @@ def test_MMParser_Widefield_Data():
     ds = mmParser.getDatabaseAtom()    
     
     assert_equal(ds.data.shape, (512, 512))
+    
+def test_FormatMap():
+    """FormatMap provides a basic two-way hash table.
+    
+    """
+    # Create an empty FormatMap
+    testMap      = parsers.FormatMap()
+    testMap['A'] = 'a'
+    testMap['B'] = 'b'
+    
+    assert_equal(testMap['A'], 'a')
+    assert_equal(testMap['a'], 'A')
+    assert_equal(testMap['B'], 'b')
+    assert_equal(testMap['b'], 'B')
+    assert_equal(len(testMap),   2)
+    
+    del(testMap['b'])
+    assert_equal(len(testMap),   1)
+    
+    # Tests undefined keys
+    assert_equal(testMap['C'], 'C')
+    
+def test_FormatMap_Dict_Constructor():
+    """FormatMap acceptsa dict in its constructor.
+    
+    """
+    # Create an empty FormatMap
+    testMap      = parsers.FormatMap({'A' : 'a', 'B' : 'b'})
+    
+    assert_equal(testMap['A'], 'a')
+    assert_equal(testMap['a'], 'A')
+    assert_equal(testMap['B'], 'b')
+    assert_equal(testMap['b'], 'B')
+    assert_equal(len(testMap),   2)
+    
+    del(testMap['b'])
+    assert_equal(len(testMap),   1)
+    
+    # Tests undefined keys
+    assert_equal(testMap['C'], 'C')
