@@ -24,13 +24,13 @@ __Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
                           'DAPI' : 'DAPI',
                           'Cy5'  : 'Cy5'}
 
-"""FormatDefault : FormatMap
+"""FormatDefault : dict
        The default mapping for converting between column header names
        when using the ConvertHeader processor.
        
 """
-from bstore.parsers import FormatMap
-__Format_Default__                       = FormatMap()
+# TODO: Move FormatMap from bstore.parsers to avoid recursive import statements
+__Format_Default__                       = {}
 __Format_Default__['x [nm]']             = 'x'
 __Format_Default__['y [nm]']             = 'y'
 __Format_Default__['z [nm]']             = 'z'

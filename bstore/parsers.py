@@ -160,7 +160,7 @@ class Parser(metaclass = ABCMeta):
         pass
 
 class MMParser(Parser):
-    """Parses a Micro-Manger-based filename for the dataset's acquisition info.
+    """Parses a Micro-Manager-based file for the acquisition info.
     
     Attributes
     ----------
@@ -190,7 +190,14 @@ class MMParser(Parser):
     
     @property
     def data(self):
-        return self._dataGetter()
+        # The if statementis required because _getDataDefault is a bound
+        # method. This means it will always receive an instance of the
+        # calling parser as an argument. If a custom dataGetter is set,
+        # the self argument must be passed explicitly.
+        if self._dataGetter == self._getDataDefault:
+            return self._dataGetter()
+        else:
+            return self._dataGetter(self)
         
     def _getDataDefault(self):
         """Default function used for reading the data in a database atom.

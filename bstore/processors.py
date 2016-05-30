@@ -13,6 +13,7 @@ from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
 from pyhull             import qconvex
 from bstore             import config
+from bstore.parsers     import FormatMap
 
 class AddColumn:
     """Adds a column to a DataFrame.
@@ -291,7 +292,7 @@ class ConvertHeader:
     mapping      : FormatMap
     
     """
-    def __init__(self, mapping = config.__Format_Default__):
+    def __init__(self, mapping = FormatMap(config.__Format_Default__)):
         """Determines whether the file is a single file or a directory tree.
         
         Parameters

@@ -12,7 +12,6 @@ __email__ = 'kyle.m.douglass@gmail.com'
 from nose.tools import *
 from bstore  import parsers, database
 from pathlib import Path
-import sys
 
 class TestParser(parsers.Parser):
     @property
@@ -49,7 +48,8 @@ def test_Parser_Attributes():
     assert_equal(parser.prefix,      'my_dataset')
     assert_equal(parser.sliceID,             None)
     assert_equal(parser.datasetType, 'locResults')
-    
+
+@raises(parsers.DatasetError)    
 def test_Parser_datasetType():
     """Will Parser detect a bad value for datasetType?
     
@@ -61,13 +61,9 @@ def test_Parser_datasetType():
     sliceID     =         None
     datasetType = 'locRseults' # misspelled
     
-    try:
-        parser = TestParser(acqID, channelID, posID,
-                            prefix, sliceID, datasetType)
-    except parsers.DatasetError:
-        pass
-    else:
-        raise Exception('DatasetError not caught.')
+
+    parser = TestParser(acqID, channelID, posID,
+                        prefix, sliceID, datasetType)
     
 def test_Parser_getBasicInfo():
     """Will getBasicInfo return the right values?
