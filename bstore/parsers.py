@@ -190,7 +190,7 @@ class MMParser(Parser):
     
     @property
     def data(self):
-        # The if statementis required because _getDataDefault is a bound
+        # The if statement is required because _getDataDefault is a bound
         # method. This means it will always receive an instance of the
         # calling parser as an argument. If a custom dataGetter is set,
         # the self argument must be passed explicitly.

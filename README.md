@@ -1,4 +1,4 @@
-# BStore
+# B-Store
 Lightweight data management and analysis tools for single-molecule microscopy.
 
 ## Location of test data
