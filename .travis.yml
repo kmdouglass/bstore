@@ -4,9 +4,10 @@ python:
   - "3.5"
 
 before_install:
-  - pwd
   # Download the test files
+  - cd ..
   - git clone https://github.com/kmdouglass/bstore_test_files.git
+  - cd $TRAVIS_BUILD_DIR
 
 install:
   - sudo apt-get update
