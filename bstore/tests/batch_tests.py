@@ -14,17 +14,17 @@ from pathlib    import Path
 from bstore.batch import CSVBatchProcessor, HDFBatchProcessor
 from bstore       import processors as proc
 from bstore       import database   as db
+from bstore       import config
 import shutil
 import pandas as pd
 import json
 
-# Update this to point towards the test data on your system or network
-pathToTestData = Path(('/home/kmdouglass/ownCloud/'
-                       'test-data/Telomeres_Knockdowns'))
+testDataRoot   = Path(config.__Path_To_Test_Data__)
+pathToTestData = testDataRoot / Path('Telomeres_Knockdowns')
 assert pathToTestData.exists(), 'Test data could not be found.'
 
 # Build the test batch processors
-outputDir  = Path('tests/test_files/batch_test_results/')
+outputDir  = testDataRoot / Path('batch_test_results/')
 if outputDir.exists():
     shutil.rmtree(str(outputDir))
 
@@ -41,7 +41,7 @@ outputDirHDF  = outputDir / Path('HDFBatch_test_results/')
 if outputDirHDF.exists():
     shutil.rmtree(str(outputDirHDF))
     
-inputDB    = Path('tests/test_files/test_experiment/test_experiment_db.h5')
+inputDB    = testDataRoot / Path('test_experiment/test_experiment_db.h5')
 locFilter1 = proc.Filter('loglikelihood', '<', 800)
 locFilter2 = proc.Filter('sigma',         '<', 200)
 pipeline   = [locFilter1, locFilter2]                               

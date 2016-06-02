@@ -1,11 +1,16 @@
 from nose.tools import *
 from bstore import processors as proc
+from bstore import config
 import pandas as pd
 from pathlib import Path
 import numpy as np
 
+testDataRoot = Path(config.__Path_To_Test_Data__)
+
 # Load localization + fiducial ground truth test set
-locs = pd.read_csv('tests/test_files/test_localizations_with_fiducials.csv')
+pathToTestData = testDataRoot / Path('processor_test_files') \
+                              / Path('test_localizations_with_fiducials.csv')
+locs = pd.read_csv(str(pathToTestData))
 
 def test_DriftCorrection():
     """Drift correction is properly applied to all localizations.
@@ -144,8 +149,10 @@ def test_ClusterStats():
     """Cluster statistics are computed correctly.
     
     """
-    statProc = proc.ComputeClusterStats()
-    data     = pd.read_csv('tests/test_files/test_cluster_stats.csv')
+    statProc   = proc.ComputeClusterStats()
+    pathToData = testDataRoot \
+               / Path('processor_test_files/test_cluster_stats.csv')
+    data       = pd.read_csv(str(pathToData))
     
     # Rename columns to work with ComputeClusterStats
     data.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'}, inplace = True)
@@ -175,13 +182,12 @@ def test_MergeFang_Stats():
     merger         = proc.Merge(mergeRadius = 25,
                                 tOff = 2,
                                 statsComputer = proc.MergeFang())
-    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    pathToTestData = testDataRoot / Path('processor_test_files/merge.csv')
     
     with open(str(pathToTestData), mode = 'r') as inFile:
         df = pd.read_csv(inFile, comment = '#')
     
     mergedDF = merger(df)
-    #mergedDF.to_csv(str(pathToTestData.parent) + '/results.csv')
     
     # Localizations should be merged into two resulting localization
     assert_equal(len(mergedDF), 2)
@@ -205,7 +211,7 @@ def test_Merger():
     merger         = proc.Merge(mergeRadius   = 25,
                                 tOff          = 2,
                                 statsComputer = None)
-    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    pathToTestData = testDataRoot / Path('processor_test_files/merge.csv')
     
     with open(str(pathToTestData), mode = 'r') as inFile:
         df = pd.read_csv(inFile, comment = '#')
@@ -222,7 +228,7 @@ def test_MergeFang_ZeroOffTime():
     merger         = proc.Merge(mergeRadius   = 25,
                                 tOff          = 1,
                                 statsComputer = proc.MergeFang())
-    pathToTestData = Path('tests/test_files/processor_test_files/merge.csv')
+    pathToTestData = testDataRoot / Path('processor_test_files/merge.csv')
     
     with open(str(pathToTestData), mode = 'r') as inFile:
         df = pd.read_csv(inFile, comment = '#')

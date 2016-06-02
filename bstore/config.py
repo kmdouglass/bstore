@@ -1,21 +1,21 @@
 __bstore_Version__ = 'v0.1.0a-d75645c'
 
 """__HDF_AtomID_Prefix__ : str
-       String that precedes all attributes marking database atom
-       identifiers in an HDF database.
+    String that precedes all attributes marking database atom
+    identifiers in an HDF database.
 
 """
 __HDF_AtomID_Prefix__ = 'SMLM_'
 
 """___HDF_Metadata_Prefix : str
-     String that precedes all attributes marking metadata elements in
-     an HDF database.
+    String that precedes all attributes marking metadata elements in
+    an HDF database.
 
 """
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
 
 """__Channel_Identifier___ : dict
-       Dictionary containing shorthand names for common fluorophores.
+    Dictionary containing shorthand names for common fluorophores.
        
 """
 __Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
@@ -25,11 +25,10 @@ __Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
                           'Cy5'  : 'Cy5'}
 
 """FormatDefault : dict
-       The default mapping for converting between column header names
-       when using the ConvertHeader processor.
+    The default mapping for converting between column header names
+    when using the ConvertHeader processor.
        
 """
-# TODO: Move FormatMap from bstore.parsers to avoid recursive import statements
 __Format_Default__                       = {}
 __Format_Default__['x [nm]']             = 'x'
 __Format_Default__['y [nm]']             = 'y'
@@ -43,3 +42,10 @@ __Format_Default__['sigma [nm]']         = 'sigma'
 __Format_Default__['dx [nm]']            = 'dx'
 __Format_Default__['dy [nm]']            = 'dy'
 __Format_Default__['length [frames]']    = 'length'
+
+"""__Path_To_Test_Data__ : str
+    Path relative to the bstore project root directory that
+    contains the data for running the automated tests.
+       
+"""
+__Path_To_Test_Data__ = '../bstore_test_files/'
