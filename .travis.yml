@@ -5,7 +5,6 @@ python:
 
 before_install:
   # Download the test files
-  - cd $HOME
   - git clone https://github.com/kmdouglass/bstore_test_files.git
 
 install:
