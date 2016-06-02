@@ -7,17 +7,10 @@ import bstore.config as config
 import sys
 import pprint
 import re
-import warnings
 
 pp = pprint.PrettyPrinter(indent=4)  
 
-# TODO: Move this to config.py
-# locMetadata MUST follow locResults
-typesOfAtoms = (
-                'locResults',
-                'locMetadata',
-                'widefieldImage'
-               )
+typesOfAtoms = config.__Types_Of_Atoms__
 
 def _checkType(typeString):
     if typeString not in typesOfAtoms:
