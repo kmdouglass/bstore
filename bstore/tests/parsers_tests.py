@@ -11,7 +11,10 @@ __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools import *
 from bstore  import parsers, database
+from bstore  import config
 from pathlib import Path
+
+testDataRoot = Path(config.__Path_To_Test_Data__)
 
 class TestParser(parsers.Parser):
     @property
@@ -106,14 +109,14 @@ def test_MMParser_Channel_Underscores():
     """Will MMParser extract the prefix and channel with weird underscores?
     
     """
-    inputFilename   = ['Cos7_Microtubules_Cy5_3_MMStack_Pos0_locResults.dat',
-                       '_Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
-                       'Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
-                       'Cos7_Cy5_Microtubules_3_MMStack_Pos0_locResults.dat',
-                       'Cos7_MicrotubulesCy5_3_MMStack_Pos0_locResults.dat',
-                       'Cos7_Microtubules__Cy5_3_MMStack_Pos0_locResults.dat',
-                       'Cos7___Microtubules__Cy5_3_MMStack_Pos0_locResults.dat']
-    datasetType     = 'locResults'
+    inputFilename = ['Cos7_Microtubules_Cy5_3_MMStack_Pos0_locResults.dat',
+                     '_Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
+                     'Cy5_Cos7_Microtubules_3_MMStack_Pos0_locResults.dat',
+                     'Cos7_Cy5_Microtubules_3_MMStack_Pos0_locResults.dat',
+                     'Cos7_MicrotubulesCy5_3_MMStack_Pos0_locResults.dat',
+                     'Cos7_Microtubules__Cy5_3_MMStack_Pos0_locResults.dat',
+                     'Cos7___Microtubules__Cy5_3_MMStack_Pos0_locResults.dat']
+    datasetType   = 'locResults'
     
     mmParser = parsers.MMParser()
     for currFilename in inputFilename:
@@ -196,7 +199,7 @@ def test_MMParser_Metadata():
     
     """
     f = 'bacteria_HaloInduced_A647_1_MMStack_1-Pos_002_002_locMetadata.json'
-    inputFile = Path('tests') / Path('test_files') / Path(f)
+    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -216,7 +219,7 @@ def test_MMParser_Metadata_NoPosition_Metadata():
     """
     # Note that the json entry for position information is empty in this file!
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path('test_files') / Path(f)
+    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -235,7 +238,7 @@ def test_MMParser_Metadata_SinglePosition():
     """
     # Note that the json entry for position information is empty in this file!
     f = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path('test_files') / Path(f)
+    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -320,7 +323,7 @@ def test_MMParser_DatabaseAtom():
     
     """
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path('test_files') / Path(f)
+    inputFile = testDataRoot / Path('parsers_test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -357,7 +360,7 @@ def test_MMParser_Uninitialized_After_Use():
     
     """
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
-    inputFile = Path('tests') / Path('test_files') / Path(f)
+    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
     datasetType = 'locMetadata'
     
     mmParser = parsers.MMParser()
@@ -372,7 +375,8 @@ def test_MMParser_Widefield_Data():
     
     """
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
-    inputFile = Path('tests') / Path('test_files/Cos7_A647_WF1/') / Path(f)
+    inputFile   = testDataRoot / Path('parsers_test_files') \
+                               / Path('Cos7_A647_WF1/') / Path(f)
     datasetType = 'widefieldImage'
     
     mmParser = parsers.MMParser()
@@ -403,7 +407,7 @@ def test_FormatMap():
     assert_equal(testMap['C'], 'C')
     
 def test_FormatMap_Dict_Constructor():
-    """FormatMap acceptsa dict in its constructor.
+    """FormatMap accepts a dict in its constructor.
     
     """
     # Create an empty FormatMap
