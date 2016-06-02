@@ -1,6 +1,4 @@
 # B-Store
+[![Build Status](https://travis-ci.com/kmdouglass/bstore.svg?token=wpszvKaNd7qmZqYsAqpT&branch=development)](https://travis-ci.com/kmdouglass/bstore)
+
 Lightweight data management and analysis tools for single-molecule microscopy.
-
-## Location of test data
-
-The test data repo may be found here: https://github.com/kmdouglass/bstore_test_files
