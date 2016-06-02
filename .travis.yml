@@ -4,8 +4,8 @@ python:
   - "3.5"
 
 before_install:
+  - pwd
   # Download the test files
-  - cd $HOME
   - git clone https://github.com/kmdouglass/bstore_test_files.git
 
 install:
@@ -33,6 +33,8 @@ install:
   # Install convex hull software
   - easy_install pyhull
 
+  - pwd
+  
   # Install this library
   - python setup.py install
 
