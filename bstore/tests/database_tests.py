@@ -17,6 +17,8 @@ from numpy.random import rand
 from os           import remove
 import h5py
 
+testDataRoot = Path(config.__Path_To_Test_Data__)
+
 # Flag identifying atomic ID prefix
 atomPre = config.__HDF_AtomID_Prefix__
 
@@ -229,7 +231,7 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
     """Database creates an HDF file with the right keys and atomic metadata.
     
     """
-    dbName = Path('./tests/test_files/myDB.h5')
+    dbName = testDataRoot / Path('database_test_files/myDB.h5')
     if dbName.exists():
         remove(str(dbName))
     
@@ -271,7 +273,7 @@ def test_HDFDatabase_Get():
     """HDFDatabase.get() returns the correct Dataset.
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
      
     # Create an ID with empty data for retrieving the dataset     
@@ -287,7 +289,7 @@ def test_HDFDatabase_Get_Dict():
     """HDFDatabase.get() works when a dict is supplied.
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
      
     # Create a dict of IDs for retrieving the dataset     
@@ -310,7 +312,7 @@ def test_HDFDatabase_Get_Dict_KeyError():
     """HDFDatabase.get() detects when KeyError raised.
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
      
     # Create a dict of IDs for retrieving the dataset     
@@ -330,12 +332,12 @@ def test_HDFDatabase_Put_LocMetadata():
     """HDFDatabase correctly places metadata into the database.
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
 
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile   = Path('tests/test_files') / Path(f)
+    inputFile   = testDataRoot / Path('database_test_files') / Path(f)
     datasetType = 'locMetadata'
     mmParser    = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
@@ -363,7 +365,7 @@ def test_HDF_Database_Get_LocMetadata():
     """The database can return localization metadata with get().
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
     # Create a dict of IDs for retrieving the dataset     
@@ -401,16 +403,15 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     """locMetadata atom cannot be put if localization data doesn't exist.
     
     """
-    dbName = Path('./tests/test_files/myEmptyDB.h5')
+    dbName = testDataRoot / Path('database_test_files/myEmptyDB.h5')
     if dbName.exists():
         remove(str(dbName))
         
-    dbName   = Path('./tests/test_files/myEmptyDB.h5')
     myEmptyDB     = database.HDFDatabase(dbName)
 
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile   = Path('tests/test_files') / Path(f)
+    inputFile   = testDataRoot / Path('database_test_files') / Path(f)
     datasetType = 'locMetadata'
     mmParser    = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
@@ -428,12 +429,13 @@ def test_HDF_Database_Put_WidefieldImage():
     
     """
     # Load the database
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
     # Load the widefield image and convert it to an atom
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
-    inputFile = Path('tests') / Path('test_files/Cos7_A647_WF1/') / Path(f)
+    inputFile = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') / Path(f)
     datasetType = 'widefieldImage'
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
@@ -452,7 +454,7 @@ def test_HDF_Database_Check_Key_Existence_LocResults():
     
     """
     # Remake the database
-    dbName = Path('./tests/test_files/myDB_DoubleKey.h5')
+    dbName = testDataRoot / Path('database_test_files/myDB_DoubleKey.h5')
     if dbName.exists():
         remove(str(dbName))
     myDB     = database.HDFDatabase(dbName)
@@ -469,14 +471,14 @@ def test_HDF_Database_Check_Key_Existence_LocMetadata():
     """An error is raised if using a key that already exists for locMetadata.
     
     """
-    dbName   = Path('./tests/test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     if dbName.exists():
         remove(str(dbName))
     myDB     = database.HDFDatabase(dbName)
 
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile   = Path('tests/test_files') / Path(f)
+    inputFile   = testDataRoot / Path('database_test_files') / Path(f)
     datasetType = 'locMetadata'
     mmParser    = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
@@ -500,14 +502,14 @@ def test_HDF_Database_Build():
     """The database build is performed successfully.
     
     """
-    dbName   = Path('./tests/test_files/myDB_Build.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
     myDB = database.HDFDatabase(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
-    searchDirectory = Path('./tests/test_files/test_experiment')
+    searchDirectory = testDataRoot / Path('test_experiment')
     
     # Build database
     myDB.build(myParser, searchDirectory, dryRun = False)

@@ -20,7 +20,7 @@ import pandas as pd
 import json
 
 testDataRoot   = Path(config.__Path_To_Test_Data__)
-pathToTestData = testDataRoot / Path('Telomeres_Knockdowns')
+pathToTestData = testDataRoot / Path('test_experiment_2')
 assert pathToTestData.exists(), 'Test data could not be found.'
 
 # Build the test batch processors
