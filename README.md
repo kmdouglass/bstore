@@ -35,7 +35,7 @@ Microscope hardware and acquisition control is often performed inside either com
 If you are a core facility manager and looking for a database system for fluorescence microscopy data, [OMERO](https://www.openmicroscopy.org/site) is a well-developed project that may suit your needs. Additionally, there has been some discussion on a SMLM standard format and incorporating it into OMERO (see this thread at http://lists.openmicroscopy.org.uk/pipermail/ome-devel/2015-July/003410.html). In our experience, OMERO requires infrastructure in the form of hardware and personnel that small labs may not be able to satisfy. Furthermore, this standard format does not yet exist as of June, 2016. In anticipation of this format, B-Store is designed to be as agnostic to file formats as possible so that it may adapt as the field evolves.
 
 ## How is B-Store implemented?
-B-Store is written in the [Python](https://www.python.org/) programming language (version 3) and relies heavily on a datatype known as a DataFrame. DataFrames and their functionality are provided by the [Pandas](http://pandas.pydata.org/) library and in many ways work like Excel spreadsheets but are much, much faster. Pandas is optimized and used extensively for big data analytics, among other things.
+B-Store is written in the [Python](https://www.python.org/) programming language (version 3) and relies heavily on a datatype known as a DataFrame. DataFrames and their functionality are provided by the [Pandas](http://pandas.pydata.org/) library and in many ways work like Excel spreadsheets but are much, much faster. Pandas is highly optimized and used extensively for both normal and big data analytics at companies and research institutions across the globe.
 
 In addition to Pandas, B-Store implements features provided by numerous scientific, open source Python libraries like [numpy](http://www.numpy.org/) and [matplotlib](http://matplotlib.org/).
 
@@ -44,9 +44,9 @@ If you don't know Python, you can still use B-Store in a number of ways.
 
 The easiest way is to explore the [Jupyter notebooks](http://jupyter.org/) in the *examples* folder. Find an example that does what you want, then modify the relevant parts, such as file names. Then, simply run the notebook.
 
-You may also wish to use B-Store's database system, but not its analysis tools. In this case, you can use the notebooks to build your database, but access and analyze the data from the programming language of your choice, such as MATLAB. B-Store currently provides functionality for a database stored in an HDF file, but the Database interface may be
+You may also wish to use B-Store's database system, but not its analysis tools. In this case, you can use the notebooks to build your database, but access and analyze the data from the programming language of your choice, such as MATLAB. B-Store currently provides functionality for a database stored in an HDF file, but the Database interface allows for an extension to SQL or something else if you find it useful.
 
-A third option is to call the Python code from within another language. Information for doing this in MATLAB may be found at the follow link, though we have not yet tested this ourselves: http://www.mathworks.com/help/matlab/call-python-libraries.html
+A third option is to call the Python code from within another language. Information for doing this in MATLAB may be found at the following link, though we have not yet tested this ourselves: http://www.mathworks.com/help/matlab/call-python-libraries.html
 
 Of course, these approaches will only take you so far. Many parts of B-Store are meant to be customized to suit each scientist's needs, and these customizations are most easily implemented in Python. Regardless, the largest amount of customization you will want to do will likely be to write a `Parser`. A `Parser` converts raw acquisition and localization data into a format that can pass through the database interface (known as a `DatabaseAtom`). If your programming language can call Python and access the `DatabaseAtom` and `Database` interfaces, then you can write the parser in the language of your choice and then pass the parsed data through these interfaces to build your database.
 
@@ -71,10 +71,9 @@ There are three important advantages to enforcing an interface such as this.
 2. The format of the data that you generate in your experiments can be made independent of the database, so you can do whatever you want to it. The `Parser` ensures that it is in the right format only at the point of database insertion.
 3. The nature of the database and the types of data it can handle can grow and change in the future with minimal difficulty.
 
-The logic of this interface is described graphically below. The raw images on top pass through the `Parser` and into the database, where they are organized into acquisition groups. Each group is identified by a name (**prefix**). A group consists of a number of datasets that are uniquely identified by their acqusition group **prefix**, **acquisition ID**, and **dataset type**. The other identifiers are optional. The database is therefore a collection of hierarchically arranged datasets that are uniquely determined by these identifiers.
+The logic of this interface is described graphically below. The raw data on top pass through the `Parser` and into the database, where they are organized into acquisition groups. Each group is identified by a name called a **prefix**, an **acquisition ID**, and a **dataset type**. An acqusition group is one acqusition that was acquired during an experiment and may optinally contain multiple fields of view (**positions**), wavelengths (**channels**), or axial **slices**. The database is therefore a collection of hierarchically arranged datasets, each belonging to a different acquisition group, and each uniquely identified by the conditions of the acqusition.
 
 ![B-Store design logic.](/design/dataset_logic.png)
-
 
 # What is single molecule localization microscopy (SMLM)?
 
