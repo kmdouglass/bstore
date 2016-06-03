@@ -14,7 +14,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="dataset_logic.svg">
+   sodipodi:docname="dataset_logic.svg"
+   inkscape:export-filename="/home/douglass/src/bstore/design/dataset_logic.png"
+   inkscape:export-xdpi="299.07001"
+   inkscape:export-ydpi="299.07001">
   <defs
      id="defs4">
     <marker
@@ -40,10 +43,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="379.28855"
-     inkscape:cy="503.49065"
+     inkscape:cx="251.50425"
+     inkscape:cy="493.8942"
      inkscape:document-units="mm"
-     inkscape:current-layer="g3559"
+     inkscape:current-layer="g3405"
      showgrid="false"
      units="mm"
      inkscape:window-width="1920"
@@ -67,7 +70,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -228,33 +231,7 @@
            style="color:#000000;fill:none;stroke:#000000;stroke-width:1.75342488;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.04109851, 1.75342487;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
       </g>
       <g
-         id="g4561-6"
-         transform="translate(18.881321,275.96677)">
-        <g
-           id="g4589-2">
-          <rect
-             style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25983993, 1.77165332;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             id="rect4563-8"
-             width="157.67717"
-             height="28.150455"
-             x="54.859814"
-             y="138.97739" />
-          <text
-             xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
-             x="133.48746"
-             y="159.38953"
-             id="text4565-4"
-             sodipodi:linespacing="125%"><tspan
-               sodipodi:role="line"
-               x="133.48746"
-               y="159.38953"
-               style="font-size:18px;text-align:center;text-anchor:middle"
-               id="tspan4567-3">Date</tspan></text>
-        </g>
-      </g>
-      <g
-         transform="translate(0,-6)"
+         transform="translate(0,-32)"
          id="g3405">
         <g
            id="g3367">
@@ -675,24 +652,76 @@
            y="443.79077"
            x="34.285717"
            id="tspan5663"
-           sodipodi:role="line">Experiment</tspan></text>
+           sodipodi:role="line">Database</tspan></text>
       <path
          inkscape:connector-curvature="0"
          id="path4510"
          d="m 350.14413,369.97439 0,123.00197"
          style="fill:none;stroke:#000000;stroke-width:3.54330754;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
+      <g
+         id="g4561-6"
+         transform="translate(365.55179,326.84028)">
+        <g
+           id="g4589-2">
+          <rect
+             style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25983993, 1.77165332;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             id="rect4563-8"
+             width="157.67717"
+             height="28.150455"
+             x="54.859814"
+             y="138.97739" />
+          <text
+             xml:space="preserve"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+             x="133.48746"
+             y="159.38953"
+             id="text4565-4"
+             sodipodi:linespacing="125%"><tspan
+               sodipodi:role="line"
+               x="133.48746"
+               y="159.38953"
+               style="font-size:18px;text-align:center;text-anchor:middle"
+               id="tspan4567-3">Date</tspan></text>
+        </g>
+      </g>
       <text
          xml:space="preserve"
          style="font-size:7px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
-         x="237.4183"
-         y="431.60727"
+         x="445.71503"
+         y="457.12506"
          id="text3666"
          sodipodi:linespacing="125%"><tspan
            sodipodi:role="line"
            id="tspan3668"
-           x="237.4183"
-           y="431.60727"
+           x="445.71503"
+           y="457.12506"
            style="font-size:10px">(Future Implementation)</tspan></text>
+      <g
+         transform="translate(365.55179,632.84028)"
+         id="g3097">
+        <g
+           id="g3099">
+          <rect
+             y="138.97739"
+             x="54.859814"
+             height="28.150455"
+             width="157.67717"
+             id="rect3101"
+             style="color:#000000;fill:#cccccc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.77165329;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25983993, 1.77165332;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3103"
+             y="159.38953"
+             x="133.48746"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
+             xml:space="preserve"><tspan
+               id="tspan3105"
+               style="font-size:18px;text-align:center;text-anchor:middle"
+               y="159.38953"
+               x="133.48746"
+               sodipodi:role="line">Date</tspan></text>
+        </g>
+      </g>
     </g>
   </g>
 </svg>
