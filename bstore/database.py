@@ -7,6 +7,7 @@ import bstore.config as config
 import sys
 import pprint
 import re
+import pandas as pd
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -214,6 +215,12 @@ class HDFDatabase(Database):
         widefieldImageString : str
             Glob string that identifies widefield images.
             
+        Returns
+        -------
+        buildResults : DataFrame
+            A sorted DataFrame for investigating what files were actually
+            added to the database.
+            
         """       
         # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
@@ -231,27 +238,31 @@ class HDFDatabase(Database):
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
         
-        # TODO: Add length of atoms to the output of the pretty printer        
+        # Keep a running record of what datasets were parsed
+        datasets = []        
         
         # Ensure that locResults get put first so the metadata has
-        # a place to go
-        for dataset in files['locResults']:
-            parser.parseFilename(dataset, datasetType = 'locResults')
-            pp.pprint(parser.getBasicInfo())
-            if not dryRun:
-                self.put(parser.getDatabaseAtom())                                              
-        
-        # Place all other data into the database
-        del(files['locResults'])
-        for currType in files.keys():
-            print(currType)  
-            
-            for currFile in files[currType]:
-                print(currFile)
-                parser.parseFilename(currFile, datasetType = currType)
-                pp.pprint(parser.getBasicInfo())
+        # a place to go.
+        try:
+            for dataset in files['locResults']:
+                parser.parseFilename(dataset, datasetType = 'locResults')
+                datasets.append(parser.getBasicInfo())
                 if not dryRun:
-                    self.put(parser.getDatabaseAtom())
+                    self.put(parser.getDatabaseAtom())                                              
+            
+            # Place all other data into the database
+            del(files['locResults'])
+            for currType in files.keys(): 
+                
+                for currFile in files[currType]:
+                    parser.parseFilename(currFile, datasetType = currType)
+                    datasets.append(parser.getBasicInfo())
+                    if not dryRun:
+                        self.put(parser.getDatabaseAtom())
+        finally:
+            # Report on all the datasets that were parsed
+            buildResults = self._sortDatasets(datasets)
+            return buildResults
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
@@ -639,6 +650,32 @@ class HDFDatabase(Database):
         atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
         
         return atomicIDs
+        
+    def _sortDatasets(self, dsInfo):
+        """Sorts and organizes all datasets before a Database build.
+        
+        _sortDatasets() accepts a list of dicts containing dataset
+        information. It then sorts and organizes the information in a
+        human-readable format, allowing both humans and computers to
+        locate possible errors before and after the database is built.
+        
+        Parameters
+        ----------
+        dsInfo : list of dict
+            Each element of dsInfo is a dictionary containing the IDs
+            for a particular dataset.
+            
+        Returns
+        -------
+        df     : DataFrame
+        
+        """
+        # Build the DataFrame with indexes prefix and acqID. These are
+        # the primary identifiers for a dataset and are always required;
+        df = pd.DataFrame(dsInfo).set_index(['prefix', 'acqID'])
+        df.sort_index(inplace = True)
+        
+        return df
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
