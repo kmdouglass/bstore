@@ -60,8 +60,9 @@ Since every lab uses different software and file formats for acquiring data, a c
 Once in the database, we can pull data from it in a batch process and operate on it like this:
 
 ```python
-# Import the processors library
-from DataSTORM import processors as proc
+# Import the processors and batch library
+from bstore import processors as proc
+from bstore import batch
 
 # Create a pipeline consisting of processors to apply to the data
 filter1 = proc.Filter('uncertainty', '<', 30)
@@ -103,7 +104,7 @@ There are three important advantages to enforcing an interface such as this.
 2. The format of the data that you generate in your experiments can be made independent of the database, so you can do whatever you want to it. The `Parser` ensures that it is in the right format only at the point of database insertion.
 3. The nature of the database and the types of data it can handle can grow and change in the future with minimal difficulty.
 
-The logic of this interface is described graphically below. The raw data on top pass through the `Parser` and into the database, where they are organized into acquisition groups. Each group is identified by a name called a **prefix**, an **acquisition ID**, and a **dataset type**. An acqusition group is one acqusition that was acquired during an experiment and may optinally contain multiple fields of view (**positions**), wavelengths (**channels**), or axial **slices**. The database is therefore a collection of hierarchically arranged datasets, each belonging to a different acquisition group, and each uniquely identified by the conditions of the acqusition.
+The logic of this interface is described graphically below. The raw data on top pass through the `Parser` and into the database, where they are organized into acquisition groups. Each group is identified by a name called a **prefix**. Within the group, a dataset possesses an **acquisition ID** and a **dataset type**. An acqusition group is a set of datasets that were acquired during an experiment. A single dataset may optionally contain multiple fields of view (**positions**), wavelengths (**channels**), or axial **slices**. The database is therefore a collection of hierarchically arranged datasets, each belonging to a different acquisition group, and each uniquely identified by the conditions of the acquisition.
 
 ![B-Store design logic.](/design/dataset_logic.png)
 
