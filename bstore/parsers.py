@@ -178,6 +178,14 @@ class MMParser(Parser):
     widefieldIdentifier = ['WF']
     
     def __init__(self, dataGetter = None):
+        """Set the Parser to an uninitialized state and set the dataGetter.
+        
+        Parameters
+        ----------
+        dataGetter : func
+            The function defining how to read the various datasetTypes.
+            
+        """
         # Start uninitialized because parseFilename has not yet been called
         self.uninitialized = True
         
