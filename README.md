@@ -82,6 +82,29 @@ The output will be a number of .csv files arranged in a subfolder containing loc
 
 Of course there are many more options available than in these minimal examples. You can find out more in the [examples folder](https://github.com/kmdouglass/bstore/tree/development/examples).
 
+# Tell me how to install B-Store.
+## Linux
+If you're starting from scratch, you first need to install Python. On Linux, this is most easily achieved by downloading and installing a Python 3.5 or greater Anaconda environment from https://www.continuum.io/downloads. After installing Anaconda, create a new environment for B-Store with a few essential libraries:
+
+```sh
+conda update conda
+conda create --name bstore nose numpy scipy matplotlib scikit-learn pandas h5py
+source activate bstore
+conda install -c soft-matter trackpy
+```
+
+This will create an environment named bstore with numpy, scipy, etc. installed, activate the environment, and then install a specific package named trackpy.
+
+Next, clone the B-Store repository, move into the repository folder, and install B-Store.
+
+```sh
+git clone https://github.com/kmdouglass/bstore
+cd bstore
+python setup.py install
+```
+
+## Windows
+Coming soon. (If you can't wait, the steps above are largely the same; you need to run them from the Anaconda prompt instead of the terminal.)
 
 # What is the logic behind the B-Store design?
 B-Store is designed to search specified directories on your computer for files associated with an SMLM experiment, such as those containing raw localizations and widefield images. These files are passed through a `Parser`, which converts them into a format suitable for insertion into a database. It does this by ensuring that the files satisfy the requirements of an interface known as a `DatabaseAtom`. Data that implements this interface may pass into and out of the database; data that does not implement the interface cannot. You can think of the `DatabaseAtom` interface like a guard post at a government research facility. Only people with an ID badge for that facility (the interface) may enter. In principle, B-Store does not care about the data itself or the details of the database (HDF, SQL, etc.).
