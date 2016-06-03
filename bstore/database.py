@@ -246,9 +246,11 @@ class HDFDatabase(Database):
         try:
             for dataset in files['locResults']:
                 parser.parseFilename(dataset, datasetType = 'locResults')
-                datasets.append(parser.getBasicInfo())
+                
                 if not dryRun:
-                    self.put(parser.getDatabaseAtom())                                              
+                    self.put(parser.getDatabaseAtom())
+                    
+                datasets.append(parser.getBasicInfo())
             
             # Place all other data into the database
             del(files['locResults'])
@@ -256,12 +258,21 @@ class HDFDatabase(Database):
                 
                 for currFile in files[currType]:
                     parser.parseFilename(currFile, datasetType = currType)
-                    datasets.append(parser.getBasicInfo())
+                    
                     if not dryRun:
                         self.put(parser.getDatabaseAtom())
+                        
+                    datasets.append(parser.getBasicInfo())
         finally:
             # Report on all the datasets that were parsed
             buildResults = self._sortDatasets(datasets)
+            
+            if buildResults is not None:
+                print('{0:d} files were successfully parsed.'.format(
+                                                            len(buildResults)))
+            else:
+                print('0 files were successfully parsed.')
+                
             return buildResults
     
     def _checkKeyExistence(self, atom):
@@ -289,9 +300,8 @@ class HDFDatabase(Database):
                             raise HDF5KeyExists(('Error: '
                                                  '{0:s} already '
                                                  'exists.'.format(key)))                    
-        except IOError as e:
-            print('Error: Could not open file.')
-            print(e.args)
+        except IOError:
+            pass
             
     def _genAtomicID(self, key):
         """Generates an atomic ID from a HDF key. The inverse of _genKey.
@@ -670,12 +680,17 @@ class HDFDatabase(Database):
         df     : DataFrame
         
         """
-        # Build the DataFrame with indexes prefix and acqID. These are
-        # the primary identifiers for a dataset and are always required;
-        df = pd.DataFrame(dsInfo).set_index(['prefix', 'acqID'])
-        df.sort_index(inplace = True)
-        
-        return df
+        # If any datasets at all were correctly parsed, then dsInfo
+        # will not be empty.
+        if dsInfo:
+            # Build the DataFrame with indexes prefix and acqID. These are
+            # the primary identifiers for a dataset and are always required;
+            df = pd.DataFrame(dsInfo).set_index(['prefix', 'acqID'])
+            df.sort_index(inplace = True)
+            
+            return df
+        else:
+            return None
             
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
