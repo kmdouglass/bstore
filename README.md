@@ -8,6 +8,14 @@
 1. To organize SMLM data inside a database for fast and easy information retrieval and storage.
 2. To facilitate the analysis of high content SMLM datasets.
 
+## What problem does B-Store solve?
+
+High content SMLM experiments can produce hundreds or even thousands
+of files containing multiple types of data (images, raw localizations,
+acquisition information, etc.). B-Store automatically sorts and stores
+this information in a database for rapid retrieval and analysis,
+removing any need to manually maintain the data yourself.
+
 ## What are the design criteria that guide B-Store's development?
 To realize these roles, B-Store is designed to meet these important criteria:
 
@@ -154,10 +162,18 @@ SMLM is a suite of super-resolution fluorescence microscopy techniques for imagi
 A fantastic movie explaining how this works using the blinking lights of the Eiffel tower was created by Ricardo Henriques. You can watch it here: https://www.youtube.com/watch?v=RE70GuMCzww
 
 # Who wrote B-Store?
-[Kyle Douglass](http://kmdouglass.github.io) is the primary author of B-Store. He works at the [EPFL](http://epfl.ch/) in the lab of [Suliana Manley](http://leb.epfl.ch/).
+## Authors
++ [Kyle Douglass](http://kmdouglass.github.io) - primary author
++ [Niklas Berliner](https://github.com/nberliner) - contributor
 
-Other contributors include:
+# Acknowledgements
++ [Suliana Manley](http://leb.epfl.ch) - Principal investigator
++ [trackpy](http://soft-matter.github.io/trackpy/v0.3.0/) - Localization merging
++ [Christian Sieben](https://people.epfl.ch/christian.sieben) - Bug testing and idea development
 + [Marcel Stefko](https://people.epfl.ch/marcel.stefko?lang=en)
++ [SystemsX.ch](http://www.systemsx.ch/) - Funding
++ [Python](https://www.python.org/community/)
++ [Anaconda](https://www.continuum.io/why-anaconda)
 
 # What does the 'B' stand for?
 Blink.
