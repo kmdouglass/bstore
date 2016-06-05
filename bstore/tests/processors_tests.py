@@ -165,7 +165,6 @@ def test_ClusterStats():
     assert_equal(stats['number_of_localizations'].iloc[0],                   5)
     assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.77)
     assert_equal(stats['eccentricity'].iloc[0].round(2),                     1)
-    assert_equal(stats['convex_hull_area'].iloc[0].round(2),                 1)
     
     # Cluster ID 1: longer in x than in y
     assert_equal(stats['x_center'].iloc[1],                                 10)
@@ -173,7 +172,15 @@ def test_ClusterStats():
     assert_equal(stats['number_of_localizations'].iloc[1],                   5)
     assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
     assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
-    assert_equal(stats['convex_hull_area'].iloc[1].round(2),                 8)
+    
+    # Only run these tests if pyhull is installed
+    # pyhull is not available in Linux
+    try:
+        from pyhull import qconvex
+        assert_equal(stats['convex_hull_area'].iloc[0].round(2), 1)
+        assert_equal(stats['convex_hull_area'].iloc[1].round(2), 8)
+    except ImportError:
+        pass
     
 def test_MergeFang_Stats():
     """Merger correctly merges localizations from the same molecule.

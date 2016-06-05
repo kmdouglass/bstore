@@ -11,7 +11,6 @@ from scipy.signal       import gaussian
 from scipy.ndimage      import filters
 from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
-from pyhull             import qconvex
 from bstore             import config
 from bstore.parsers     import FormatMap
 
@@ -184,7 +183,7 @@ class ComputeClusterStats:
         tempResultsEcc    = groups.apply(self._eccentricity,     ['x', 'y'])
         tempResultsCHull  = groups.apply(self._convexHull,       ['x', 'y'])
         tempResultsLength = pd.Series(groups.size())
-        
+
         # Create a column that determines whether to reject the cluster
         # These can be set to False during a manual filtering stage.
         tempResultsKeep = pd.Series([True] * len(tempResultsLength),
@@ -197,8 +196,8 @@ class ComputeClusterStats:
                               inplace = True)
         tempResultsRg.name     = 'radius_of_gyration'
         tempResultsEcc.name    = 'eccentricity'
-        tempResultsCHull.name  = 'convex_hull_area'
         tempResultsLength.name = 'number_of_localizations'
+        tempResultsCHull.name  = 'convex_hull_area'
         
         # Create the merged DataFrame
         dataToJoin = (tempResultsCoM,
@@ -272,6 +271,15 @@ class ComputeClusterStats:
         volume : float or np.nan
         
         """
+        # Compute CHull only if pyhull is installed
+        # pyhull is only available in Linux
+        try:        
+            from pyhull import qconvex
+        except ImportError:
+            print (('Warning: pyhull is not installed. ' 
+                    'Cannot compute convex hull. Returning NaN instead.'))
+            return np.nan
+        
         points = group[coordinates].as_matrix()
         output = qconvex('FA', points)
     
