@@ -163,22 +163,22 @@ def test_ClusterStats():
     assert_equal(stats['x_center'].iloc[0],                                  0)
     assert_equal(stats['y_center'].iloc[0],                                  0)
     assert_equal(stats['number_of_localizations'].iloc[0],                   5)
-    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.77)
+    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.63)
     assert_equal(stats['eccentricity'].iloc[0].round(2),                     1)
     
     # Cluster ID 1: longer in x than in y
     assert_equal(stats['x_center'].iloc[1],                                 10)
     assert_equal(stats['y_center'].iloc[1],                                  2)
     assert_equal(stats['number_of_localizations'].iloc[1],                   5)
-    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
+    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.00)
     assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
     
     # Only run these tests if pyhull is installed
     # pyhull is not available in Linux
     try:
         from pyhull import qconvex
-        assert_equal(stats['convex_hull_area'].iloc[0].round(2), 1)
-        assert_equal(stats['convex_hull_area'].iloc[1].round(2), 8)
+        assert_equal(stats['convex_hull'].iloc[0].round(2), 1)
+        assert_equal(stats['convex_hull'].iloc[1].round(2), 8)
     except ImportError:
         pass
 
@@ -199,22 +199,22 @@ def test_ClusterStats_CustomCoordColumns():
     assert_equal(stats['x [nm]_center'].iloc[0],                             0)
     assert_equal(stats['y [nm]_center'].iloc[0],                             0)
     assert_equal(stats['number_of_localizations'].iloc[0],                   5)
-    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.77)
+    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.63)
     assert_equal(stats['eccentricity'].iloc[0].round(2),                     1)
     
     # Cluster ID 1: longer in x than in y
     assert_equal(stats['x [nm]_center'].iloc[1],                            10)
     assert_equal(stats['y [nm]_center'].iloc[1],                             2)
     assert_equal(stats['number_of_localizations'].iloc[1],                   5)
-    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
+    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.00)
     assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
     
     # Only run these tests if pyhull is installed
     # pyhull is not available in Linux
     try:
         from pyhull import qconvex
-        assert_equal(stats['convex_hull_area'].iloc[0].round(2), 1)
-        assert_equal(stats['convex_hull_area'].iloc[1].round(2), 8)
+        assert_equal(stats['convex_hull'].iloc[0].round(2), 1)
+        assert_equal(stats['convex_hull'].iloc[1].round(2), 8)
     except ImportError:
         pass
     
@@ -231,7 +231,7 @@ def test_ClusterStats_CustomStats():
     data       = pd.read_csv(str(pathToData))
     
     # Define a custom statistic to compute
-    def VarTimesTwo(self, group, coordinates):
+    def VarTimesTwo(group, coordinates):
         # Multiples each localization position by 2, then computes
         # the sum of the variances. This is silly but serves as an example.
         variances = group[coordinates].apply(lambda x: x * 2).var(ddof=0)
@@ -241,12 +241,11 @@ def test_ClusterStats_CustomStats():
         
     statProc   = proc.ComputeClusterStats(coordCols=['x [nm]', 'y [nm]'],
                                           statsFunctions = customStats)
-
-
-    
-
-    
-
+                                          
+    stats = statProc(data)
+    ok_('var_times_two' in stats, 'Error: New column name not in DataFrame.')
+    assert_equal(stats['var_times_two'].iloc[0].round(2),                 1.60)
+    assert_equal(stats['var_times_two'].iloc[1].round(2),                16.00)
     
 def test_MergeFang_Stats():
     """Merger correctly merges localizations from the same molecule.

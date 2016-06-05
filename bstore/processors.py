@@ -171,7 +171,7 @@ class ComputeClusterStats:
         self._idLabel   = idLabel
         self._statsFunctions = {'radius_of_gyration' : self._radiusOfGyration,
                                 'eccentricity'       : self._eccentricity,
-                                'convex_hull_area'   : self._convexHull}
+                                'convex_hull'        : self._convexHull}
         
         # Add the input functions to the defaults if they were supplied
         if statsFunctions:                      
@@ -195,8 +195,7 @@ class ComputeClusterStats:
         procdf : DataFrame
             A DataFrame object containing cluster statistics.
         
-        """
-        # TODO: Apply strategy pattern here        
+        """  
         # Group localizations by their ID
         groups = df.groupby(self._idLabel)
         
@@ -212,12 +211,6 @@ class ComputeClusterStats:
             temp.name = name # The name of the column is now the dictionary key
             tempResultsCustom.append(temp)
 
-        # Create a column that determines whether to reject the cluster
-        # These can be set to False during a manual filtering stage.
-        tempResultsKeep = pd.Series([True] * len(tempResultsLength),
-                                    index = tempResultsLength.index,
-                                    name  = 'keep_for_analysis')
-
         # Appends '_center' to the names of the coordinate columns
         # and renames the series
         newCoordCols = [col + '_center' for col in self._coordCols]
@@ -229,8 +222,7 @@ class ComputeClusterStats:
         
         # Create the merged DataFrame
         dataToJoin = [tempResultsCoM,
-                      tempResultsLength,
-                      tempResultsKeep]
+                      tempResultsLength]
         dataToJoin = dataToJoin + tempResultsCustom
                       
         procdf = pd.concat(dataToJoin, axis = 1)
@@ -257,7 +249,7 @@ class ComputeClusterStats:
         variances = group[coordinates].var(ddof = 0)
         
         # sqrt(3/2) makes the radius of gyration comparable to a 3D cluster        
-        Rg = np.sqrt(3 * variances.sum() / 2)
+        Rg = np.sqrt(variances.sum())
         return Rg
         
         
