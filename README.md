@@ -1,3 +1,27 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [B-Store](#b-store)
+- [What is B-Store?](#what-is-b-store)
+  - [What problem does B-Store solve?](#what-problem-does-b-store-solve)
+  - [What are the design criteria that guide B-Store's development?](#what-are-the-design-criteria-that-guide-b-stores-development)
+  - [What doesn't B-Store do?](#what-doesnt-b-store-do)
+- [How do I use B-Store?](#how-do-i-use-b-store)
+- [Installation](#installation)
+  - [Linux](#linux)
+  - [Windows](#windows)
+- [What is the logic behind the B-Store design?](#what-is-the-logic-behind-the-b-store-design)
+  - [What language is B-Store written in?](#what-language-is-b-store-written-in)
+  - [I want to use B-Store, but I don't know Python.](#i-want-to-use-b-store-but-i-dont-know-python)
+- [What is single molecule localization microscopy (SMLM)?](#what-is-single-molecule-localization-microscopy-smlm)
+- [Who wrote B-Store?](#who-wrote-b-store)
+  - [Authors](#authors)
+- [Acknowledgements](#acknowledgements)
+- [What does the 'B' stand for?](#what-does-the-b-stand-for)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # B-Store
 [![Build Status](https://travis-ci.com/kmdouglass/bstore.svg?token=wpszvKaNd7qmZqYsAqpT&branch=development)](https://travis-ci.com/kmdouglass/bstore)
 
