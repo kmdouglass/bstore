@@ -181,6 +181,72 @@ def test_ClusterStats():
         assert_equal(stats['convex_hull_area'].iloc[1].round(2), 8)
     except ImportError:
         pass
+
+def test_ClusterStats_CustomCoordColumns():
+    """ComputeClusterStats allows for customizing the coordinate columns.
+    
+    """
+    # This is the same test as above, but the column names will be
+    # changed in ComputeClusterStats's constructor instead.
+    statProc   = proc.ComputeClusterStats(coordCols=['x [nm]', 'y [nm]'])
+    pathToData = testDataRoot \
+               / Path('processor_test_files/test_cluster_stats.csv')
+    data       = pd.read_csv(str(pathToData))
+    
+    stats = statProc(data)
+    
+    # Cluster ID 0: symmetric about center
+    assert_equal(stats['x [nm]_center'].iloc[0],                             0)
+    assert_equal(stats['y [nm]_center'].iloc[0],                             0)
+    assert_equal(stats['number_of_localizations'].iloc[0],                   5)
+    assert_equal(stats['radius_of_gyration'].iloc[0].round(2),            0.77)
+    assert_equal(stats['eccentricity'].iloc[0].round(2),                     1)
+    
+    # Cluster ID 1: longer in x than in y
+    assert_equal(stats['x [nm]_center'].iloc[1],                            10)
+    assert_equal(stats['y [nm]_center'].iloc[1],                             2)
+    assert_equal(stats['number_of_localizations'].iloc[1],                   5)
+    assert_equal(stats['radius_of_gyration'].iloc[1].round(2),            2.45)
+    assert_equal(stats['eccentricity'].iloc[1].round(2),                     4)
+    
+    # Only run these tests if pyhull is installed
+    # pyhull is not available in Linux
+    try:
+        from pyhull import qconvex
+        assert_equal(stats['convex_hull_area'].iloc[0].round(2), 1)
+        assert_equal(stats['convex_hull_area'].iloc[1].round(2), 8)
+    except ImportError:
+        pass
+    
+def test_ClusterStats_CustomStats():
+    """ComputeClusterStats accepts custom stats functions.
+    
+    """
+    # ComputeClusterStats's constructor should accept a dict with
+    # name/function pairs and apply each function to the clustered
+    # localizations. This allows customzing what statistics are
+    # computed at run-time by the user.
+    pathToData = testDataRoot \
+               / Path('processor_test_files/test_cluster_stats.csv')
+    data       = pd.read_csv(str(pathToData))
+    
+    # Define a custom statistic to compute
+    def VarTimesTwo(self, group, coordinates):
+        # Multiples each localization position by 2, then computes
+        # the sum of the variances. This is silly but serves as an example.
+        variances = group[coordinates].apply(lambda x: x * 2).var(ddof=0)
+        return variances.sum()
+    
+    customStats = {'var_times_two' : VarTimesTwo}
+        
+    statProc   = proc.ComputeClusterStats(coordCols=['x [nm]', 'y [nm]'],
+                                          statsFunctions = customStats)
+
+
+    
+
+    
+
     
 def test_MergeFang_Stats():
     """Merger correctly merges localizations from the same molecule.

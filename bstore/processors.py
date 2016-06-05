@@ -161,7 +161,10 @@ class ComputeClusterStats:
             coordinates.
         statsFunctions : dict of name/function pairs
             A dictionary containing column names and functions for computing
-            custom statistics from the clustered localizations
+            custom statistics from the clustered localizations. The keys in
+            dictionary determine the name of the customized column and the
+            value contains a function that computes a number from the
+            coordinates of the localizations in each cluster.
         
         """
         self._coordCols = coordCols
@@ -172,7 +175,7 @@ class ComputeClusterStats:
         
         # Add the input functions to the defaults if they were supplied
         if statsFunctions:                      
-            for name, func in statsFunctions:
+            for name, func in statsFunctions.items():
                 self._statsFunctions[name] = func
     
     def __call__(self, df):
@@ -206,7 +209,7 @@ class ComputeClusterStats:
         tempResultsCustom = []
         for name, func in self._statsFunctions.items():        
             temp      = groups.apply(func, self._coordCols)
-            temp.name = name
+            temp.name = name # The name of the column is now the dictionary key
             tempResultsCustom.append(temp)
 
         # Create a column that determines whether to reject the cluster
