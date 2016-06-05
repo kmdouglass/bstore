@@ -34,8 +34,6 @@ install:
   # Install convex hull software
   - easy_install pyhull
 
-  - pwd
-  
   # Install this library
   - python setup.py install
 

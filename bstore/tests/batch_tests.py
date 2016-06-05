@@ -52,10 +52,10 @@ def test_CSVBatchProcessor_DatasetParser():
     """CSVBatchProcessor correctly identifies the localization files.
     
     """
-    knownDatasets = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults.dat',
-                     'HeLaS_Control_IFFISH_A647_2_MMStack_locResults.dat',
-                     'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults.dat',
-                     'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults.dat']
+    knownDatasets = ['HeLaS_Control_IFFISH_A647_1_MMStack_Pos0_locResults.dat',
+                     'HeLaS_Control_IFFISH_A647_2_MMStack_Pos0_locResults.dat',
+                     'HeLaS_shTRF2_IFFISH_A647_1_MMStack_Pos0_locResults.dat',
+                     'HeLaS_shTRF2_IFFISH_A647_2_MMStack_Pos0_locResults.dat']
                      
     assert_equal(len(bpCSV.datasetList), 4)
                      
@@ -71,10 +71,11 @@ def test_CSVBatchProcessor_Pipeline():
     bpCSV.go()
     
     # Check the results of the filtering
-    results = ['HeLaS_Control_IFFISH_A647_1_MMStack_locResults_processed.csv',
-               'HeLaS_Control_IFFISH_A647_2_MMStack_locResults_processed.csv',
-               'HeLaS_shTRF2_IFFISH_A647_1_MMStack_locResults_processed.csv',
-               'HeLaS_shTRF2_IFFISH_A647_2_MMStack_locResults_processed.csv']
+    results = [
+           'HeLaS_Control_IFFISH_A647_1_MMStack_Pos0_locResults_processed.csv',
+           'HeLaS_Control_IFFISH_A647_2_MMStack_Pos0_locResults_processed.csv',
+           'HeLaS_shTRF2_IFFISH_A647_1_MMStack_Pos0_locResults_processed.csv',
+           'HeLaS_shTRF2_IFFISH_A647_2_MMStack_Pos0_locResults_processed.csv']
                
     for currRes in results:
         pathToCurrRes = outputDir / Path(currRes)

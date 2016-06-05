@@ -82,7 +82,7 @@ The output will be a number of .csv files arranged in a subfolder containing loc
 
 Of course there are many more options available than in these minimal examples. You can find out more in the [examples folder](https://github.com/kmdouglass/bstore/tree/development/examples).
 
-# Tell me how to install B-Store.
+# Installation
 ## Linux
 If you're starting from scratch, you first need to install Python. On Linux, this is most easily achieved by downloading and installing a Python 3.5 or greater Anaconda environment from https://www.continuum.io/downloads. After installing Anaconda, create a new environment for B-Store with a few essential libraries:
 
