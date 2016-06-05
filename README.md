@@ -5,7 +5,6 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [B-Store](#b-store)
 - [What is B-Store?](#what-is-b-store)
   - [What problem does B-Store solve?](#what-problem-does-b-store-solve)
   - [What are the design criteria that guide B-Store's development?](#what-are-the-design-criteria-that-guide-b-stores-development)
