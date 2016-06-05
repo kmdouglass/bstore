@@ -147,12 +147,33 @@ class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
     """
-    def __init__(self, idLabel = 'cluster_id'):
+    def __init__(self, idLabel  = 'cluster_id',
+                 coordCols      = ['x', 'y'],
+                 statsFunctions = None):
         """Set the column name for the cluster ID numbers.
         
+        Parameters
+        ----------
+        idLabel        : str
+            The column name containing cluster ID's.
+        coordCols      : list of string
+            A list containing the column names containing the localization
+            coordinates.
+        statsFunctions : dict of name/function pairs
+            A dictionary containing column names and functions for computing
+            custom statistics from the clustered localizations
+        
         """
-        # TODO: coordCols = ['x', 'y']
+        self._coordCols = coordCols
         self._idLabel   = idLabel
+        self._statsFunctions = {'radius_of_gyration' : self._radiusOfGyration,
+                                'eccentricity'       : self._eccentricity,
+                                'convex_hull_area'   : self._convexHull}
+        
+        # Add the input functions to the defaults if they were supplied
+        if statsFunctions:                      
+            for name, func in statsFunctions:
+                self._statsFunctions[name] = func
     
     def __call__(self, df):
         """Compute the statistics for each cluster of localizations.
@@ -176,13 +197,17 @@ class ComputeClusterStats:
         # Group localizations by their ID
         groups = df.groupby(self._idLabel)
         
-        # Computes the statistics for each cluster
-        tempResultsCoM    = groups.agg({'x' : 'mean',
-                                        'y' : 'mean'})
-        tempResultsRg     = groups.apply(self._radiusOfGyration, ['x', 'y'])
-        tempResultsEcc    = groups.apply(self._eccentricity,     ['x', 'y'])
-        tempResultsCHull  = groups.apply(self._convexHull,       ['x', 'y'])
+        # Computes the default statistics for each cluster
+        tempResultsCoM    = groups[self._coordCols].agg(np.mean)
         tempResultsLength = pd.Series(groups.size())
+        
+        # Compute the custom statistics for each cluster and set
+        # the column name to the dictionary key
+        tempResultsCustom = []
+        for name, func in self._statsFunctions.items():        
+            temp      = groups.apply(func, self._coordCols)
+            temp.name = name
+            tempResultsCustom.append(temp)
 
         # Create a column that determines whether to reject the cluster
         # These can be set to False during a manual filtering stage.
@@ -190,22 +215,20 @@ class ComputeClusterStats:
                                     index = tempResultsLength.index,
                                     name  = 'keep_for_analysis')
 
-        # Rename the series
-        tempResultsCoM.rename(columns = {'x': 'x_center',
-                                         'y': 'y_center'},
+        # Appends '_center' to the names of the coordinate columns
+        # and renames the series
+        newCoordCols = [col + '_center' for col in self._coordCols]
+        nameMapping  = dict(zip(self._coordCols, newCoordCols))
+        
+        tempResultsCoM.rename(columns = nameMapping,
                               inplace = True)
-        tempResultsRg.name     = 'radius_of_gyration'
-        tempResultsEcc.name    = 'eccentricity'
         tempResultsLength.name = 'number_of_localizations'
-        tempResultsCHull.name  = 'convex_hull_area'
         
         # Create the merged DataFrame
-        dataToJoin = (tempResultsCoM,
+        dataToJoin = [tempResultsCoM,
                       tempResultsLength,
-                      tempResultsRg,
-                      tempResultsEcc,
-                      tempResultsCHull,
-                      tempResultsKeep)
+                      tempResultsKeep]
+        dataToJoin = dataToJoin + tempResultsCustom
                       
         procdf = pd.concat(dataToJoin, axis = 1)
         
@@ -220,7 +243,7 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The merged localizations.   
+            The clustered localizations.   
             
         Returns
         -------
@@ -241,14 +264,14 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The merged localizations.   
+            The clustered localizations.   
             
         Returns
         -------
         ecc   : float
             The eccentricity of the group of localizations.
         """
-        # Compute the x-y covariance matrix  and its eigevalues
+        # Compute the covariance matrix  and its eigevalues
         Mcov = np.cov(group[coordinates].as_matrix(),
                       rowvar = 0,
                       bias   = 1)
@@ -264,7 +287,7 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The merged localizations. 
+            The clustered localizations. 
         
         Returns
         -------
