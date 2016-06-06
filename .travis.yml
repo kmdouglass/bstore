@@ -2,6 +2,13 @@
 language: python
 python:
   - "3.5"
+
+before_install:
+  # Download the test files
+  - cd ..
+  - git clone https://github.com/kmdouglass/bstore_test_files.git
+  - cd $TRAVIS_BUILD_DIR
+
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -30,4 +37,4 @@ install:
   # Install this library
   - python setup.py install
 
-script: nosetests -w DataSTORM
+script: nosetests
