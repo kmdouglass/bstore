@@ -17,7 +17,6 @@ config = {
                          'numpy',
                          'scipy',
                          'matplotlib',
-                         'pyhull',
                          'h5py'],
     'packages'        : [],
     'scripts'         : [],

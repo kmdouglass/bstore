@@ -17,9 +17,10 @@
   - [What language is B-Store written in?](#what-language-is-b-store-written-in)
   - [I want to use B-Store, but I don't know Python.](#i-want-to-use-b-store-but-i-dont-know-python)
 - [What is single molecule localization microscopy (SMLM)?](#what-is-single-molecule-localization-microscopy-smlm)
-- [Who wrote B-Store?](#who-wrote-b-store)
-  - [Authors](#authors)
 - [Acknowledgements](#acknowledgements)
+  - [Authors](#authors)
+  - [People and Organizations](#people-and-organizations)
+  - [Software](#software)
 - [What does the 'B' stand for?](#what-does-the-b-stand-for)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -184,17 +185,19 @@ SMLM is a suite of super-resolution fluorescence microscopy techniques for imagi
 
 A fantastic movie explaining how this works using the blinking lights of the Eiffel tower was created by Ricardo Henriques. You can watch it here: https://www.youtube.com/watch?v=RE70GuMCzww
 
-# Who wrote B-Store?
+# Acknowledgements
 ## Authors
 + [Kyle Douglass](http://kmdouglass.github.io) - primary author
 + [Niklas Berliner](https://github.com/nberliner) - contributor
 
-# Acknowledgements
+## People and Organizations
 + [Suliana Manley](http://leb.epfl.ch) - Principal investigator
-+ [trackpy](http://soft-matter.github.io/trackpy/v0.3.0/) - Localization merging
-+ [Christian Sieben](https://people.epfl.ch/christian.sieben) - Bug testing and idea development
-+ [Marcel Stefko](https://people.epfl.ch/marcel.stefko?lang=en)
++ Christian Sieben - Bug testing and idea development
++ Marcel Stefko
 + [SystemsX.ch](http://www.systemsx.ch/) - Funding
+
+## Software
++ [trackpy](http://soft-matter.github.io/trackpy/v0.3.0/) - Localization merging
 + [Python](https://www.python.org/community/)
 + [Anaconda](https://www.continuum.io/why-anaconda)
 
