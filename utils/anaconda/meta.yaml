@@ -1,0 +1,38 @@
+# conda build <DIR_WITH_THIS_FILE> --channel-soft-matter
+package:
+  name: bstore
+  version: "0.1.0b"
+
+source:
+  git_rev: v0.1.0b
+  git_url: https://github.com/kmdouglass/bstore.git
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - conda
+    - nose
+    - numpy
+    - scipy
+    - matplotlib
+    - scikit-learn
+    - pandas
+    - h5py
+    - trackpy
+
+  run:
+    - python
+    - nose
+    - numpy
+    - scipy
+    - matplotlib
+    - scikit-learn
+    - pandas
+    - h5py
+    - trackpy
+
+about:
+  home: https://github.com/kmdouglass/bstore.git
+  license: BSD3
+  license_file: LICENSE.txt
