@@ -1,4 +1,4 @@
-__bstore_Version__ = 'v0.1.0b-b36559d'
+__bstore_Version__ = 'v0.1.0b-4bb4875'
 
 """__HDF_AtomID_Prefix__ : str
     String that precedes all attributes marking database atom
