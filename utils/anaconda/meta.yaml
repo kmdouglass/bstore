@@ -1,4 +1,4 @@
-# conda build <DIR_WITH_THIS_FILE> --channel-soft-matter
+# conda build <DIR_WITH_THIS_FILE> --channel soft-matter
 package:
   name: bstore
   version: "0.1.0b"
@@ -31,6 +31,10 @@ requirements:
     - pandas
     - h5py
     - trackpy
+
+test:
+  imports:
+    - bstore
 
 about:
   home: https://github.com/kmdouglass/bstore.git

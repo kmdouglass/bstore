@@ -19,7 +19,7 @@ config = {
                          'scipy',
                          'matplotlib',
                          'h5py'],
-    'packages'        : [],
+    'packages'        : ['bstore'],
     'scripts'         : [],
     'name'            : 'bstore'
 }
