@@ -10,7 +10,6 @@ config = {
     'download_url'    : 'https://github.com/kmdouglass/bstore',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '0.1.0b',
-
     'install_requires': ['nose',
                          'scikit-learn',
                          'pandas',

@@ -69,7 +69,12 @@ Microscope hardware and acquisition control is often performed inside either com
 If you are a core facility manager and looking for a database system for fluorescence microscopy data, [OMERO](https://www.openmicroscopy.org/site) is a well-developed project that may suit your needs. Additionally, there has been some discussion on a SMLM standard format and incorporating it into OMERO (see this thread at http://lists.openmicroscopy.org.uk/pipermail/ome-devel/2015-July/003410.html). In our experience, OMERO requires infrastructure in the form of hardware and personnel that small labs may not be able to satisfy. Furthermore, this standard format does not yet exist as of June, 2016. Partly for these reasons, we developed B-Store for people like ourselves who want a minimal, no-fuss SMLM data management system. In anticipation of a standard SMLM format, B-Store is designed to be as agnostic to file formats as possible so that it may adapt as the field evolves.
 
 # How do I use B-Store?
-Assuming you have a Parser that knows how to read your raw data and convert it to the right format for the database, a minimal example for building a database goes like this:
+First start a Jupyter notebook session:
+```sh
+jupyter notebook
+```
+
+A minimal example for building a database goes like this:
 
 ```python
 # Import the libraries
@@ -89,7 +94,7 @@ searchDirectory = Path('/path/to/my/data')
 db.build(parser, searchDirectory)
 ```
 
-Since every lab uses different software and file formats for acquiring data, a customized `Parser` for interpreting your data will be required. (Don't worry. We provide help in writing your own.)
+Since every lab uses different software and file formats for acquiring data, a customized `Parser` for interpreting your data will be required. (Don't worry. We provide help in writing your own.) For simple formats, you may even be able to use the built-in `SimpleParser`.
 
 Once in the database, we can pull data from it in a batch process and operate on it like this:
 
@@ -117,28 +122,25 @@ The output will be a number of .csv files arranged in a subfolder containing loc
 Of course there are many more options available than in these minimal examples. You can find out more in the [examples folder](https://github.com/kmdouglass/bstore/tree/development/examples).
 
 # Installation
-## Linux
-If you're starting from scratch, you first need to install Python. On Linux, this is most easily achieved by downloading and installing a Python 3.5 or greater Anaconda environment from https://www.continuum.io/downloads. After installing Anaconda, create a new environment for B-Store with a few essential libraries:
+B-Store is most easily installed from the [Anaconda Cloud package repository](https://anaconda.org/kmdouglass/bstore). If you don't already have Anaconda installed, you may download it for Python 3.5 and greater from https://www.continuum.io/downloads. Once installed, run the commands from the terminal listed below for your system. (If you're on Windows, use the Anaconda Prompt that is supplied with Anaconda.)
 
+*Note that these commands will install B-Store into an environment named bstore that is independent of your default environment. When you want to activate this environment to use B-Store, simply type `source activate bstore` in the Linux/OSX terminal or `activate B-Store` in the Windows Anaconda Prompt.*
+
+## Linux / OSX
 ```sh
 conda update conda
-conda create --name bstore nose numpy scipy matplotlib scikit-learn pandas h5py
+conda create --name bstore jupyter
 source activate bstore
-conda install -c soft-matter trackpy
-```
-
-This will create an environment named bstore with numpy, scipy, etc. installed, activate the environment, and then install a specific package named trackpy.
-
-Next, clone the B-Store repository, move into the repository folder, and install B-Store.
-
-```sh
-git clone https://github.com/kmdouglass/bstore
-cd bstore
-python setup.py install
+conda install -c kmdouglass -c soft-matter bstore
 ```
 
 ## Windows
-Coming soon. (If you can't wait, the steps above are largely the same; you need to run them from the Anaconda prompt instead of the terminal.)
+```sh
+conda update conda
+conda create --name bstore jupyter
+activate bstore
+conda install -c kmdouglass -c soft-matter bstore
+```
 
 # What is the logic behind the B-Store design?
 B-Store is designed to search specified directories on your computer for files associated with an SMLM experiment, such as those containing raw localizations and widefield images. These files are passed through a `Parser`, which converts them into a format suitable for insertion into a database. It does this by ensuring that the files satisfy the requirements of an interface known as a `DatabaseAtom`. Data that implements this interface may pass into and out of the database; data that does not implement the interface cannot. You can think of the `DatabaseAtom` interface like a guard post at a government research facility. Only people with an ID badge for that facility (the interface) may enter. In principle, B-Store does not care about the data itself or the details of the database (HDF, SQL, etc.).
