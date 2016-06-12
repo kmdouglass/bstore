@@ -149,15 +149,6 @@ class Parser(metaclass = ABCMeta):
         
         """
         pass
-    
-    @abstractproperty
-    def uninitialized(self):
-        """Indicates that all dataset information has been removed.
-        
-        This property helps ensure that a Parser never holds onto partial
-        information about a Dataset.
-        """
-        pass
 
 class MMParser(Parser):
     """Parses a Micro-Manager-based file for the acquisition info.
@@ -242,7 +233,7 @@ class MMParser(Parser):
         
     @uninitialized.setter
     def uninitialized(self, value):
-        """Resets the Parser an uninitialized state if True is provided.
+        """Resets the Parser to an uninitialized state if True is provided.
         
         Parameters
         ----------
@@ -503,11 +494,16 @@ class MMParser(Parser):
             
         return acqID, channelID, posID, prefix, sliceID
         
-class HDFParser(Parser):
-    """Parses HDF groups and datasets to extract their acquisition information.
+class SimpleParser(Parser):
+    """A simple parser for and extracting acquisition information.
+    
+    The SimpleParser converts files of the format prefix_acqID.* into
+    DatabaseAtoms for insertion into a database. * may represent .csv files
+    (for locResults), .json (for locMetadata), and .tiff (for widefieldImages).
     
     """
-    pass
+    def __init__(self):
+        pass
 
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed to Parser.
