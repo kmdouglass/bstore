@@ -280,9 +280,11 @@ class MMParser(Parser):
                                              'been initialized.'))
         
         ids = self.getBasicInfo()
-        dba = database.Dataset(ids['acqID'], ids['channelID'],
-                                   self.data, ids['posID'], ids['prefix'],
-                                   ids['sliceID'], ids['datasetType'])
+        dba = database.Dataset(ids['prefix'], ids['acqID'], ids['datasetType'],
+                               self.data, 
+                               channelID = ids['channelID'],
+                               posID     = ids['posID'], 
+                               sliceID   = ids['sliceID'])
         return dba
     
     def parseFilename(self, filename, datasetType = 'locResults'):

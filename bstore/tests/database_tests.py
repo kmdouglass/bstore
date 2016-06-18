@@ -32,8 +32,10 @@ def test_Dataset_CompleteSubclass():
     """Dataset instantiation correctly detects complete subclassing.
     
     """    
-    myDataset = database.Dataset(1, 'A647', data, (0,),
-                                 'HeLa', 1, 'locResults')
+    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
+                                 channelID = 'A647',
+                                 posID     = (0,),
+                                 sliceID   = 1)
 
 @raises(TypeError)    
 def test_Dataset_IncompleteSubclass():
@@ -41,10 +43,15 @@ def test_Dataset_IncompleteSubclass():
     
     """
     class Dataset(database.DatabaseAtom):
-        def __init__(self, acqID, channelID, data,
-                     posID, prefix, sliceID, datasetType):
-            super(Dataset, self).__init__(acqID, channelID, data, posID, 
-                                          prefix, sliceID, datasetType)
+        """A concrete realization of a DatabaseAtom.
+    
+        """
+        def __init__(self, prefix, acqID, datasetType, data,
+                     channelID = None, posID = None, sliceID = None):
+            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
+                                          channelID = channelID,
+                                          posID     = posID,
+                                          sliceID   = sliceID)
                                                 
         @property
         def acqID(self):
@@ -76,7 +83,10 @@ def test_Dataset_IncompleteSubclass():
             pass
 
     # Should raise a TypeError because posID is not defined.
-    myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, 'locResults')
+    myDataset = Dataset('HeLa', 1, 'locResults', data,
+                        channelID = 'A647',
+                        posID     = (0,),
+                        sliceID   = 1)
 
 @raises(ValueError)
 def test_Dataset_NoAcqID():
@@ -84,10 +94,12 @@ def test_Dataset_NoAcqID():
     
     """
     class Dataset(database.DatabaseAtom):
-        def __init__(self, acqID, channelID, data, posID,
-                     prefix, sliceID, datasetType):
-            super(Dataset, self).__init__(acqID, channelID, data, posID,
-                                          prefix, sliceID, datasetType)
+        def __init__(self, prefix, acqID, datasetType, data,
+                     channelID = None, posID = None, sliceID = None):
+            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
+                                          channelID = channelID,
+                                          posID     = posID,
+                                          sliceID   = sliceID)
                                                 
         @property
         def acqID(self):
@@ -118,7 +130,10 @@ def test_Dataset_NoAcqID():
             pass
 
     # Should raise ValueError because acqID is None.
-    myDataset = Dataset(None, 'A647', data, (0,), 'HeLa', 1, 'locResults')
+    myDataset = Dataset('HeLa', None, 'locResults', data,
+                        channelID = 'A647',
+                        posID     = (0,),
+                        sliceID   = 1)
 
 @raises(ValueError)
 def test_Dataset_NoDatasetType():
@@ -126,10 +141,12 @@ def test_Dataset_NoDatasetType():
     
     """
     class Dataset(database.DatabaseAtom):
-        def __init__(self, acqID, channelID, data, posID,
-                     prefix, sliceID, datasetType):
-            super(Dataset, self).__init__(acqID, channelID, posID, data,
-                                          prefix, sliceID, datasetType)
+        def __init__(self, prefix, acqID, datasetType, data,
+                     channelID = None, posID = None, sliceID = None):
+            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
+                                          channelID = channelID,
+                                          posID     = posID,
+                                          sliceID   = sliceID)
                                                 
         @property
         def acqID(self):
@@ -160,7 +177,10 @@ def test_Dataset_NoDatasetType():
             pass
 
     # Should throw ValueError because datasetType is None.
-    myDataset = Dataset(1, 'A647', data, (0,), 'HeLa', 1, None)
+    myDataset = Dataset('HeLa', 1, None, data,
+                        channelID = 'A647',
+                        posID     = (0,),
+                        sliceID   = 1)
 
         
 def test_Database_CompleteSubclass():
@@ -189,20 +209,26 @@ def test_HDFDatabase_KeyGeneration():
     
     """
     myDatasets = [
-                  database.Dataset(1, 'A647', data, (0,),
-                                   'HeLa_Control', None, 'locResults'),
-                  database.Dataset(43, None, data, (0,),
-                                   'HeLa_Control', None, 'locResults'),
-                  database.Dataset(6, None, data, None,
-                                   'HeLa_Control', None, 'locResults'),
-                  database.Dataset(6, 'Cy5', data, (1,),
-                                   'HeLa_Control', 3, 'locResults'),
-                  database.Dataset(89, 'DAPI', data, (3, 12),
-                                  'HeLa_Control', 46, 'locResults'),
-                  database.Dataset(76, 'A750', data, (0,2),
-                                   'HeLa_Control', None, 'widefieldImage'),
-                  database.Dataset(76, 'A750', data, (0,2),
-                                   'HeLa_Control', None, 'locMetadata')
+                  database.Dataset('HeLa_Control', 1, 'locResults', data,
+                                   channelID = 'A647',
+                                   posID     = (0,)),
+                  database.Dataset('HeLa_Control', 43, 'locResults', data,
+                                   posID = (0,)),
+                  database.Dataset('HeLa_Control', 6, 'locResults', data),
+                  database.Dataset('HeLa_Control', 6, 'locResults', data,
+                                   channelID = 'Cy5',
+                                   posID     = (1,),
+                                   sliceID   = 3),
+                  database.Dataset('HeLa_Control', 89, 'locResults', data,
+                                   channelID = 'DAPI',
+                                   posID = (3, 12),
+                                   sliceID = 46),
+                  database.Dataset('HeLa_Control', 76, 'widefieldImage', data,
+                                   channelID = 'A750',
+                                   posID = (0,2)),
+                  database.Dataset('HeLa_Control', 76, 'locMetadata', data,
+                                   channelID = 'A750',
+                                   posID = (0,2))
                  ]
      
     # The last one should be locResults and not locMetadata because
@@ -236,10 +262,12 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         remove(str(dbName))
     
     myDB  = database.HDFDatabase(dbName)
-    myDS  = database.Dataset(1, 'A647', data, (0,),
-                             'Cos7', None, 'locResults')
-    myDS2 = database.Dataset(1, 'A647', data, (1,2),
-                             'Cos7', None, 'locResults')
+    myDS  = database.Dataset('Cos7', 1, 'locResults', data,
+                             channelID = 'A647',
+                             posID     = (0,))
+    myDS2 = database.Dataset('Cos7', 1, 'locResults', data, 
+                             channelID = 'A647',
+                             posID     = (1,2))
     
     myDB.put(myDS)
     myDB.put(myDS2)
@@ -277,8 +305,9 @@ def test_HDFDatabase_Get():
     myDB     = database.HDFDatabase(dbName)
      
     # Create an ID with empty data for retrieving the dataset     
-    myDSID   = database.Dataset(1, 'A647', None, (0,),
-                                'Cos7', None, 'locResults')
+    myDSID   = database.Dataset('Cos7', 1, 'locResults', None,
+                                channelID = 'A647',
+                                posID     = (0,))
     
     # Get the data from the database and compare it to the input data
     retrievedDataset = myDB.get(myDSID)
@@ -343,12 +372,16 @@ def test_HDFDatabase_Put_LocMetadata():
     mmParser.parseFilename(inputFile, datasetType)
     
     # Create the dataset; locMetadata needs locResults, so put those first
-    dsLocs = database.Dataset(mmParser.acqID, mmParser.channelID,
-                              data, mmParser.posID, mmParser.prefix,
-                              mmParser.sliceID, 'locResults')
-    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
-                              mmParser.data, mmParser.posID, mmParser.prefix,
-                              mmParser.sliceID, mmParser.datasetType)
+    dsLocs = database.Dataset(mmParser.prefix, mmParser.acqID, 'locResults',
+                              data,
+                              channelID = mmParser.channelID,
+                              posID     = mmParser.posID, 
+                              sliceID   = mmParser.sliceID, )
+    dsMeta = database.Dataset(mmParser.prefix, mmParser.acqID,
+                              mmParser.datasetType, mmParser.data,
+                              channelID = mmParser.channelID,
+                              posID     = mmParser.posID, 
+                              sliceID   = mmParser.sliceID, )
                           
     # Write the metadata into the database
     myDB.put(dsLocs)
@@ -417,9 +450,11 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     mmParser.parseFilename(inputFile, datasetType)
     
     # Create the dataset
-    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
-                              mmParser.data, mmParser.posID, mmParser.prefix,
-                              mmParser.sliceID, mmParser.datasetType)
+    dsMeta = database.Dataset(mmParser.prefix, mmParser.acqID,
+                              mmParser.datasetType, mmParser.data,
+                              channelID = mmParser.channelID,
+                              posID     = mmParser.posID, 
+                              sliceID   = mmParser.sliceID, )
                           
     # Write the metadata into the database; should raise LocResultsDoNotExist
     myEmptyDB.put(dsMeta)
@@ -459,8 +494,9 @@ def test_HDF_Database_Check_Key_Existence_LocResults():
         remove(str(dbName))
     myDB     = database.HDFDatabase(dbName)
     
-    myDS  = database.Dataset(1, 'A647', data, (0,),
-                             'Cos7', None, 'locResults')
+    myDS  = database.Dataset('Cos7', 1, 'locResults', data,
+                             channelID = 'A647',
+                             posID = (0,))
                              
     # Raises error on the second put because the key already exists.
     myDB.put(myDS)
@@ -484,12 +520,16 @@ def test_HDF_Database_Check_Key_Existence_LocMetadata():
     mmParser.parseFilename(inputFile, datasetType)
     
     # Create the dataset; locMetadata needs locResults, so put those first
-    dsLocs = database.Dataset(mmParser.acqID, mmParser.channelID,
-                              data, mmParser.posID, mmParser.prefix,
-                              mmParser.sliceID, 'locResults')
-    dsMeta = database.Dataset(mmParser.acqID, mmParser.channelID,
-                              mmParser.data, mmParser.posID, mmParser.prefix,
-                              mmParser.sliceID, mmParser.datasetType)
+    dsLocs = database.Dataset(mmParser.prefix, mmParser.acqID, 'locResults',
+                              data,
+                              channelID = mmParser.channelID,
+                              posID     = mmParser.posID, 
+                              sliceID   = mmParser.sliceID)
+    dsMeta = database.Dataset(mmParser.prefix, mmParser.acqID, 
+                              mmParser.datasetType, mmParser.data,
+                              channelID = mmParser.channelID,
+                              posID     = mmParser.posID, 
+                              sliceID   = mmParser.sliceID)
                           
     # Write the metadata into the database
     myDB.put(dsLocs)

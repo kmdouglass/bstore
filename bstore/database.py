@@ -31,8 +31,8 @@ class DatabaseAtom(metaclass = ABCMeta):
     """Represents one organizational unit in the database.
     
     """
-    def __init__(self, acqID, channelID, data,
-                 posID, prefix, sliceID, datasetType):
+    def __init__(self, prefix, acqID, datasetType, data,
+                 channelID = None, posID = None, sliceID = None):
         if acqID is None:
             raise ValueError('acqID cannot be \'None\'.')
                 
@@ -149,10 +149,12 @@ class Dataset(DatabaseAtom):
     """A concrete realization of a DatabaseAtom.
     
     """
-    def __init__(self, acqID, channelID, data,
-                 posID, prefix, sliceID, datasetType):
-        super(Dataset, self).__init__(acqID, channelID, data, posID,
-                                      prefix, sliceID, datasetType)
+    def __init__(self, prefix, acqID, datasetType, data,
+                 channelID = None, posID = None, sliceID = None):
+        super(Dataset, self).__init__(prefix, acqID, datasetType, data,
+                                      channelID = channelID,
+                                      posID     = posID,
+                                      sliceID   = sliceID)
                                                 
     @property
     def acqID(self):
@@ -359,8 +361,10 @@ class HDFDatabase(Database):
             index = re.findall(r'\d+', sliceRaw.group(0))
             sliceID = int(index[0])
         
-        returnDS = Dataset(acqID, channelID, data, posID,
-                           prefix, sliceID, datasetType)
+        returnDS = Dataset(prefix, acqID, datasetType, data,
+                           channelID = channelID,
+                           posID     = posID,
+                           sliceID   = sliceID)
         return returnDS
 
     def _genKey(self, atom):
@@ -548,8 +552,8 @@ class HDFDatabase(Database):
                                                                  dsID.getInfo()
             
         # Use returnDS to get the key pointing to the dataset
-        returnDS = Dataset(acqID, channelID, None, posID,
-                           prefix, sliceID, datasetType)
+        returnDS = Dataset(prefix, acqID, datasetType, None,
+                           channelID=channelID, posID=posID, sliceID=sliceID)
         hdfKey   = self._genKey(returnDS)
 
         # Ensure that the key exists        
