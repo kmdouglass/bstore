@@ -128,7 +128,18 @@ class Parser(metaclass = ABCMeta):
                      }
                      
         return basicInfo
+    
+    @property
+    def prefix(self):
+        return self._prefix
         
+    @prefix.setter
+    def prefix(self, value):
+        if value:
+            # Replaces spaces with '_' in prefix.
+            # This avoids problems with spaces in PyTables
+            self._prefix = value.replace(' ', '_')
+    
     @abstractproperty
     def data(self):
         """Loads the data into memory and maps it to the correct format.
