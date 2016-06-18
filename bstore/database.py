@@ -32,7 +32,7 @@ class DatabaseAtom(metaclass = ABCMeta):
     
     """
     def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, posID = None, sliceID = None):
+                 channelID = None, date = None, posID = None, sliceID = None):
         if acqID is None:
             raise ValueError('acqID cannot be \'None\'.')
                 
@@ -48,13 +48,14 @@ class DatabaseAtom(metaclass = ABCMeta):
         self._prefix      = prefix
         self._sliceID     = sliceID
         self._datasetType = datasetType
+        self._date        = date
         
     def getInfo(self):
         """Returns the dataset information (without the data) as a tuple.
         
         """
-        return self._acqID, self._channelID, self._posID, \
-               self._prefix, self._sliceID, self._datasetType
+        return self._prefix, self._acqID, self._datasetType, \
+               self._channelID, self._date, self._posID, self._sliceID
                
     def getInfoDict(self):
         """Returns the dataset information (without the data) as a dict.
@@ -65,7 +66,8 @@ class DatabaseAtom(metaclass = ABCMeta):
                      'posID'       : self._posID,
                      'prefix'      : self._prefix,
                      'sliceID'     : self._sliceID,
-                     'datasetType' : self._datasetType}
+                     'datasetType' : self._datasetType,
+                     'date'        : self._date}
         return atomicIDs
         
     @abstractproperty
@@ -78,6 +80,10 @@ class DatabaseAtom(metaclass = ABCMeta):
     
     @abstractproperty
     def data(self):
+        pass
+    
+    @abstractproperty
+    def date(self):
         pass
     
     @abstractproperty
@@ -150,9 +156,10 @@ class Dataset(DatabaseAtom):
     
     """
     def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, posID = None, sliceID = None):
+                 channelID = None, date = None, posID = None, sliceID = None):
         super(Dataset, self).__init__(prefix, acqID, datasetType, data,
                                       channelID = channelID,
+                                      date      = date,
                                       posID     = posID,
                                       sliceID   = sliceID)
                                                 
@@ -171,6 +178,10 @@ class Dataset(DatabaseAtom):
     @data.setter
     def data(self, value):
         self._data = value
+        
+    @property
+    def date(self, value):
+        return self._date
     
     @property
     def posID(self):
@@ -323,7 +334,7 @@ class HDFDatabase(Database):
             just the ID information.
             
         """
-        
+        # TODO: Extract the date from the key
         # Parse key for atomic IDs
         splitStr    = key.split(sep = '/')
         prefix      = splitStr[0]
@@ -379,6 +390,7 @@ class HDFDatabase(Database):
         str
         
         """
+        # TODO: Add date to the very beginning of this string
         acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
                     '_' + str(atom.acqID)
                                  
@@ -538,6 +550,7 @@ class HDFDatabase(Database):
             try:
                 acqID       = dsID['acqID']
                 channelID   = dsID['channelID']
+                date        = dsID['date']
                 posID       = dsID['posID']
                 prefix      = dsID['prefix']
                 sliceID     = dsID['sliceID']
@@ -548,12 +561,13 @@ class HDFDatabase(Database):
                 print(e.args)
                 raise
         else:
-            acqID, channelID, posID, prefix, sliceID, datasetType = \
+            prefix, acqID, datasetType, channelID, date, posID, sliceID = \
                                                                  dsID.getInfo()
             
         # Use returnDS to get the key pointing to the dataset
         returnDS = Dataset(prefix, acqID, datasetType, None,
-                           channelID=channelID, posID=posID, sliceID=sliceID)
+                           channelID = channelID, date = date,
+                           posID = posID, sliceID = sliceID)
         hdfKey   = self._genKey(returnDS)
 
         # Ensure that the key exists        
