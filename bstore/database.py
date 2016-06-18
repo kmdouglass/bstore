@@ -1,4 +1,4 @@
-from pathlib import PurePath, Path
+from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
 import h5py
@@ -263,6 +263,9 @@ class HDFDatabase(Database):
                         self.put(parser.getDatabaseAtom())
                         
                     datasets.append(parser.getBasicInfo())
+        except:
+            import sys
+            print("Unexpected error:", sys.exc_info()[0])
         finally:
             # Report on all the datasets that were parsed
             buildResults = self._sortDatasets(datasets)
@@ -586,6 +589,9 @@ class HDFDatabase(Database):
                 hdf = HDFStore(self._dbName)
                 hdf.put(key, atom.data, format = 'table',
                         data_columns = True, index = False)
+            except:
+                import sys
+                print("Unexpected error:", sys.exc_info()[0])
             finally:
                 hdf.close()
                 
@@ -610,6 +616,9 @@ class HDFDatabase(Database):
                 # Current version of this software
                 hdf[key].attrs[atomPrefix +'Version'] = \
                                                    config.__bstore_Version__
+            except:
+                import sys
+                print("Unexpected error:", sys.exc_info()[0])
             finally:
                 hdf.close()
         elif atom.datasetType == 'locMetadata':
@@ -655,8 +664,10 @@ class HDFDatabase(Database):
             f.close()
         
         # Read attributes of each key in resultGroups for SMLM_*
-        # and convert them to a datasetAtom ID
-        resultKeys = list(map(Path, resultGroups))
+        # and convert them to a datasetAtom ID.
+        # Note: If you use Path and Not PurePosixPath, '/' will
+        # become '\\' on Windows and you won't get the right keys.
+        resultKeys = list(map(PurePosixPath, resultGroups))
         atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
         
         return atomicIDs
