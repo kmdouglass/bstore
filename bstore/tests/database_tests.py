@@ -114,7 +114,7 @@ def test_Dataset_NoAcqID():
             pass
         
         @property
-        def date(self):
+        def dateID(self):
             pass
         
         @property
@@ -165,7 +165,7 @@ def test_Dataset_NoDatasetType():
             pass
         
         @property
-        def date(self):
+        def dateID(self):
             pass
         
         @property
@@ -333,7 +333,7 @@ def test_HDFDatabase_Get_Dict():
     myDSID   = {
                 'acqID'       : 1,
                 'channelID'   : 'A647',
-                'date'        : None,
+                'dateID'      : None,
                 'posID'       : (0,),
                 'prefix'      : 'Cos7',
                 'sliceID'     : None,
@@ -414,7 +414,7 @@ def test_HDF_Database_Get_LocMetadata():
     myDSID   = {
                 'acqID'       : 2,
                 'channelID'   : 'A750',
-                'date'        : None,
+                'dateID'      : None,
                 'posID'       : (0,),
                 'prefix'      : 'HeLa_Control',
                 'sliceID'     : None,
