@@ -431,8 +431,8 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     """
     acqID       =            1
     channelID   =       'A647'
-    posID       =         (0,) # Note that this is a tuple!
-    prefix      = 'my dataset'
+    posID       =         (0,) 
+    prefix      = 'my dataset' # Note the space in the name!
     sliceID     =         None
     datasetType = 'locResults'    
     
