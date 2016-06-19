@@ -41,6 +41,14 @@ class DatabaseAtom(metaclass = ABCMeta):
         if datasetType is None:
             raise ValueError('datasetType cannot be \'None\'.')
             
+        # dateID should follow the format YYYY-MM-DD
+        # Note that Python's 'and' short circuits, so the order here
+        # is important. pattern.match(None) will raise a TypeError
+        pattern = re.compile('\d{4}-\d{2}-\d{2}')
+        if dateID and not pattern.match(dateID):
+            raise ValueError(('Error: The date is not of the format '
+                              'YYYY-MM-DD.'))
+
         _checkType(datasetType)
             
         self._acqID       = acqID
@@ -342,7 +350,9 @@ class HDFDatabase(Database):
         
         # Check for a date in the second part of splitStr
         try:
-            datetimeObject = parse(splitStr[1])
+            # [1:] cuts off the 'd' part of the string, which
+            # is needed for PyTables naming conventions. So are underscores.
+            datetimeObject = parse(splitStr[1][1:].replace('_','-'))
             dateID = datetimeObject.strftime('%Y-%m-%d')
             
             # Remove this element so the remaining code
@@ -389,7 +399,7 @@ class HDFDatabase(Database):
         
         returnDS = Dataset(prefix, acqID, datasetType, data,
                            channelID = channelID,
-                           dateID      = dateID,
+                           dateID    = dateID,
                            posID     = posID,
                            sliceID   = sliceID)
         return returnDS
@@ -406,8 +416,11 @@ class HDFDatabase(Database):
         str
         
         """
+        # 'd' and underscores are needed for PyTables naming conventions
         if atom.dateID is not None:
-            acqKey = '/'.join([atom.prefix, atom.dateID, atom.prefix]) + \
+            acqKey = '/'.join([atom.prefix,
+                               'd' + atom.dateID.replace('-','_'),
+                               atom.prefix]) + \
                      '_' + str(atom.acqID)
         else:
             acqKey = '/'.join([atom.prefix, atom.prefix]) + \

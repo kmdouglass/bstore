@@ -190,7 +190,30 @@ def test_Dataset_NoDatasetType():
                         posID     = (0,),
                         sliceID   = 1)
 
-        
+@raises(ValueError)
+def test_Dataset_BadDateFormat():
+    """The dataset raises an error when a bad date string is supplied.
+    
+    """
+    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
+                                  channelID = 'A647',
+                                  # Should be 2016-06-01
+                                  dateID    = '2016-06-1', 
+                                  posID     = (0,),
+                                  sliceID   = 1)
+                                  
+def test_Dataset_GoodDateFormat():
+    """The dataset accepts a good date string.
+    
+    """
+    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
+                                  channelID = 'A647',
+                                  dateID    = '2016-06-01', 
+                                  posID     = (0,),
+                                  sliceID   = 1)
+                                  
+    ok_(myDataset.dateID == '2016-06-01')
+                                  
 def test_Database_CompleteSubclass():
     """Database instantiation is complete.
     
@@ -234,6 +257,10 @@ def test_HDFDatabase_KeyGeneration():
                   database.Dataset('HeLa_Control', 76, 'widefieldImage', data,
                                    channelID = 'A750',
                                    posID = (0,2)),
+                  database.Dataset('HeLa_Control', 76, 'widefieldImage', data,
+                                   channelID = 'A750',
+                                   dateID    = '2016-05-05',
+                                   posID = (0,2)),
                   database.Dataset('HeLa_Control', 76, 'locMetadata', data,
                                    channelID = 'A750',
                                    posID = (0,2))
@@ -249,6 +276,8 @@ def test_HDFDatabase_KeyGeneration():
                   'HeLa_Control/HeLa_Control_89' + \
                       '/locResults_DAPI_Pos_003_012_Slice46',
                   'HeLa_Control/HeLa_Control_76' + \
+                      '/widefieldImage_A750_Pos_000_002',
+                  'HeLa_Control/d2016_05_05/HeLa_Control_76' + \
                       '/widefieldImage_A750_Pos_000_002',
                   'HeLa_Control/HeLa_Control_76' + \
                       '/locResults_A750_Pos_000_002'
@@ -276,9 +305,14 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
     myDS2 = database.Dataset('Cos7', 1, 'locResults', data, 
                              channelID = 'A647',
                              posID     = (1,2))
+    myDS3 = database.Dataset('Cos7', 1, 'locResults', data, 
+                             channelID = 'A647',
+                             dateID    = '2016-05-05',
+                             posID     = (1,2))
     
     myDB.put(myDS)
     myDB.put(myDS2)
+    myDB.put(myDS3)
     assert_true(dbName.exists())
     
     # Get keys and attributes
@@ -303,6 +337,15 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString1].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString1].attrs[atomPre + 'sliceID'],          'None')
         assert_equal(f[keyString1].attrs[atomPre + 'datasetType'],'locResults')
+        
+        keyString2 = 'Cos7/d2016_05_05/Cos7_1/' + keys[1]
+        assert_equal(f[keyString2].attrs[atomPre + 'acqID'],                 1)
+        assert_equal(f[keyString2].attrs[atomPre + 'channelID'],        'A647')
+        assert_equal(f[keyString2].attrs[atomPre + 'posID'][0],              1)
+        assert_equal(f[keyString2].attrs[atomPre + 'posID'][1],              2)
+        assert_equal(f[keyString2].attrs[atomPre + 'prefix'],           'Cos7')
+        assert_equal(f[keyString2].attrs[atomPre + 'sliceID'],          'None')
+        assert_equal(f[keyString2].attrs[atomPre + 'datasetType'],'locResults')
         f.close()
 
 def test_HDFDatabase_Get():
@@ -310,12 +353,32 @@ def test_HDFDatabase_Get():
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    # Created in test_HDFDatabase_Put_Keys_AtomicMetadata()    
+    myDB     = database.HDFDatabase(dbName)
+    
+    # Create an ID with empty data for retrieving the dataset     
+    myDSID   = database.Dataset('Cos7', 1, 'locResults', None,
+                                channelID = 'A647',
+                                posID     = (0,))
+    
+    # Get the data from the database and compare it to the input data
+    retrievedDataset = myDB.get(myDSID)
+    ok_((data['x'] == retrievedDataset.data['x']).all())
+    ok_((data['y'] == retrievedDataset.data['y']).all())
+    
+def test_HDFDatabase_GetWithDate():
+    """HDFDatabase.get() returns the correct Dataset with a dateID.
+    
+    """
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    # Created in test_HDFDatabase_Put_Keys_AtomicMetadata()  
     myDB     = database.HDFDatabase(dbName)
      
     # Create an ID with empty data for retrieving the dataset     
     myDSID   = database.Dataset('Cos7', 1, 'locResults', None,
                                 channelID = 'A647',
-                                posID     = (0,))
+                                dateID    = '2016-05-05',
+                                posID     = (1,2))
     
     # Get the data from the database and compare it to the input data
     retrievedDataset = myDB.get(myDSID)
@@ -333,8 +396,8 @@ def test_HDFDatabase_Get_Dict():
     myDSID   = {
                 'acqID'       : 1,
                 'channelID'   : 'A647',
-                'dateID'      : None,
-                'posID'       : (0,),
+                'dateID'      : '2016-05-05',
+                'posID'       : (1,2),
                 'prefix'      : 'Cos7',
                 'sliceID'     : None,
                 'datasetType' : 'locResults'
