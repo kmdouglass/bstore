@@ -15,7 +15,7 @@
    version="1.1"
    inkscape:version="0.48.5 r10040"
    sodipodi:docname="dataset_logic.svg"
-   inkscape:export-filename="/home/douglass/src/bstore/design/dataset_logic.png"
+   inkscape:export-filename="/home/kmdouglass/src/bstore/design/dataset_logic.png"
    inkscape:export-xdpi="120"
    inkscape:export-ydpi="120">
   <defs
@@ -43,16 +43,16 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="251.50425"
+     inkscape:cx="253.52456"
      inkscape:cy="493.8942"
      inkscape:document-units="mm"
-     inkscape:current-layer="g3405"
+     inkscape:current-layer="g3559"
      showgrid="false"
      units="mm"
-     inkscape:window-width="1920"
-     inkscape:window-height="1129"
+     inkscape:window-width="1366"
+     inkscape:window-height="715"
      inkscape:window-x="0"
-     inkscape:window-y="49"
+     inkscape:window-y="31"
      inkscape:window-maximized="1"
      inkscape:snap-midpoints="true"
      showguides="true"
@@ -684,18 +684,6 @@
                id="tspan4567-3">Date</tspan></text>
         </g>
       </g>
-      <text
-         xml:space="preserve"
-         style="font-size:7px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"
-         x="445.71503"
-         y="457.12506"
-         id="text3666"
-         sodipodi:linespacing="125%"><tspan
-           sodipodi:role="line"
-           id="tspan3668"
-           x="445.71503"
-           y="457.12506"
-           style="font-size:10px">(Future Implementation)</tspan></text>
       <g
          transform="translate(365.55179,632.84028)"
          id="g3097">
