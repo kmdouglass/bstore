@@ -582,7 +582,7 @@ class HDFDatabase(Database):
             try:
                 acqID       = dsID['acqID']
                 channelID   = dsID['channelID']
-                dateID        = dsID['dateID']
+                dateID      = dsID['dateID']
                 posID       = dsID['posID']
                 prefix      = dsID['prefix']
                 sliceID     = dsID['sliceID']
@@ -656,6 +656,8 @@ class HDFDatabase(Database):
                 hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
                 hdf[key].attrs[atomPrefix + 'channelID']   = \
                     'None' if atom.channelID is None else atom.channelID
+                hdf[key].attrs[atomPrefix + 'dateID']      = \
+                    'None' if atom.dateID is None else atom.dateID
                 hdf[key].attrs[atomPrefix + 'posID']       = \
                     'None' if atom.posID is None else atom.posID
                 hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
