@@ -424,3 +424,23 @@ def test_FormatMap_Dict_Constructor():
     
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
+    
+def test_MMParser_ConvertsSpacesToUnderscores():
+    """The MMParser will convert spaces in the prefix to underscores.
+    
+    """
+    acqID       =            1
+    channelID   =       'A647'
+    posID       =         (0,) # Note that this is a tuple!
+    prefix      = 'my dataset'
+    sliceID     =         None
+    datasetType = 'locResults'    
+    
+    parser = TestParser(acqID, channelID, posID,
+                        prefix, sliceID, datasetType)
+    assert_equal(parser.acqID,                  1)
+    assert_equal(parser.channelID,         'A647')
+    assert_equal(parser.posID,               (0,))
+    assert_equal(parser.prefix,      'my_dataset') # Note the underscore
+    assert_equal(parser.sliceID,             None)
+    assert_equal(parser.datasetType, 'locResults')
