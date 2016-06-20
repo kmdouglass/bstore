@@ -67,6 +67,8 @@ class Parser(metaclass = ABCMeta):
         The number identifying the Multi-D acquisition for a given prefix name.
     channelID   : str
         The color channel associated with the dataset.
+    dateID      : str
+        The date of the acquistion in the format YYYY-mm-dd.
     posID       : (int,) or (int, int)
         The position identifier. It is a single element tuple if positions were
         manually set; otherwise, it's a 2-tuple indicating the x and y
@@ -80,7 +82,8 @@ class Parser(metaclass = ABCMeta):
         'locMetadata', or 'widefieldImage'.
        
     """
-    def __init__(self, acqID, channelID, posID, prefix, sliceID, datasetType):
+    def __init__(self, acqID, channelID, dateID,
+                 posID, prefix, sliceID, datasetType):
         """Initialize the parser's metadata information.
         
         Parameters
@@ -109,6 +112,7 @@ class Parser(metaclass = ABCMeta):
         # These are the essential pieces of information to identify a dataset.
         self.acqID       =       acqID
         self.channelID   =   channelID
+        self.dateID      =      dateID
         self.posID       =       posID
         self.prefix      =      prefix
         self.sliceID     =     sliceID
@@ -121,6 +125,7 @@ class Parser(metaclass = ABCMeta):
         basicInfo = {
                      'acqID'         :       self.acqID,
                      'channelID'     :   self.channelID,
+                     'dateID'        :      self.dateID,
                      'posID'         :       self.posID,
                      'prefix'        :      self.prefix,
                      'sliceID'       :     self.sliceID,
@@ -259,6 +264,7 @@ class MMParser(Parser):
                 self._metadata      = None
                 self.acqID          = None
                 self.channelID      = None
+                self.dateID         = None
                 self.posID          = None
                 self.prefix         = None
                 self.sliceID        = None
@@ -281,9 +287,8 @@ class MMParser(Parser):
         
         ids = self.getBasicInfo()
         dba = database.Dataset(ids['prefix'], ids['acqID'], ids['datasetType'],
-                               self.data, 
-                               channelID = ids['channelID'],
-                               posID     = ids['posID'], 
+                               self.data, channelID = ids['channelID'],
+                               dateID = ids['dateID'], posID = ids['posID'], 
                                sliceID   = ids['sliceID'])
         return dba
     
@@ -326,8 +331,9 @@ class MMParser(Parser):
             super(MMParser, self).__init__(*parsedData, datasetType)
         elif datasetType == 'locMetadata':
             parsedData = self._parseLocMetadata(fullPath)
-            (acqID, channelID, posID, prefix, sliceID, metadata) = parsedData
-            super(MMParser, self).__init__(acqID, channelID, posID,
+            (acqID, channelID, dateID, posID, prefix, sliceID, metadata) = \
+                                                                     parsedData
+            super(MMParser, self).__init__(acqID, channelID, dateID, posID,
                                            prefix, sliceID, datasetType)           
             self._metadata = metadata
         elif datasetType == 'widefieldImage':
@@ -354,6 +360,7 @@ class MMParser(Parser):
         -------
         acqID     : int
         channelID : str
+        dateID    : str
         posID     : (int,) or (int, int)
         prefix    : str
         sliceID   : int
@@ -408,10 +415,12 @@ class MMParser(Parser):
             indexes = re.findall(r'\d{1,}', positionRaw.group(0))
             posID   = tuple([int(index) for index in indexes])
         
-        # TODO: Copy this part from database._genAtomicID and write tests       
+        # TODO: Copy sliceID part from database._genAtomicID and write tests       
+        # These are not currently implemented by the MMParser
         sliceID = None
+        dateID  = None
         
-        return acqID, channelID, posID, prefix, sliceID
+        return acqID, channelID, dateID, posID, prefix, sliceID
         
     def _parseLocMetadata(self, fullPath):
         """Parse a localization metadata file.
@@ -437,7 +446,7 @@ class MMParser(Parser):
         
         filename = str(fullPath.name)
             
-        acqID, channelID, posID, prefix, sliceID = \
+        acqID, channelID, dateID, posID, prefix, sliceID = \
                                             self._parseLocResults(filename)
         
         # Remove non-matching position information from the metadata
@@ -460,7 +469,7 @@ class MMParser(Parser):
         # TODO: FUTURE IMPLEMENTATION
         # Isolate slice position from and change metadata accordingly
 
-        return acqID, channelID, posID, prefix, sliceID, metadata
+        return acqID, channelID, dateID, posID, prefix, sliceID, metadata
         
     def _parseWidefieldImage(self, filename):
         """Parse a widefield image for the Dataset interface.
@@ -479,7 +488,7 @@ class MMParser(Parser):
         sliceID   : int
             
         """
-        acqID, channelID, posID, prefix, sliceID = \
+        acqID, channelID, dateID, posID, prefix, sliceID = \
                         self._parseLocResults(filename, extractAcqID = False)
                         
         # Extract the widefield image identifier from prefix and use it
@@ -505,7 +514,7 @@ class MMParser(Parser):
             assert len(acqID) == 1, 'Error: found multiple acqID\'s.'
             acqID = int(acqID[0])
             
-        return acqID, channelID, posID, prefix, sliceID
+        return acqID, channelID, dateID, posID, prefix, sliceID
         
 class SimpleParser(Parser):
     """A simple parser for and extracting acquisition information.
