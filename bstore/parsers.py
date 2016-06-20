@@ -59,7 +59,7 @@ class FormatMap(dict):
         return dict.__len__(self) // 2
 
 class Parser(metaclass = ABCMeta):
-    """Creates machine-readable data structures with acquisition info.
+    """Translates files to machine-readable data structures with acq. info.
     
     Attributes
     ----------
@@ -93,6 +93,8 @@ class Parser(metaclass = ABCMeta):
             name.
         channelID   : str
             The color channel associated with the dataset.
+        dateID      : str
+            The date of the acquistion in the format YYYY-mm-dd.
         posID       : int, or (int, int)
             The position identifier. It is a single element tuple if positions
             were manually set; otherwise, it's a 2-tuple indicating the x and y
@@ -434,6 +436,7 @@ class MMParser(Parser):
         -------
         acqID     : int
         channelID : str
+        dateID    : str
         posID     : (int,) or (int, int)
         prefix    : str
         sliceID   : int
@@ -483,6 +486,7 @@ class MMParser(Parser):
         -------
         acqID     : int
         channelID : str
+        dateID    : str
         posID     : (int,) or (int, int)
         prefix    : str
         sliceID   : int
@@ -527,6 +531,19 @@ class SimpleParser(Parser):
     def __init__(self):
         pass
 
+    def getBasicInfo(self):
+        pass
+    
+    def getDatabaseAtom(self):
+        pass
+    
+    def parseFilename(self):
+        pass
+    
+    @property
+    def data(self):
+        pass
+    
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed to Parser.
     
