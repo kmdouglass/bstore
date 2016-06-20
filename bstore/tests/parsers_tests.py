@@ -38,12 +38,13 @@ def test_Parser_Attributes():
     """
     acqID       =            1
     channelID   =       'A647'
+    dateID      =         None
     posID       =         (0,) # Note that this is a tuple!
     prefix      = 'my_dataset'
     sliceID     =         None
     datasetType = 'locResults'    
     
-    parser = TestParser(acqID, channelID, posID,
+    parser = TestParser(acqID, channelID, dateID, posID,
                         prefix, sliceID, datasetType)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
@@ -59,13 +60,14 @@ def test_Parser_datasetType():
     """
     acqID       =            1
     channelID   =       'A647'
+    dateID      =         None
     posID       =         (0,)
     prefix      = 'my_dataset'
     sliceID     =         None
     datasetType = 'locRseults' # misspelled
     
 
-    parser = TestParser(acqID, channelID, posID,
+    parser = TestParser(acqID, channelID, dateID, posID,
                         prefix, sliceID, datasetType)
     
 def test_Parser_getBasicInfo():
@@ -74,12 +76,13 @@ def test_Parser_getBasicInfo():
     """
     acqID       =             3
     channelID   =        'A750'
+    dateID      =          None
     posID       =         (0,1)
     prefix      =        'HeLa'
     sliceID     =          None
     datasetType = 'locMetadata'
     
-    parser    = TestParser(acqID, channelID, posID,
+    parser    = TestParser(acqID, channelID, dateID, posID,
                            prefix, sliceID, datasetType)
     basicInfo = parser.getBasicInfo()
     assert_equal(basicInfo['acqID'],                    3)
@@ -431,12 +434,13 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     """
     acqID       =            1
     channelID   =       'A647'
+    dateID      =        None,
     posID       =         (0,) 
     prefix      = 'my dataset' # Note the space in the name!
     sliceID     =         None
     datasetType = 'locResults'    
     
-    parser = TestParser(acqID, channelID, posID,
+    parser = TestParser(acqID, channelID, dateID, posID,
                         prefix, sliceID, datasetType)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
