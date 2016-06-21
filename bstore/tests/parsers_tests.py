@@ -44,8 +44,9 @@ def test_Parser_Attributes():
     sliceID     =         None
     datasetType = 'locResults'    
     
-    parser = TestParser(acqID, channelID, dateID, posID,
-                        prefix, sliceID, datasetType)
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        posID = posID, sliceID = sliceID)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
     assert_equal(parser.posID,               (0,))
@@ -67,8 +68,9 @@ def test_Parser_datasetType():
     datasetType = 'locRseults' # misspelled
     
 
-    parser = TestParser(acqID, channelID, dateID, posID,
-                        prefix, sliceID, datasetType)
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        posID = posID, sliceID = sliceID)
     
 def test_Parser_getBasicInfo():
     """Will getBasicInfo return the right values?
@@ -82,8 +84,9 @@ def test_Parser_getBasicInfo():
     sliceID     =          None
     datasetType = 'locMetadata'
     
-    parser    = TestParser(acqID, channelID, dateID, posID,
-                           prefix, sliceID, datasetType)
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        posID = posID, sliceID = sliceID)
     basicInfo = parser.getBasicInfo()
     assert_equal(basicInfo['acqID'],                    3)
     assert_equal(basicInfo['channelID'],           'A750')
@@ -103,6 +106,7 @@ def test_MMParser_LocResults_Attributes():
     mmParser.parseFilename(inputFilename, datasetType)
     assert_equal(mmParser.acqID,                              3)
     assert_equal(mmParser.channelID,                     'A647')
+    assert_equal(mmParser.dateID,                          None)
     assert_equal(mmParser.posID,                           (0,))
     assert_equal(mmParser.prefix,           'Cos7_Microtubules')
     assert_equal(mmParser.sliceID,                         None)
@@ -440,8 +444,9 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     sliceID     =         None
     datasetType = 'locResults'    
     
-    parser = TestParser(acqID, channelID, dateID, posID,
-                        prefix, sliceID, datasetType)
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        posID = posID, sliceID = sliceID)
     assert_equal(parser.acqID,                  1)
     assert_equal(parser.channelID,         'A647')
     assert_equal(parser.posID,               (0,))
