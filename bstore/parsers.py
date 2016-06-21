@@ -6,6 +6,7 @@ from bstore import database, config
 import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
+from os.path import splitext
 
 class FormatMap(dict):
     """Two-way map for mapping one localization file format to another.
@@ -551,21 +552,59 @@ class SimpleParser(Parser):
     def getDatabaseAtom(self):
         pass
     
-    def parseFilename(self, dsType = 'locResults'):
+    def parseFilename(self, filename, dsType = 'locResults'):
         """Converts a filename into a DatabaseAtom.
         
         Parameters
         ----------
-        dsType : str
+        filename : str or Path
+            A string or pathlib Path object containing the dataset's filename.
+        dsType   : str
             The type of the dataset being parsed. This tells the Parser
             how to interpret the data.
             
         """
-        pass
+        # Check for a valid datasetType
+        if dsType not in database.typesOfAtoms:
+            raise DatasetError(dsType)        
+        
+        # Save the full path to the file for later.
+        # If filename is already a Path object, this does nothing.
+        self._fullPath = pathlib.Path(filename)        
+        
+        # Convert Path objects to strings if Path is supplied
+        if isinstance(filename, pathlib.PurePath):
+            filename = str(filename.name)
+
+        # Remove file type ending and any parent folders
+        # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
+        rootName = splitext(filename)[0].split('/')[-1]
+        
+        # Extract the prefix and acqID
+        prefix, acqID = rootName.rsplit('_', 1)
+        
+        # Initialize the Parser
+        super(SimpleParser, self).__init__(prefix, acqID, dsType)
     
     @property
     def data(self):
-        pass
+        if self.datasetType == 'locResults':
+            # Loading the csv file when data() is called reduces the
+            # chance that large DataFrames do not needlessly
+            # remain in memory.
+            with open(str(self._fullPath), 'r') as file:            
+                df = pd.read_csv(file)
+                return df
+                
+        elif self.datasetType == 'locMetadata':
+            # Read the txt file and convert it to a JSON string.
+            with open(str(self._fullPath), 'r') as file:
+                metadata = json.load(file)
+                return metadata
+            
+        elif self.datasetType == 'widefieldImage':
+            # Load the image data only when called
+            return imread(str(self._fullPath))
     
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed to Parser.
