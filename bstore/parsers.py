@@ -552,21 +552,21 @@ class SimpleParser(Parser):
     def getDatabaseAtom(self):
         pass
     
-    def parseFilename(self, filename, dsType = 'locResults'):
+    def parseFilename(self, filename, datasetType = 'locResults'):
         """Converts a filename into a DatabaseAtom.
         
         Parameters
         ----------
-        filename : str or Path
+        filename      : str or Path
             A string or pathlib Path object containing the dataset's filename.
-        dsType   : str
+        datasetType   : str
             The type of the dataset being parsed. This tells the Parser
             how to interpret the data.
             
         """
         # Check for a valid datasetType
-        if dsType not in database.typesOfAtoms:
-            raise DatasetError(dsType)        
+        if datasetType not in database.typesOfAtoms:
+            raise DatasetError(datasetType)        
         
         # Save the full path to the file for later.
         # If filename is already a Path object, this does nothing.
@@ -582,9 +582,10 @@ class SimpleParser(Parser):
         
         # Extract the prefix and acqID
         prefix, acqID = rootName.rsplit('_', 1)
+        acqID = int(acqID)
         
         # Initialize the Parser
-        super(SimpleParser, self).__init__(prefix, acqID, dsType)
+        super(SimpleParser, self).__init__(prefix, acqID, datasetType)
     
     @property
     def data(self):

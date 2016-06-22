@@ -453,3 +453,96 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     assert_equal(parser.prefix,      'my_dataset') # Note the underscore
     assert_equal(parser.sliceID,             None)
     assert_equal(parser.datasetType, 'locResults')
+    
+def test_SimpleParser_ParseFilename_LocResults():
+    """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
+    
+    """
+    # File number 1
+    f = 'HeLaL_Control_1.csv'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+                             
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile)
+    assert_equal(parser.acqID,                  1)
+    assert_equal(parser.channelID,           None)
+    assert_equal(parser.posID,               None)
+    assert_equal(parser.prefix,   'HeLaL_Control')
+    assert_equal(parser.sliceID,             None)
+    assert_equal(parser.datasetType, 'locResults')
+    
+    f = 'HeLaS_Control_2.csv'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile)
+    assert_equal(parser.acqID,                  2)
+    assert_equal(parser.channelID,           None)
+    assert_equal(parser.posID,               None)
+    assert_equal(parser.prefix,   'HeLaS_Control')
+    assert_equal(parser.sliceID,             None)
+    assert_equal(parser.datasetType, 'locResults')
+    
+def test_SimpleParser_ParseFilename_Metadata():
+    """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
+    
+    """
+    # File number 1
+    f = 'HeLaL_Control_1.txt'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+                             
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile, datasetType = 'locMetadata')
+    assert_equal(parser.acqID,                   1)
+    assert_equal(parser.channelID,            None)
+    assert_equal(parser.posID,                None)
+    assert_equal(parser.prefix,    'HeLaL_Control')
+    assert_equal(parser.sliceID,              None)
+    assert_equal(parser.datasetType, 'locMetadata')
+    
+    f = 'HeLaS_Control_2.txt'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile, datasetType = 'locMetadata')
+    assert_equal(parser.acqID,                   2)
+    assert_equal(parser.channelID,            None)
+    assert_equal(parser.posID,                None)
+    assert_equal(parser.prefix,    'HeLaS_Control')
+    assert_equal(parser.sliceID,              None)
+    assert_equal(parser.datasetType, 'locMetadata')
+    
+def test_SimpleParser_ParseFilename_WidefieldImage():
+    """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
+    
+    """
+    # File number 1
+    f = 'HeLaL_Control_1.txt'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+                             
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile, datasetType = 'widefieldImage')
+    assert_equal(parser.acqID,                      1)
+    assert_equal(parser.channelID,               None)
+    assert_equal(parser.posID,                   None)
+    assert_equal(parser.prefix,       'HeLaL_Control')
+    assert_equal(parser.sliceID,                 None)
+    assert_equal(parser.datasetType, 'widefieldImage')
+    
+    f = 'HeLaS_Control_2.txt'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile, datasetType = 'widefieldImage')
+    assert_equal(parser.acqID,                      2)
+    assert_equal(parser.channelID,               None)
+    assert_equal(parser.posID,                   None)
+    assert_equal(parser.prefix,       'HeLaS_Control')
+    assert_equal(parser.sliceID,                 None)
+    assert_equal(parser.datasetType, 'widefieldImage')
+    
+# TODO: Test that the data, metadata, and widefield images
+# are read correctly.
