@@ -7,6 +7,7 @@ import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
 from os.path import splitext
+import sys
 
 class FormatMap(dict):
     """Two-way map for mapping one localization file format to another.
@@ -539,11 +540,11 @@ class MMParser(Parser):
         return prefix, acqID, channelID, dateID, posID, sliceID
         
 class SimpleParser(Parser):
-    """A simple parser for and extracting acquisition information.
+    """A simple parser for extracting acquisition information.
     
     The SimpleParser converts files of the format prefix_acqID.* into
     DatabaseAtoms for insertion into a database. * may represent .csv files
-    (for locResults), .json (for locMetadata), and .tiff (for widefieldImages).
+    (for locResults), .json (for locMetadata), and .tif (for widefieldImages).
     
     """
     def __init__(self):
@@ -584,25 +585,30 @@ class SimpleParser(Parser):
         if datasetType not in database.typesOfAtoms:
             raise DatasetError(datasetType)        
         
-        # Save the full path to the file for later.
-        # If filename is already a Path object, this does nothing.
-        self._fullPath = pathlib.Path(filename)        
-        
-        # Convert Path objects to strings if Path is supplied
-        if isinstance(filename, pathlib.PurePath):
-            filename = str(filename.name)
-
-        # Remove file type ending and any parent folders
-        # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
-        rootName = splitext(filename)[0].split('/')[-1]
-        
-        # Extract the prefix and acqID
-        prefix, acqID = rootName.rsplit('_', 1)
-        acqID = int(acqID)
-        
-        # Initialize the Parser
-        super(SimpleParser, self).__init__(prefix, acqID, datasetType)
-        self._initialized = True
+        try:
+            # Save the full path to the file for later.
+            # If filename is already a Path object, this does nothing.
+            self._fullPath = pathlib.Path(filename)        
+            
+            # Convert Path objects to strings if Path is supplied
+            if isinstance(filename, pathlib.PurePath):
+                filename = str(filename.name)
+    
+            # Remove file type ending and any parent folders
+            # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
+            rootName = splitext(filename)[0].split('/')[-1]
+            
+            # Extract the prefix and acqID
+            prefix, acqID = rootName.rsplit('_', 1)
+            acqID = int(acqID)
+            
+            # Initialize the Parser
+            super(SimpleParser, self).__init__(prefix, acqID, datasetType)
+            self._initialized = True
+        except:
+            self._initialized = False
+            print('Error: File could not be parsed.', sys.exc_info()[0])
+            raise
     
     @property
     def data(self):
