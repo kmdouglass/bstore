@@ -547,10 +547,26 @@ class SimpleParser(Parser):
     
     """
     def __init__(self):
-        pass
+        self._initialized = False
     
     def getDatabaseAtom(self):
-        pass
+        """Returns an object capable of insertion into a SMLM database.
+        
+        Returns 
+        -------
+        dba : DatabaseAtom
+            One atomic unit for insertion into the database.
+        
+        """
+        if not self._initialized:
+            raise ParserNotInitializedError('Parser not initialized.')
+        
+        ids = self.getBasicInfo()
+        dba = database.Dataset(ids['prefix'], ids['acqID'], ids['datasetType'],
+                               self.data, channelID = ids['channelID'],
+                               dateID = ids['dateID'], posID = ids['posID'], 
+                               sliceID = ids['sliceID'])
+        return dba
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Converts a filename into a DatabaseAtom.
@@ -586,6 +602,7 @@ class SimpleParser(Parser):
         
         # Initialize the Parser
         super(SimpleParser, self).__init__(prefix, acqID, datasetType)
+        self._initialized = True
     
     @property
     def data(self):

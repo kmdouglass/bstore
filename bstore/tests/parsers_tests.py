@@ -589,3 +589,27 @@ def test_SimpleParser_Read_WidefieldImage():
     # Test the size of the widefield image and its first value
     assert_equal(parser.data.shape, (927, 927))
     assert_equal(parser.data[0, 0], 102)
+    
+def test_SimpleParser_GetDatabaseAtom():
+    """SimpleParser returns a correct DatabaseAtom.
+    
+    """
+    f = 'HeLaL_Control_1.tif'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+                             
+    parser = parsers.SimpleParser()
+    parser.parseFilename(inputFile, datasetType = 'widefieldImage')
+    
+    # Test the size of the widefield image and its first value
+    ds = parser.getDatabaseAtom()
+    assert_equal(ds.prefix, 'HeLaL_Control')
+    assert_equal(ds.data.shape, (927, 927))
+
+@raises(parsers.ParserNotInitializedError) 
+def test_SimpleParser_GetDatabaseAtom_NotInitialized():
+    """SimpleParser returns raises a not-initialized error.
+    
+    """                             
+    parser = parsers.SimpleParser()
+    ds = parser.getDatabaseAtom()
