@@ -613,3 +613,13 @@ def test_SimpleParser_GetDatabaseAtom_NotInitialized():
     """                             
     parser = parsers.SimpleParser()
     ds = parser.getDatabaseAtom()
+    
+@raises(Exception)
+def test_SimpleParser_BadParse():
+    """SimpleParser correctly catches errors during parsing.
+    
+    """
+    f = 'HeLaL.tif' # No acqID; file shouldn't parse
+                             
+    parser = parsers.SimpleParser()
+    parser.parseFilename(f, datasetType = 'widefieldImage')
