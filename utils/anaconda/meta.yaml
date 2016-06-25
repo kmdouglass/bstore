@@ -1,10 +1,10 @@
 # conda build <DIR_WITH_THIS_FILE> --channel soft-matter
 package:
   name: bstore
-  version: "0.1.0b"
+  version: "0.1.0b2"
 
 source:
-  git_rev: v0.1.0b-rev1
+  git_rev: v0.1.0b-rev2
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:

@@ -13,7 +13,7 @@ Lightweight data management and analysis tools for single-molecule microscopy.
   - [What doesn't B-Store do?](#what-doesnt-b-store-do)
 - [How do I use B-Store?](#how-do-i-use-b-store)
 - [Installation](#installation)
-  - [Linux](#linux)
+  - [Linux / OSX](#linux--osx)
   - [Windows](#windows)
 - [What is the logic behind the B-Store design?](#what-is-the-logic-behind-the-b-store-design)
   - [What language is B-Store written in?](#what-language-is-b-store-written-in)
