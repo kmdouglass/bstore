@@ -152,8 +152,9 @@ At the time this README file was written, the `DatabaseAtom` interface consisted
 3. **prefix** - a descriptive name for the acquisition, such as the cell type or condition
 4. **dataset type** - The type of data contained in the atom (currently localizations, metadata, or widefield images)
 5. channel ID - the wavelength being imaged
-6. position ID - A single integer or integer pair identifying the position on the sample
-7. slice ID - An integer identifying the axial slice acquired
+6. date ID - the date on which an acquisition was taken
+7. position ID - A single integer or integer pair identifying the position on the sample
+8. slice ID - An integer identifying the axial slice acquired
 
 The first four properties in bold are required; the last three are optional.
 
