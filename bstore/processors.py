@@ -490,6 +490,49 @@ class FiducialDriftCorrect(DriftCorrect):
         """
         if self._interactiveSearch:        
             self.interactiveSearch(df)
+        
+        # Extract the localizations inside the regions just identified
+        fiducialLocs = self._extractLocsFromRegions(df)
+            
+    def _extractLocsFromRegions(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+        
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+        
+        Returns
+        -------
+        locsInRegions : Pandas DataFrame
+            DataFrame containing localizations only within the select regions.
+        
+        """
+        # If search regions are not defined, raise an error
+        if not self._fidRegions[0]['xMin']:
+            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
+        
+        locsInRegions = []
+        numRegions    = len(self._fidRegions)
+        for regionNumber in range(numRegions):
+            xMin = self._fidRegions[regionNumber]['xMin']
+            xMax = self._fidRegions[regionNumber]['xMax']
+            yMin = self._fidRegions[regionNumber]['yMin']
+            yMax = self._fidRegions[regionNumber]['yMax']
+        
+            # Isolate the localizations within the current region
+            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
+                                  (df[self._coordCols[0]] < xMax) &
+                                  (df[self._coordCols[1]] > yMin) &
+                                  (df[self._coordCols[1]] < yMax)].copy()
+                                  
+            # Add a multi-index identifying the region number
+            locsInCurrRegion['region_id'] = regionNumber
+            locsInCurrRegion.set_index(['region_id'], inplace = True)
+            
+            locsInRegions.append(locsInCurrRegion)
+        
+        return pd.concat(locsInRegions)
     
     @property
     def driftTrajectory(self):
@@ -564,7 +607,7 @@ class FiducialDriftCorrect(DriftCorrect):
         ax.set_ylabel(r'y-position, ' + unitLabel)
         ax.invert_yaxis()
     
-        cb      = plt.colorbar(im)
+        cb = plt.colorbar(im)
         cb.set_label('Counts')
 
         toggleSelector.RS = RectangleSelector(ax,
@@ -1486,6 +1529,15 @@ class MergeFang(MergeStats):
         return procdf
         
 class ZeroFiducials(Exception):
+    """Raised when zero fiducials are present during drift correction.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class ZeroFiducialRegions(Exception):
     """Raised when zero fiducials are present during drift correction.
     
     """
