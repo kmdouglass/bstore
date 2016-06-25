@@ -3,7 +3,7 @@ import trackpy           as tp
 import numpy             as np
 import matplotlib.pyplot as plt
 import re
-from abc                import ABCMeta, abstractmethod
+from abc                import ABCMeta, abstractmethod, abstractproperty
 from pathlib            import Path
 from sklearn.cluster    import DBSCAN
 from operator           import *
@@ -13,7 +13,95 @@ from scipy.interpolate  import UnivariateSpline
 from matplotlib.widgets import RectangleSelector
 from bstore             import config
 from bstore.parsers     import FormatMap
+import warnings
 
+"""Metaclasses
+-------------------------------------------------------------------------------
+"""
+class DriftCorrect(metaclass = ABCMeta):
+    """Basic functionality for a drift correction processor.
+    
+    """
+    @abstractproperty
+    def driftTrajectory(self):
+        """A list of x,y pairs with each possessing a unique frame number.
+        
+        """
+        pass
+    
+    @abstractproperty
+    def correctorType(self):
+        """Identifies the type of drift corrector for a specific class.
+        
+        """
+        pass
+    
+    @abstractmethod
+    def correctLocalizations(self):
+        """Corrects a DataFrame of localizations for drift.
+        
+        """
+        pass
+    
+    @abstractmethod
+    def readSettings(self):
+        """Sets the state of the drift corrector.
+        
+        """
+        pass
+    
+    @abstractmethod
+    def writeSettings(self):
+        """Writes the state of the drift corrector to a file.
+        
+        """
+        pass
+    
+class MergeStats(metaclass = ABCMeta):
+    """Basic functionality for computing statistics from merged localizations.
+    """
+    @abstractmethod
+    def computeStatistics(self):
+        """Computes the merged molecule statistics.
+        
+        """
+        pass
+    
+    def _wAvg(self, group, coordinate, photonsCol = 'photons'):
+        """Perform a photon-weighted average over positions.
+        
+        This helper function computes the average of all numbers in the
+        'coordinate' column when applied to a Pandas GroupBy object.
+        
+        Parameters
+        ----------
+        group : Pandas GroupBy
+            The merged localizations.
+        coordinate : str
+            Column label for the coordinate over which to compute the weighted
+            average for a particular group.
+        photonsCol : str
+            Column label for the photons column.
+        
+        Returns
+        -------
+        wAvg : float
+            The weighted average over the grouped data in 'coordinate',
+            weighted by the square root of values in the 'photons' column.
+        """
+        positions = group[coordinate]
+        photons   = group[photonsCol]
+        
+        wAvg = (positions * photons.apply(np.sqrt)).sum() \
+               / photons.apply(np.sqrt).sum()
+               
+        return wAvg
+
+
+"""
+Concrete classes
+-------------------------------------------------------------------------------
+"""
 class AddColumn:
     """Adds a column to a DataFrame.
     
@@ -356,7 +444,157 @@ class ConvertHeader:
             
         return procdf
         
-class FiducialDriftCorrect:
+class FiducialDriftCorrect(DriftCorrect):
+    """Correct localizations for lateral drift using fiducials.
+    
+    """
+    _correctorType = 'FiducialDriftCorrect'    
+    
+    def __init__(self, interactiveSearch = True, coordCols = ['x', 'y']):
+        """Initialize the processor.
+        
+        Parameters
+        ----------
+        interactiveSearch : bool
+            Determines whether the user will interactively find fiducials.
+            Setting this to False means that fiducials are found automatically,
+            although this is not always reliable.
+        xyColNames        : list str
+            List of strings identifying the x- and y-coordinate column names
+            in that order.
+        
+        """
+        # Assign class properties based on input arguments
+        self._interactiveSearch = interactiveSearch
+        self._coordCols         = coordCols
+        
+        # Setup the class fields
+        self._fidRegions = [{'xMin' : None,
+                             'xMax' : None,
+                             'yMin' : None,
+                             'yMax' : None}]
+    
+    def __call__(self, df):
+        """Find the localizations and perform the drift correction.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+            
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with drift-corrected x- and y-coordinates.
+        
+        """
+        if self._interactiveSearch:        
+            self.interactiveSearch(df)
+    
+    @property
+    def driftTrajectory(self):
+        return self._driftTrajectory
+        
+    @property
+    def correctorType(self):
+        return self._correctorType
+        
+    def correctLocalizations(self):
+        pass
+    
+    def interactiveSearch(self, df, gridSize = 100, unitConvFactor = 1./1000,
+                          unitLabel = 'microns'):
+        """Interactively find fiducials in the histogram images.
+        
+        Allows the user to select regions in which to search for fiducials.
+        
+        Parameters
+        ----------
+        df             : Pandas DataFrame
+            Data to visualize and search for fiducials.
+        gridSize       : float
+            The size of the hexagonal grid in the 2D histogram.
+        unitConvFactor : float
+            Conversion factor for plotting the 2D histogram in different units
+            than the data. Most commonly used to convert nanometers to microns.
+            In this case, there are unitConvFactor = 1/1000 nm/micron.
+        unitLabel      : str
+            Unit label for the histogram. This is only used for labeling the
+            axes of the 2D histogram; users may change this depending on the
+            units of their data and unitConvFactor.
+            
+        """
+        # Reset the fiducial regions
+        self._fidRegions = [{'xMin' : None, 'xMax' : None,
+                             'yMin' : None, 'yMax' : None}]     
+        
+        def onClose(event):
+            """Run when the figure closes.
+            
+            """
+            fig.canvas.stop_event_loop()
+            
+        def onSelect(eclick, erelease):
+            pass
+        
+        def toggleSelector(event, processor):
+            """Handles user input.
+            
+            """
+            if event.key in [' ']:
+                # Clear fiducial regions list if they are not empty
+                #(Important for when multiple search regions are selected.)
+                if not self._fidRegions[0]['xMin']:                
+                    # Convert _fidRegions to empty list ready for appending
+                    self._fidRegions = []
+                
+                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
+                processor._fidRegions.append({'xMin' : xMin/unitConvFactor,
+                                              'xMax' : xMax/unitConvFactor,
+                                              'yMin' : yMin/unitConvFactor,
+                                              'yMax' : yMax/unitConvFactor})
+    
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('close_event', onClose)        
+        
+        im      = ax.hexbin(df[self._coordCols[0]] * unitConvFactor,
+                            df[self._coordCols[1]] * unitConvFactor,
+                            gridsize = gridSize, cmap = plt.cm.YlOrRd_r)
+        ax.set_xlabel(r'x-position, ' + unitLabel)
+        ax.set_ylabel(r'y-position, ' + unitLabel)
+        ax.invert_yaxis()
+    
+        cb      = plt.colorbar(im)
+        cb.set_label('Counts')
+
+        toggleSelector.RS = RectangleSelector(ax,
+                                              onSelect,
+                                              drawtype    = 'box',
+                                              useblit     = True,
+                                              button      = [1, 3], #l/r only
+                                              spancoords  = 'data',
+                                              interactive = True)
+        plt.connect('key_press_event',
+                    lambda event: toggleSelector(event, self))
+        
+        # Make figure full screen
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+        plt.show()
+        
+        # Suppress the MatplotlibDeprecationWarning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig.canvas.start_event_loop_default()
+    
+    def readSettings(self):
+        pass
+    
+    def writeSettings(self):
+        pass
+        
+        
+class FiducialDriftCorrect_Deprecated:
     """Correct localizations for lateral drift using fiducials.
     
     The fiducial drift correction processor implements an algorithm for
@@ -436,6 +674,8 @@ class FiducialDriftCorrect:
             (NOT IMPLEMENTED)
             
         """
+        warnings.warn(('Warning: This version of FiducialDriftCorrect '
+                       'is deprecated.'), DeprecationWarning, stacklevel=2)
         self.mergeRadius           = mergeRadius
         self.offTime               = offTime
         self.minSegmentLength      = minSegmentLength
@@ -1196,44 +1436,6 @@ class Merge:
             procdf = dfTracked
         
         return procdf
-        
-class MergeStats(metaclass = ABCMeta):
-    @abstractmethod
-    def computeStatistics(self):
-        """Computes the merged molecule statistics.
-        
-        """
-        pass
-    
-    def _wAvg(self, group, coordinate, photonsCol = 'photons'):
-        """Perform a photon-weighted average over positions.
-        
-        This helper function computes the average of all numbers in the
-        'coordinate' column when applied to a Pandas GroupBy object.
-        
-        Parameters
-        ----------
-        group : Pandas GroupBy
-            The merged localizations.
-        coordinate : str
-            Column label for the coordinate over which to compute the weighted
-            average for a particular group.
-        photonsCol : str
-            Column label for the photons column.
-        
-        Returns
-        -------
-        wAvg : float
-            The weighted average over the grouped data in 'coordinate',
-            weighted by the square root of values in the 'photons' column.
-        """
-        positions = group[coordinate]
-        photons   = group[photonsCol]
-        
-        wAvg = (positions * photons.apply(np.sqrt)).sum() \
-               / photons.apply(np.sqrt).sum()
-               
-        return wAvg
         
 class MergeFang(MergeStats):
     """Merger for localizations computed from Fang's sCMOS MLE software.

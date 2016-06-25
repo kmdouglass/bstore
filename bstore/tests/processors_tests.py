@@ -12,12 +12,18 @@ pathToTestData = testDataRoot / Path('processor_test_files') \
                               / Path('test_localizations_with_fiducials.csv')
 locs = pd.read_csv(str(pathToTestData))
 
-def test_DriftCorrection():
+def test_FiducialDriftCorrect_Instantiation():
+    """The FiducialDriftCorrect processor has the required methods and fields.
+    
+    """
+    dc = proc.FiducialDriftCorrect()
+
+def test_DriftCorrection_Deprecated():
     """Drift correction is properly applied to all localizations.
     
     """
     # Create the drift corrector
-    dc = proc.FiducialDriftCorrect(minFracFiducialLength = 0.5,
+    dc = proc.FiducialDriftCorrect_Deprecated(minFracFiducialLength = 0.5,
                                    neighborRadius        = 150,
                                    smoothingWindowSize   = 800,
                                    smoothingFilterSize   = 200,
@@ -76,12 +82,12 @@ def test_DriftCorrection():
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
     
-def test_DriftCorrection_dropTrajectories():
+def test_DriftCorrection_dropTrajectories_Deprecated():
     """Drift correction works after a trajectory is dropped.
     
     """    
     # Create the drift corrector
-    dc = proc.FiducialDriftCorrect(minFracFiducialLength = 0.5,
+    dc = proc.FiducialDriftCorrect_Deprecated(minFracFiducialLength = 0.5,
                                    neighborRadius        = 150,
                                    smoothingWindowSize   = 800,
                                    smoothingFilterSize   = 200,
