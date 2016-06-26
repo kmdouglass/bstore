@@ -450,7 +450,8 @@ class FiducialDriftCorrect(DriftCorrect):
     """
     _correctorType = 'FiducialDriftCorrect'    
     
-    def __init__(self, interactiveSearch = True, coordCols = ['x', 'y']):
+    def __init__(self, interactiveSearch = True, coordCols = ['x', 'y'],
+                 removeFiducials = True, driftComputer = None):
         """Initialize the processor.
         
         Parameters
@@ -459,14 +460,27 @@ class FiducialDriftCorrect(DriftCorrect):
             Determines whether the user will interactively find fiducials.
             Setting this to False means that fiducials are found automatically,
             although this is not always reliable.
-        xyColNames        : list str
+        coordCols         : list str
             List of strings identifying the x- and y-coordinate column names
             in that order.
+        removeFiducials   : bool
+            Determines whether localizations belonging to fiducials are
+            dropped from the input DataFrame when the processor is called.
+        driftComputer     : func
+            Function for computing the drift trajectory from fiducial
+            localizations. If 'None', the default function utilizing
+            smoothing splines is used.
         
         """
         # Assign class properties based on input arguments
         self._interactiveSearch = interactiveSearch
         self._coordCols         = coordCols
+        self._removeFiducials   = removeFiducials
+        
+        if driftComputer:        
+            self._computeDriftTrajectory = driftComputer
+        else:
+            self._computeDriftTrajectory = self._defaultDriftComputer
         
         # Setup the class fields
         self._fidRegions = [{'xMin' : None,
@@ -492,7 +506,91 @@ class FiducialDriftCorrect(DriftCorrect):
             self.interactiveSearch(df)
         
         # Extract the localizations inside the regions just identified
-        fiducialLocs = self._extractLocsFromRegions(df)
+        try:
+            fiducialLocs = self._extractLocsFromRegions(df)
+        except ZeroFiducialRegions:
+            print('No regions with fiducials identified.')
+            return df
+        
+        # TODO: Cluster localizations if desired
+        
+        # Remove localizations inside the search regions from the DataFrame
+        if self._removeFiducials:
+            # Removes rows from the df DataFrame that have the same index rows
+            # in fiducialLocs. This relies on all functions preceding this
+            # line to not modify the index column of the input df.
+            procdf = df[~df.index.isin(fiducialLocs.index.levels[0])]
+        
+        # Compute drift trajectory
+        #self.driftTrajectory = self._computeDriftTrajectory(fiducialLocs)
+
+        # Correct the localizations
+        #procdf = self.correctLocalizations(procdf)
+        
+        return procdf
+        
+    def _defaultDriftComputer(self, fiducialLocs):
+        """The default algorithm for computing a drift trajectory.
+        
+        Parameters
+        ----------
+        fiducialLocs    : Pandas DataFrame
+            Localizations belonging to fiducial markers. A multi-index column
+            named 'region_id' is required.
+        
+        Returns
+        -------
+        driftTrajectory : Pandas DataFrame
+            A DataFrame with x, y, and frame columns and unique, sequential
+            values for entries in the frame column defining a drift
+            trajectory.
+        
+        """
+        assert 'region_id' in fiducialLocs.index.names, \
+                      'fiducialLocs DataFrame requires index named "region_id"'
+            
+        splines = []
+        regionIDIndex = fiducialLocs.index.names.index('region_id')
+        x = self._coordCols[0]
+        y = self._coordCols[1]        
+        
+        # fid is an integer
+        for fid in fiducialLocs.index.levels[regionIDIndex]:
+            # Get localizations from inside the current region matching fid
+            currRegionLocs  = fiducialLocs.xs(fid, level='region_id',
+                                              drop_level=False)            
+            
+            maxFrame        = currRegionLocs['frame'].max()
+            minFrame        = currRegionLocs['frame'].min()
+            
+            # TODO: Pick up from here rewriting this funciton
+            windowSize      = self.smoothingWindowSize
+            sigma           = self.smoothingFilterSize
+            
+            # Determine the appropriate weighting factors
+            _, varx = self._movingAverage(currRegionLocs[x],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            _, vary = self._movingAverage(currRegionLocs[y],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            
+            # Perform spline fits. Extrapolate using boundary values (const)
+            extrapMethod = 'const'
+            xSpline = UnivariateSpline(currRegionLocs['frame'].as_matrix(),
+                                       currRegionLocs[x].as_matrix(),
+                                       w   = 1/np.sqrt(varx),
+                                       ext = extrapMethod)
+            ySpline = UnivariateSpline(currRegionLocs'frame'].as_matrix(),
+                                       currRegionLocs[y].as_matrix(),
+                                       w   = 1/np.sqrt(vary),
+                                       ext = extrapMethod)
+            
+            # Append results to class field splines
+            splines.append({'xS'       : xSpline,
+                            'yS'       : ySpline,
+                            'minFrame' : minFrame,
+                            'maxFrame' : maxFrame})
             
     def _extractLocsFromRegions(self, df):
         """Reduce the size of the search area for automatic fiducial detection.
@@ -528,7 +626,8 @@ class FiducialDriftCorrect(DriftCorrect):
                                   
             # Add a multi-index identifying the region number
             locsInCurrRegion['region_id'] = regionNumber
-            locsInCurrRegion.set_index(['region_id'], inplace = True)
+            locsInCurrRegion.set_index(['region_id'], append = True,
+                                       inplace = True)
             
             locsInRegions.append(locsInCurrRegion)
         
@@ -537,6 +636,19 @@ class FiducialDriftCorrect(DriftCorrect):
     @property
     def driftTrajectory(self):
         return self._driftTrajectory
+    
+    @driftTrajectory.setter
+    def driftTrajectory(self, value):
+        """Sets the computed the drift trajectory of the processor.
+        
+        Parameters
+        ----------
+        value : Pandas DataFrame
+            A DataFrame with x, y, and frame columns and unique, sequential
+            values for entries in the frame column defining a drift
+            trajectory.
+        """
+        self._driftTrajectory = value
         
     @property
     def correctorType(self):
