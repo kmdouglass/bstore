@@ -490,8 +490,16 @@ class DefaultDriftComputer(ComputeTrajectories):
     
     Attributes
     ----------
-    splines   : list of dict of 2x UnivariateSpline, 2x int
-    avgSpline : Pandas DataFrame
+    fiducialData        : Pandas DataFrame
+        DataFrame with a 'region_id' column denoting localizations from
+        different regions of the original dataset. This is created by the
+        parent ComputeTrajectories class.
+    smoothingWindowSize : float
+        Moving average window size in frames for spline fitting.
+    smoothingFilterSize : float
+        Moving average Gaussian kernel width in frames for spline fitting.
+    splines             : list of dict of 2x UnivariateSpline, 2x int
+    avgSpline           : Pandas DataFrame
     
     """
     # TODO: Explain this algorithm in the docstring above.
@@ -513,10 +521,11 @@ class DefaultDriftComputer(ComputeTrajectories):
             Moving average Gaussian kernel width in frames for spline fitting.
             
         """
-        self._coordCols = coordCols
-        self._frameCol  = frameCol
+        self.coordCols = coordCols
+        self.frameCol  = frameCol
         self.smoothingWindowSize = smoothingWindowSize
         self.smoothingFilterSize = smoothingFilterSize
+        super(ComputeTrajectories, self).__init__()
         
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
@@ -535,7 +544,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         average : float
             The moving window average.
         var     : float
-            The variance of the data within the moving window.
+            The variance of the data within the sumoving window.
         
         References
         ----------
@@ -633,7 +642,8 @@ class DefaultDriftComputer(ComputeTrajectories):
         of frames in the dataset.
         
         """
-        self.fiducialLocs = fiducialLocs
+        self.clearFiducialLocs()
+        self._fiducialData = fiducialLocs
         self.fitCurves()
         self.combineCurves(startFrame, stopFrame)
         
@@ -642,18 +652,24 @@ class DefaultDriftComputer(ComputeTrajectories):
     def fitCurves(self):
         """Fits individual splines to each fiducial.
                
-        """            
+        """
+        print('Performing spline fits...')
+        # Check whether fiducial trajectories already exist
+        if self._fiducialData is None:
+            raise ZeroFiducials('Zero fiducials are currently saved '
+                                'with this processor.')
+            
         self.splines = []
-        regionIDIndex = self.fiducialLocs.index.names.index('region_id')
-        x = self._coordCols[0]
-        y = self._coordCols[1]        
-        frameID = self._frameCol
+        regionIDIndex = self._fiducialData.index.names.index('region_id')
+        x = self.coordCols[0]
+        y = self.coordCols[1]        
+        frameID = self.frameCol
         
         # fid is an integer
-        for fid in self.fiducialLocs.index.levels[regionIDIndex]:
+        for fid in self._fiducialData.index.levels[regionIDIndex]:
             # Get localizations from inside the current region matching fid
-            currRegionLocs  = self.fiducialLocs.xs(fid, level='region_id',
-                                                   drop_level=False)            
+            currRegionLocs  = self._fiducialData.xs(fid, level='region_id',
+                                                    drop_level=False)            
             
             maxFrame        = currRegionLocs[frameID].max()
             minFrame        = currRegionLocs[frameID].min()
@@ -685,6 +701,69 @@ class DefaultDriftComputer(ComputeTrajectories):
                                  'yS'       : ySpline,
                                  'minFrame' : minFrame,
                                  'maxFrame' : maxFrame})
+                                 
+    def plotFiducials(self, splineNumber = None):
+        """Make a plot of each fiducial track and the average spline fit.
+        
+        plotFiducials(splineNumber = None) allows the user to check the
+        individual fiducial tracks against the average spline fit.
+                
+        Parameters
+        ----------
+        splineNumber : int
+            Index of the spline to plot. (0-index)
+        
+        """
+        if self._fiducialData is None:
+            raise ZeroFiducials(
+                'Zero fiducials are currently saved with this processor.')
+        
+        x = self.coordCols[0]
+        y = self.coordCols[1]        
+        
+        if not splineNumber:
+            # Plot all trajectories and splines
+            startIndex = 0
+            stopIndex  = len(self.splines)
+        else:
+            # Plot only the input trajectory and spline
+            startIndex = splineNumber
+            stopIndex  = splineNumber + 1
+        
+        for fid in range(startIndex, stopIndex):
+            fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True)
+            locs = self._fiducialData.xs(fid, level = 'region_id',
+                                         drop_level = False)
+            
+            # Shift fiducial trajectories to zero at their start
+            frame0 = locs['frame'].iloc[[0]].as_matrix()
+            x0 = self.splines[fid]['xS'](frame0)
+            y0 = self.splines[fid]['yS'](frame0)            
+            
+            axx.plot(locs['frame'],
+                     locs[x] - x0,
+                     '.',
+                     color = 'blue',
+                     alpha = 0.5)
+            axx.plot(self.avgSpline.index,
+                     self.avgSpline['xS'],
+                     linewidth = 3,
+                     color = 'red')
+            axx.set_ylabel('x-position')
+            axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
+                     
+            axy.plot(locs['frame'],
+                     locs[y] - y0,
+                     '.',
+                     color = 'blue',
+                     alpha = 0.5)
+            axy.plot(self.avgSpline.index,
+                     self.avgSpline['yS'],
+                     linewidth = 3,
+                     color = 'red')
+            axy.set_xlabel('Frame number')
+            axy.set_ylabel('y-position')
+            plt.show()
         
 class FiducialDriftCorrect(DriftCorrect):
     """Correct localizations for lateral drift using fiducials.
@@ -937,7 +1016,6 @@ class FiducialDriftCorrect(DriftCorrect):
     
     def writeSettings(self):
         pass
-        
         
 class FiducialDriftCorrect_Deprecated:
     """Correct localizations for lateral drift using fiducials.
