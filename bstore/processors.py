@@ -490,6 +490,10 @@ class DefaultDriftComputer(ComputeTrajectories):
     
     Attributes
     ----------
+    avgSpline           : Pandas DataFrame
+        DataFrame with 'frame' index column and 'xS' and 'yS' position
+        coordinate columns representing the drift of the sample during the
+        acquisition.
     fiducialData        : Pandas DataFrame
         DataFrame with a 'region_id' column denoting localizations from
         different regions of the original dataset. This is created by the
@@ -499,13 +503,19 @@ class DefaultDriftComputer(ComputeTrajectories):
     smoothingFilterSize : float
         Moving average Gaussian kernel width in frames for spline fitting.
     splines             : list of dict of 2x UnivariateSpline, 2x int
-    avgSpline           : Pandas DataFrame
+        Individual splines fit to the fiducial trajectories. Key names are
+        'xS', 'yS', 'minFrame', and 'maxFrame'.
+    useTrajectories : list of int or None
+        List of integers corresponding to the fiducial trajectories to use
+        when computing the average trajectory. If None, all trajectories
+        are used.
     
     """
     # TODO: Explain this algorithm in the docstring above.
     
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
-                 smoothingWindowSize = 600, smoothingFilterSize = 400):
+                 smoothingWindowSize = 600, smoothingFilterSize = 400,
+                 useTrajectories = []):
         """Initialize the default drift computer.
         
         Parameters
@@ -519,12 +529,16 @@ class DefaultDriftComputer(ComputeTrajectories):
             Moving average window size in frames for spline fitting.
         smoothingFilterSize   : float
             Moving average Gaussian kernel width in frames for spline fitting.
-            
+        useTrajectories : list of int
+            List of integers corresponding to the fiducial trajectories to use
+            when computing the average trajectory. If empty, all trajectories
+            are used.
         """
         self.coordCols = coordCols
         self.frameCol  = frameCol
         self.smoothingWindowSize = smoothingWindowSize
         self.smoothingFilterSize = smoothingFilterSize
+        self.useTrajectories     = useTrajectories
         super(ComputeTrajectories, self).__init__()
         
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
@@ -606,10 +620,23 @@ class DefaultDriftComputer(ComputeTrajectories):
                 fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
                                                                 firstFrameValue  
         
+        # Create the mask area if only certain fiducials are to be averaged
+        if not self.useTrajectories:
+            mask = np.arange(numSplines)
+        else:
+            mask = self.useTrajectories        
+        
         # Compute the average over spline values
         avgSpline = {'xS' : [], 'yS' : []}
-        for key in avgSpline.keys():
-            avgSpline[key] = np.mean(fullRangeSplines[key], axis = 0)
+        
+        try:
+            for key in avgSpline.keys():
+                avgSpline[key] = np.mean(fullRangeSplines[key][mask], axis = 0)
+        except IndexError:
+            raise UseTrajectoryError('At least one of the indexes inside '
+                             'useTrajectories does not match a known fiducial '
+                             'index. The maximum fiducial index is {0:d}.'
+                             ''.format(numSplines - 1))
         
         # Append frames to avgSpline
         avgSpline['frame'] = frames
@@ -622,16 +649,17 @@ class DefaultDriftComputer(ComputeTrajectories):
         
         Parameters
         ----------
-        fiducialLocs : Pandas DataFrame
-        startFrame   : int
+        fiducialLocs    : Pandas DataFrame
+            DataFrame containing the localizations belonging to fiducials.
+        startFrame      : int
             The minimum frame number in the full dataset.
-        stopFrame    : int
+        stopFrame       : int
             The maximum frame number in the full dataset.
             
         Returns
         -------
         self.avgSpline : Pandas DataFrame
-            DataFrame with 'frame' index column and 'x' and 'y' position
+            DataFrame with 'frame' index column and 'xS' and 'yS' position
             coordinate columns representing the drift of the sample during the
             acquisition.
             
@@ -643,10 +671,10 @@ class DefaultDriftComputer(ComputeTrajectories):
         
         """
         self.clearFiducialLocs()
-        self._fiducialData = fiducialLocs
+        self.fiducialLocs = fiducialLocs       
         self.fitCurves()
         self.combineCurves(startFrame, stopFrame)
-        
+
         return self.avgSpline
         
     def fitCurves(self):
@@ -655,20 +683,20 @@ class DefaultDriftComputer(ComputeTrajectories):
         """
         print('Performing spline fits...')
         # Check whether fiducial trajectories already exist
-        if self._fiducialData is None:
+        if self.fiducialLocs is None:
             raise ZeroFiducials('Zero fiducials are currently saved '
                                 'with this processor.')
             
         self.splines = []
-        regionIDIndex = self._fiducialData.index.names.index('region_id')
+        regionIDIndex = self.fiducialLocs.index.names.index('region_id')
         x = self.coordCols[0]
         y = self.coordCols[1]        
         frameID = self.frameCol
         
         # fid is an integer
-        for fid in self._fiducialData.index.levels[regionIDIndex]:
+        for fid in self.fiducialLocs.index.levels[regionIDIndex]:
             # Get localizations from inside the current region matching fid
-            currRegionLocs  = self._fiducialData.xs(fid, level='region_id',
+            currRegionLocs  = self.fiducialLocs.xs(fid, level='region_id',
                                                     drop_level=False)            
             
             maxFrame        = currRegionLocs[frameID].max()
@@ -714,7 +742,7 @@ class DefaultDriftComputer(ComputeTrajectories):
             Index of the spline to plot. (0-index)
         
         """
-        if self._fiducialData is None:
+        if self.fiducialLocs is None:
             raise ZeroFiducials(
                 'Zero fiducials are currently saved with this processor.')
         
@@ -730,9 +758,10 @@ class DefaultDriftComputer(ComputeTrajectories):
             startIndex = splineNumber
             stopIndex  = splineNumber + 1
         
+        
         for fid in range(startIndex, stopIndex):
             fig, (axx, axy) = plt.subplots(nrows = 2, ncols = 1, sharex = True)
-            locs = self._fiducialData.xs(fid, level = 'region_id',
+            locs = self.fiducialLocs.xs(fid, level = 'region_id',
                                          drop_level = False)
             
             # Shift fiducial trajectories to zero at their start
@@ -740,10 +769,15 @@ class DefaultDriftComputer(ComputeTrajectories):
             x0 = self.splines[fid]['xS'](frame0)
             y0 = self.splines[fid]['yS'](frame0)            
             
+            if (fid in self.useTrajectories) or (not self.useTrajectories):
+                markerColor = 'blue'
+            else:
+                markerColor = '#999999' # gray
+            
             axx.plot(locs['frame'],
                      locs[x] - x0,
                      '.',
-                     color = 'blue',
+                     color = markerColor,
                      alpha = 0.5)
             axx.plot(self.avgSpline.index,
                      self.avgSpline['xS'],
@@ -755,7 +789,7 @@ class DefaultDriftComputer(ComputeTrajectories):
             axy.plot(locs['frame'],
                      locs[y] - y0,
                      '.',
-                     color = 'blue',
+                     color = markerColor,
                      alpha = 0.5)
             axy.plot(self.avgSpline.index,
                      self.avgSpline['yS'],
@@ -797,6 +831,7 @@ class FiducialDriftCorrect(DriftCorrect):
         
         """
         # Assign class properties based on input arguments
+        # TODO: Make _interactiveSearch() public
         self._interactiveSearch = interactiveSearch
         self._coordCols         = coordCols
         self._frameCol          = frameCol
@@ -831,12 +866,21 @@ class FiducialDriftCorrect(DriftCorrect):
         if self._interactiveSearch:        
             self.interactiveSearch(df)
         
-        # Extract the localizations inside the regions just identified
-        try:
-            fiducialLocs = self._extractLocsFromRegions(df)
-        except ZeroFiducialRegions:
-            print('No regions with fiducials identified.')
-            return df
+            # Extract the localizations inside the regions just identified
+            try:
+                fiducialLocs = self._extractLocsFromRegions(df)
+            except ZeroFiducialRegions:
+                print('No regions with fiducials identified. '
+                      'Returning original DataFrame.')
+                # Ensure any localizations are cleared from the drift computer
+                self.driftComputer.clearFiducialLocs()
+                return df
+        else:
+            # If the interactive search was set to false, then the drift
+            # corrector has already been called and the regions saved in the
+            # drift computer. Read them back from the computer instead of 
+            # looking for them again in the raw localizations.
+            fiducialLocs = self.driftComputer.fiducialLocs
         
         # TODO: Cluster localizations if desired
         
@@ -856,7 +900,7 @@ class FiducialDriftCorrect(DriftCorrect):
                                                       startFrame,
                                                       stopFrame)
                                                            
-        # Correct the localizations
+        # TODO: Correct the localizations
         #procdf = self.correctLocalizations(procdf)
         
         return procdf
@@ -1907,6 +1951,15 @@ class MergeFang(MergeStats):
         procdf = pd.concat(dataToJoin, axis = 1)
         
         return procdf
+
+class UseTrajectoryError(Exception):
+    """Raised when drift computer has invalid indexes to fiducial trajectories.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
         
 class ZeroFiducials(Exception):
     """Raised when zero fiducials are present during drift correction.
