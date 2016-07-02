@@ -56,9 +56,50 @@ class DriftCorrect(metaclass = ABCMeta):
         
         """
         pass
+
+class ComputeTrajectories(metaclass = ABCMeta):
+    """Basic functionality for computing drift trajectories from fiducials.
+    
+    """
+    def __init__(self):
+        """Initializes the trajectory computer.
+        
+        """
+        self._fiducialData = None
+        
+    def clearFiducialLocs(self):
+        """Clears any currently held localization data.
+        
+        """
+        self._fiducialData = None
+    
+    @property
+    def fiducialLocs(self):
+        """DataFrame holding the localizations for individual fiducials.
+        
+        """
+        return self._fiducialData
+    
+    @fiducialLocs.setter
+    def fiducialLocs(self, fiducialData):
+        """Checks that the fiducial localizations are formatted correctly.
+        
+        """
+        assert 'region_id' in fiducialData.index.names, \
+                      'fiducialLocs DataFrame requires index named "region_id"'
+        
+        self._fiducialData = fiducialData
+        
+    @abstractmethod
+    def computeDriftTrajectory(self):
+        """Computes the drift trajectory.
+        
+        """
+        pass  
     
 class MergeStats(metaclass = ABCMeta):
     """Basic functionality for computing statistics from merged localizations.
+    
     """
     @abstractmethod
     def computeStatistics(self):
@@ -444,6 +485,207 @@ class ConvertHeader:
             
         return procdf
         
+class DefaultDriftComputer(ComputeTrajectories):
+    """The default algorithm for computing a drift trajectory.
+    
+    Attributes
+    ----------
+    splines   : list of dict of 2x UnivariateSpline, 2x int
+    avgSpline : Pandas DataFrame
+    
+    """
+    # TODO: Explain this algorithm in the docstring above.
+    
+    def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
+                 smoothingWindowSize = 600, smoothingFilterSize = 400):
+        """Initialize the default drift computer.
+        
+        Parameters
+        ----------
+        coordCols           : list str
+            List of strings identifying the x- and y-coordinate column names
+            in that order.
+        frameCol            : str
+            Name of the column identifying the column containing the frames.
+        smoothingWindowSize   : float
+            Moving average window size in frames for spline fitting.
+        smoothingFilterSize   : float
+            Moving average Gaussian kernel width in frames for spline fitting.
+            
+        """
+        self._coordCols = coordCols
+        self._frameCol  = frameCol
+        self.smoothingWindowSize = smoothingWindowSize
+        self.smoothingFilterSize = smoothingFilterSize
+        
+    def _movingAverage(self, series, windowSize = 100, sigma = 3):
+        """Estimate the weights for the smoothing spline.
+        
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in frames (or time).
+        sigma      : int
+            Size of the Gaussian averaging kernel in frames (or time).
+            
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the moving window.
+        
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+        
+        """
+        b       = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b/b.sum())
+        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
+        return average, var
+        
+    def combineCurves(self, startFrame, stopFrame, zeroFrame = 0):
+        """Average the splines from different fiducials together.
+        
+        combineSplines(self, framesdf) relies on the assumption that fiducial
+        trajectories span a significant portion of the full number of frames in
+        the acquisition. Under this assumption, it uses the splines found in
+        fitSplines() to extrapolate values outside of their tracks using the
+        boundary value. It next evaluates the splines at each frame spanning
+        the input DataFrame, shifts the evaluated splines to zero at the first
+        frame, and then computes the average across different fiducials.
+        
+        Parameters
+        ----------
+        startFrame : int
+            Minimum frame number in full dataset
+        stopFrame  : int
+            Maximum frame number in full dataset
+        zeroFrame  : int
+            Frame where all individual drift trajectories are equal to zero.
+            This may be adjusted to help correct fiducial trajectories that
+            don't overlap well near the beginning.
+            
+        """
+        
+        # Build list of evaluated splines between the absolute max and 
+        # min frames.
+        if zeroFrame > stopFrame:
+            warnings.warn(('Warning: zeroFrame ({0:d}) is greater than the '
+                           'maximum frame number in this dataset ({1:d})'
+                           'Setting zeroFrame to zero.'
+                           ''.format(zeroFrame, stopFrame)))
+            zeroFrame = 0
+                           
+        frames     = np.arange(startFrame, stopFrame + 1, 1)
+        numSplines = len(self.splines)
+        
+        # Evalute each x and y spline at every frame position
+        fullRangeSplines = {'xS' : np.array([self.splines[i]['xS'](frames)
+                                                 for i in range(numSplines)]),
+                            'yS' : np.array([self.splines[i]['yS'](frames)
+                                                 for i in range(numSplines)])}
+        
+        # Shift each spline at zeroFrame to (x = 0, y = 0) by subtracting its
+        # value at frame number zeroFrame
+        for key in fullRangeSplines.keys():
+            for ctr, spline in enumerate(fullRangeSplines[key]):
+                firstFrameValue = spline[zeroFrame]
+                fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
+                                                                firstFrameValue  
+        
+        # Compute the average over spline values
+        avgSpline = {'xS' : [], 'yS' : []}
+        for key in avgSpline.keys():
+            avgSpline[key] = np.mean(fullRangeSplines[key], axis = 0)
+        
+        # Append frames to avgSpline
+        avgSpline['frame'] = frames
+        
+        self.avgSpline = pd.DataFrame(avgSpline)
+        self.avgSpline.set_index('frame', inplace = True)
+        
+    def computeDriftTrajectory(self, fiducialLocs, startFrame, stopFrame):
+        """Computes the final drift trajectory from fiducial localizations.
+        
+        Parameters
+        ----------
+        fiducialLocs : Pandas DataFrame
+        startFrame   : int
+            The minimum frame number in the full dataset.
+        stopFrame    : int
+            The maximum frame number in the full dataset.
+            
+        Returns
+        -------
+        self.avgSpline : Pandas DataFrame
+            DataFrame with 'frame' index column and 'x' and 'y' position
+            coordinate columns representing the drift of the sample during the
+            acquisition.
+            
+        Notes
+        -----
+        computeDriftTrajectory() requires the start and stop frames
+        because the fiducial localizations may not span the full range
+        of frames in the dataset.
+        
+        """
+        self.fiducialLocs = fiducialLocs
+        self.fitCurves()
+        self.combineCurves(startFrame, stopFrame)
+        
+        return self.avgSpline
+        
+    def fitCurves(self):
+        """Fits individual splines to each fiducial.
+               
+        """            
+        self.splines = []
+        regionIDIndex = self.fiducialLocs.index.names.index('region_id')
+        x = self._coordCols[0]
+        y = self._coordCols[1]        
+        frameID = self._frameCol
+        
+        # fid is an integer
+        for fid in self.fiducialLocs.index.levels[regionIDIndex]:
+            # Get localizations from inside the current region matching fid
+            currRegionLocs  = self.fiducialLocs.xs(fid, level='region_id',
+                                                   drop_level=False)            
+            
+            maxFrame        = currRegionLocs[frameID].max()
+            minFrame        = currRegionLocs[frameID].min()
+            
+            windowSize      = self.smoothingWindowSize
+            sigma           = self.smoothingFilterSize
+            
+            # Determine the appropriate weighting factors
+            _, varx = self._movingAverage(currRegionLocs[x],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            _, vary = self._movingAverage(currRegionLocs[y],
+                                          windowSize = windowSize,
+                                          sigma      = sigma)
+            
+            # Perform spline fits. Extrapolate using boundary values (const)
+            extrapMethod = 'const'
+            xSpline = UnivariateSpline(currRegionLocs[frameID].as_matrix(),
+                                       currRegionLocs[x].as_matrix(),
+                                       w   = 1/np.sqrt(varx),
+                                       ext = extrapMethod)
+            ySpline = UnivariateSpline(currRegionLocs[frameID].as_matrix(),
+                                       currRegionLocs[y].as_matrix(),
+                                       w   = 1/np.sqrt(vary),
+                                       ext = extrapMethod)
+            
+            # Append results to class field splines
+            self.splines.append({'xS'       : xSpline,
+                                 'yS'       : ySpline,
+                                 'minFrame' : minFrame,
+                                 'maxFrame' : maxFrame})
+        
 class FiducialDriftCorrect(DriftCorrect):
     """Correct localizations for lateral drift using fiducials.
     
@@ -451,7 +693,8 @@ class FiducialDriftCorrect(DriftCorrect):
     _correctorType = 'FiducialDriftCorrect'    
     
     def __init__(self, interactiveSearch = True, coordCols = ['x', 'y'],
-                 removeFiducials = True, driftComputer = None):
+                 frameCol = 'frame', removeFiducials = True,
+                 driftComputer = None):
         """Initialize the processor.
         
         Parameters
@@ -463,10 +706,12 @@ class FiducialDriftCorrect(DriftCorrect):
         coordCols         : list str
             List of strings identifying the x- and y-coordinate column names
             in that order.
+        frameCol          : str
+            Name of the column identifying the column containing the frames.
         removeFiducials   : bool
             Determines whether localizations belonging to fiducials are
             dropped from the input DataFrame when the processor is called.
-        driftComputer     : func
+        driftComputer     : instance of ComputeTrajectories
             Function for computing the drift trajectory from fiducial
             localizations. If 'None', the default function utilizing
             smoothing splines is used.
@@ -475,12 +720,14 @@ class FiducialDriftCorrect(DriftCorrect):
         # Assign class properties based on input arguments
         self._interactiveSearch = interactiveSearch
         self._coordCols         = coordCols
+        self._frameCol          = frameCol
         self._removeFiducials   = removeFiducials
         
         if driftComputer:        
-            self._computeDriftTrajectory = driftComputer
+            self.driftComputer = driftComputer
         else:
-            self._computeDriftTrajectory = self._defaultDriftComputer
+            self.driftComputer = DefaultDriftComputer(coordCols = coordCols,
+                                                      frameCol = frameCol)
         
         # Setup the class fields
         self._fidRegions = [{'xMin' : None,
@@ -521,76 +768,19 @@ class FiducialDriftCorrect(DriftCorrect):
             # line to not modify the index column of the input df.
             procdf = df[~df.index.isin(fiducialLocs.index.levels[0])]
         
-        # Compute drift trajectory
-        #self.driftTrajectory = self._computeDriftTrajectory(fiducialLocs)
-
+        # Compute the final drift trajectory
+        frames     = self._frameCol
+        startFrame = procdf[frames].min()
+        stopFrame  = procdf[frames].max()
+        self.driftTrajectory = \
+            self.driftComputer.computeDriftTrajectory(fiducialLocs,
+                                                      startFrame,
+                                                      stopFrame)
+                                                           
         # Correct the localizations
         #procdf = self.correctLocalizations(procdf)
         
         return procdf
-        
-    def _defaultDriftComputer(self, fiducialLocs):
-        """The default algorithm for computing a drift trajectory.
-        
-        Parameters
-        ----------
-        fiducialLocs    : Pandas DataFrame
-            Localizations belonging to fiducial markers. A multi-index column
-            named 'region_id' is required.
-        
-        Returns
-        -------
-        driftTrajectory : Pandas DataFrame
-            A DataFrame with x, y, and frame columns and unique, sequential
-            values for entries in the frame column defining a drift
-            trajectory.
-        
-        """
-        assert 'region_id' in fiducialLocs.index.names, \
-                      'fiducialLocs DataFrame requires index named "region_id"'
-            
-        splines = []
-        regionIDIndex = fiducialLocs.index.names.index('region_id')
-        x = self._coordCols[0]
-        y = self._coordCols[1]        
-        
-        # fid is an integer
-        for fid in fiducialLocs.index.levels[regionIDIndex]:
-            # Get localizations from inside the current region matching fid
-            currRegionLocs  = fiducialLocs.xs(fid, level='region_id',
-                                              drop_level=False)            
-            
-            maxFrame        = currRegionLocs['frame'].max()
-            minFrame        = currRegionLocs['frame'].min()
-            
-            # TODO: Pick up from here rewriting this funciton
-            windowSize      = self.smoothingWindowSize
-            sigma           = self.smoothingFilterSize
-            
-            # Determine the appropriate weighting factors
-            _, varx = self._movingAverage(currRegionLocs[x],
-                                          windowSize = windowSize,
-                                          sigma      = sigma)
-            _, vary = self._movingAverage(currRegionLocs[y],
-                                          windowSize = windowSize,
-                                          sigma      = sigma)
-            
-            # Perform spline fits. Extrapolate using boundary values (const)
-            extrapMethod = 'const'
-            xSpline = UnivariateSpline(currRegionLocs['frame'].as_matrix(),
-                                       currRegionLocs[x].as_matrix(),
-                                       w   = 1/np.sqrt(varx),
-                                       ext = extrapMethod)
-            ySpline = UnivariateSpline(currRegionLocs'frame'].as_matrix(),
-                                       currRegionLocs[y].as_matrix(),
-                                       w   = 1/np.sqrt(vary),
-                                       ext = extrapMethod)
-            
-            # Append results to class field splines
-            splines.append({'xS'       : xSpline,
-                            'yS'       : ySpline,
-                            'minFrame' : minFrame,
-                            'maxFrame' : maxFrame})
             
     def _extractLocsFromRegions(self, df):
         """Reduce the size of the search area for automatic fiducial detection.
