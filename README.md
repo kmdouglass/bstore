@@ -69,9 +69,9 @@ First start a Jupyter notebook session:
 ```sh
 jupyter notebook
 ```
-**Remember to change to the environment where you installed B-Store
-  with the command `source activate <ENV NAME>` (Linux/OSX) or
-  `activate <ENV NAME>` (Windows).**
+*Remember to change to the environment where you installed B-Store
+ with the command `source activate <ENV NAME>` (Linux/OSX) or
+ `activate <ENV NAME>` (Windows).*
 
 A minimal example for building a database goes like this:
 
