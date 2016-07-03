@@ -18,25 +18,18 @@ def test_FiducialDriftCorrect_Instantiation():
     """
     dc = proc.FiducialDriftCorrect()
 
-def test_DriftCorrection_Deprecated():
+def test_DriftCorrection():
     """Drift correction is properly applied to all localizations.
     
     """
     # Create the drift corrector
-    dc = proc.FiducialDriftCorrect_Deprecated(minFracFiducialLength = 0.5,
-                                   neighborRadius        = 150,
-                                   smoothingWindowSize   = 800,
-                                   smoothingFilterSize   = 200,
-                                   interactiveSearch     = False,
-                                   doFiducialSearch      = False,
-                                   noLinking             = True,
-                                   noClustering          = False,
-                                   removeFiducials       = True)
+    dc = proc.FiducialDriftCorrect(coordCols = ['x [nm]', 'y [nm]'],
+                                   frameCol = 'frame', removeFiducials = True)
                                    
     # Tell the drift corrector where the fiducials are.
     # Normally, these methods are not directly access by users; this is why
     # we need to handle renaming of columns.
-    dc.searchRegions = [
+    dc._fidRegions = [
         {'xMin' : 730,
          'xMax' : 870,
          'yMin' : 730,
@@ -46,15 +39,16 @@ def test_DriftCorrection_Deprecated():
           'yMin' : 1400,
           'yMax' : 1600}
          ]
-    locs.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'}, inplace = True)
-    fidRegions = dc.reduceSearchArea(locs)
-    dc.detectFiducials(fidRegions)
-    locs.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'}, inplace = True)
+         
+    # Extract fiducials from the localizations
+    fiducialLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.fiducialLocs = fiducialLocs
     
     # Did we find the trajectories?
-    assert_equal(len(dc.fiducialTrajectories), 2)
-    
+    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+
     # Correct the localizations
+    dc.interactiveSearch = False
     corrLocs = dc(locs)
     
     # Were fiducial locs removed? There should be 20000 ground truth
@@ -65,42 +59,35 @@ def test_DriftCorrection_Deprecated():
     # Was the correct drift trajectory applied? The original locs
     # should be in x + dx and y + dy of corrdf
     # round() avoids rounding errors when making comparisons
-    checkx = (corrLocs['x [nm]'] + corrLocs['dx [nm]']).round(2).isin(
+    checkx = (corrLocs['x [nm]'] + corrLocs['dx']).round(2).isin(
                                            locs['x [nm]'].round(2).as_matrix())
-    checky = (corrLocs['y [nm]'] + corrLocs['dy [nm]']).round(2).isin(
+    checky = (corrLocs['y [nm]'] + corrLocs['dy']).round(2).isin(
                                            locs['y [nm]'].round(2).as_matrix())
     ok_(checkx.all())
     ok_(checky.all())
     
     # dx and dy should equal the avgSpline
-    fidTraj_x = corrLocs[['dx [nm]', 'frame']].sort_values(
-              'frame').drop_duplicates('frame')['dx [nm]'].round(2).as_matrix()
-    fidTraj_y = corrLocs[['dy [nm]', 'frame']].sort_values(
-              'frame').drop_duplicates('frame')['dy [nm]'].round(2).as_matrix()
-    spline_x  = dc.avgSpline['xS'].round(2).as_matrix()
-    spline_y  = dc.avgSpline['yS'].round(2).as_matrix()
+    fidTraj_x = corrLocs[['dx', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dx'].round(2).as_matrix()
+    fidTraj_y = corrLocs[['dy', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dy'].round(2).as_matrix()
+    spline_x  = dc.driftTrajectory['xS'].round(2).as_matrix()
+    spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
     
-def test_DriftCorrection_dropTrajectories_Deprecated():
+def test_DriftCorrection_dropTrajectories():
     """Drift correction works after a trajectory is dropped.
     
     """    
     # Create the drift corrector
-    dc = proc.FiducialDriftCorrect_Deprecated(minFracFiducialLength = 0.5,
-                                   neighborRadius        = 150,
-                                   smoothingWindowSize   = 800,
-                                   smoothingFilterSize   = 200,
-                                   interactiveSearch     = False,
-                                   doFiducialSearch      = False,
-                                   noLinking             = True,
-                                   noClustering          = False,
-                                   removeFiducials       = True)
+    dc = proc.FiducialDriftCorrect(coordCols = ['x [nm]', 'y [nm]'],
+                                   frameCol = 'frame', removeFiducials = True)
                                    
     # Tell the drift corrector where the fiducials are.
     # Normally, these methods are not directly access by users; this is why
     # we need to handle renaming of columns.
-    dc.searchRegions = [
+    dc._fidRegions = [
         {'xMin' : 730,
          'xMax' : 870,
          'yMin' : 730,
@@ -110,44 +97,45 @@ def test_DriftCorrection_dropTrajectories_Deprecated():
           'yMin' : 1400,
           'yMax' : 1600}
          ]
-    locs.rename(columns = {'x [nm]' : 'x', 'y [nm]' : 'y'}, inplace = True)
-    fidRegions = dc.reduceSearchArea(locs)
-    dc.detectFiducials(fidRegions)
-    locs.rename(columns = {'x' : 'x [nm]', 'y' : 'y [nm]'}, inplace = True)
+    # Extract fiducials from the localizations
+    fiducialLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.fiducialLocs = fiducialLocs
     
     # Did we find the trajectories?
-    assert_equal(len(dc.fiducialTrajectories), 2)
+    assert_equal(fiducialLocs.index.levels[1].max(), 1)
     
     # Correct the localizations
+    dc.interactiveSearch = False
     corrLocs = dc(locs)
+    
+    # Were fiducial locs removed? There should be 20000 ground truth
+    # localizations after the localizations belonging to
+    # fiducials are removed.
     assert_equal(corrLocs.shape[0], 20000)
     
-    # Drop second trajectory (index = 1)
-    dc.dropTrajectories([1])
-    assert_equal(len(dc.fiducialTrajectories), 1)
+    # Use the first trajectory only (index = 0)
+    dc.driftComputer.useTrajectories = [0]
     
     # Recorrect the localizations
     corrLocs = dc(locs)
-    # Since we didn't drop a trajectory, there should be 30000 locs now
-    assert_equal(corrLocs.shape[0], 30000)
     
     # Was the correct drift trajectory applied? The original locs
     # should be in x + dx and y + dy of corrdf
     # round() avoids rounding errors when making comparisons
-    checkx = (corrLocs['x [nm]'] + corrLocs['dx [nm]']).round(2).isin(
+    checkx = (corrLocs['x [nm]'] + corrLocs['dx']).round(2).isin(
                                            locs['x [nm]'].round(2).as_matrix())
-    checky = (corrLocs['y [nm]'] + corrLocs['dy [nm]']).round(2).isin(
+    checky = (corrLocs['y [nm]'] + corrLocs['dy']).round(2).isin(
                                            locs['y [nm]'].round(2).as_matrix())
     ok_(checkx.all())
     ok_(checky.all())
     
     # dx and dy should equal the avgSpline
-    fidTraj_x = corrLocs[['dx [nm]', 'frame']].sort_values(
-              'frame').drop_duplicates('frame')['dx [nm]'].round(2).as_matrix()
-    fidTraj_y = corrLocs[['dy [nm]', 'frame']].sort_values(
-              'frame').drop_duplicates('frame')['dy [nm]'].round(2).as_matrix()
-    spline_x  = dc.avgSpline['xS'].round(2).as_matrix()
-    spline_y  = dc.avgSpline['yS'].round(2).as_matrix()
+    fidTraj_x = corrLocs[['dx', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dx'].round(2).as_matrix()
+    fidTraj_y = corrLocs[['dy', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dy'].round(2).as_matrix()
+    spline_x  = dc.driftTrajectory['xS'].round(2).as_matrix()
+    spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
     
