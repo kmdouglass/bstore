@@ -1,5 +1,7 @@
 # B-Store
 [![Build Status](https://travis-ci.com/kmdouglass/bstore.svg?token=wpszvKaNd7qmZqYsAqpT&branch=master)](https://travis-ci.com/kmdouglass/bstore)
+[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/version.svg)](https://anaconda.org/kmdouglass/bstore)
+[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/installer/conda.svg)](https://conda.anaconda.org/kmdouglass)
 
 Lightweight data management and analysis tools for single-molecule microscopy.
 
@@ -73,6 +75,10 @@ First start a Jupyter notebook session:
 ```sh
 jupyter notebook
 ```
+
+**Remember to change to the environment where you installed B-Store
+  with the command `source activate <ENV NAME>` (Linux/OSX) or
+  `activate <ENV NAME>` (Windows).
 
 A minimal example for building a database goes like this:
 
