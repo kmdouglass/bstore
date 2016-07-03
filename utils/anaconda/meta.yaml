@@ -19,7 +19,7 @@ requirements:
     - scikit-learn
     - pandas
     - h5py
-    - tables
+    - pytables
     - trackpy
 
   run:
@@ -29,7 +29,7 @@ requirements:
     - scipy
     - matplotlib
     - scikit-learn
-    - tables
+    - pytables
     - h5py
     - pandas
     - trackpy
