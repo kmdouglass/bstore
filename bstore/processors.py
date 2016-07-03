@@ -509,13 +509,17 @@ class DefaultDriftComputer(ComputeTrajectories):
         List of integers corresponding to the fiducial trajectories to use
         when computing the average trajectory. If None, all trajectories
         are used.
-    
+    zeroFrame       : int
+        Frame where all individual drift trajectories are equal to zero.
+        This may be adjusted to help correct fiducial trajectories that
+        don't overlap well near the beginning.
+        
     """
     # TODO: Explain this algorithm in the docstring above.
     
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
                  smoothingWindowSize = 600, smoothingFilterSize = 400,
-                 useTrajectories = []):
+                 useTrajectories = [], zeroFrame = 0):
         """Initialize the default drift computer.
         
         Parameters
@@ -533,12 +537,17 @@ class DefaultDriftComputer(ComputeTrajectories):
             List of integers corresponding to the fiducial trajectories to use
             when computing the average trajectory. If empty, all trajectories
             are used.
+        zeroFrame       : int
+            Frame where all individual drift trajectories are equal to zero.
+            This may be adjusted to help correct fiducial trajectories that
+            don't overlap well near the beginning.
         """
         self.coordCols = coordCols
         self.frameCol  = frameCol
         self.smoothingWindowSize = smoothingWindowSize
         self.smoothingFilterSize = smoothingFilterSize
         self.useTrajectories     = useTrajectories
+        self.zeroFrame           = zeroFrame
         super(ComputeTrajectories, self).__init__()
         
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
@@ -570,7 +579,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
         return average, var
         
-    def combineCurves(self, startFrame, stopFrame, zeroFrame = 0):
+    def combineCurves(self, startFrame, stopFrame):
         """Average the splines from different fiducials together.
         
         combineSplines(self, framesdf) relies on the assumption that fiducial
@@ -587,21 +596,17 @@ class DefaultDriftComputer(ComputeTrajectories):
             Minimum frame number in full dataset
         stopFrame  : int
             Maximum frame number in full dataset
-        zeroFrame  : int
-            Frame where all individual drift trajectories are equal to zero.
-            This may be adjusted to help correct fiducial trajectories that
-            don't overlap well near the beginning.
             
         """
         
         # Build list of evaluated splines between the absolute max and 
         # min frames.
-        if zeroFrame > stopFrame:
+        if self.zeroFrame > stopFrame:
             warnings.warn(('Warning: zeroFrame ({0:d}) is greater than the '
                            'maximum frame number in this dataset ({1:d})'
                            'Setting zeroFrame to zero.'
-                           ''.format(zeroFrame, stopFrame)))
-            zeroFrame = 0
+                           ''.format(self.zeroFrame, stopFrame)))
+            self.zeroFrame = 0
                            
         frames     = np.arange(startFrame, stopFrame + 1, 1)
         numSplines = len(self.splines)
@@ -616,7 +621,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         # value at frame number zeroFrame
         for key in fullRangeSplines.keys():
             for ctr, spline in enumerate(fullRangeSplines[key]):
-                firstFrameValue = spline[zeroFrame]
+                firstFrameValue = spline[self.zeroFrame]
                 fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
                                                                 firstFrameValue  
         
@@ -749,7 +754,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         x = self.coordCols[0]
         y = self.coordCols[1]        
         
-        if not splineNumber:
+        if splineNumber is None:
             # Plot all trajectories and splines
             startIndex = 0
             stopIndex  = len(self.splines)
@@ -765,7 +770,7 @@ class DefaultDriftComputer(ComputeTrajectories):
                                          drop_level = False)
             
             # Shift fiducial trajectories to zero at their start
-            frame0 = locs['frame'].iloc[[0]].as_matrix()
+            frame0 = locs['frame'].iloc[[self.zeroFrame]].as_matrix()
             x0 = self.splines[fid]['xS'](frame0)
             y0 = self.splines[fid]['yS'](frame0)            
             
@@ -899,8 +904,7 @@ class FiducialDriftCorrect(DriftCorrect):
             self.driftComputer.computeDriftTrajectory(fiducialLocs,
                                                       startFrame,
                                                       stopFrame)
-                                                           
-        # TODO: Correct the localizations
+        
         procdf = self.correctLocalizations(procdf)
         
         return procdf
