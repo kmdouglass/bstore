@@ -824,6 +824,7 @@ class FiducialDriftCorrect(DriftCorrect):
         removeFiducials   : bool
             Determines whether localizations belonging to fiducials are
             dropped from the input DataFrame when the processor is called.
+            This is ignored if interactiveSearch is False.
         driftComputer     : instance of ComputeTrajectories
             Function for computing the drift trajectory from fiducial
             localizations. If 'None', the default function utilizing
@@ -831,11 +832,10 @@ class FiducialDriftCorrect(DriftCorrect):
         
         """
         # Assign class properties based on input arguments
-        # TODO: Make _interactiveSearch() public
-        self._interactiveSearch = interactiveSearch
-        self._coordCols         = coordCols
-        self._frameCol          = frameCol
-        self._removeFiducials   = removeFiducials
+        self.interactiveSearch = interactiveSearch
+        self._coordCols        = coordCols
+        self._frameCol         = frameCol
+        self._removeFiducials  = removeFiducials
         
         if driftComputer:        
             self.driftComputer = driftComputer
@@ -863,8 +863,8 @@ class FiducialDriftCorrect(DriftCorrect):
             A DataFrame object with drift-corrected x- and y-coordinates.
         
         """
-        if self._interactiveSearch:        
-            self.interactiveSearch(df)
+        if self.interactiveSearch:        
+            self.doInteractiveSearch(df)
         
             # Extract the localizations inside the regions just identified
             try:
@@ -901,7 +901,7 @@ class FiducialDriftCorrect(DriftCorrect):
                                                       stopFrame)
                                                            
         # TODO: Correct the localizations
-        #procdf = self.correctLocalizations(procdf)
+        procdf = self.correctLocalizations(procdf)
         
         return procdf
             
@@ -967,10 +967,42 @@ class FiducialDriftCorrect(DriftCorrect):
     def correctorType(self):
         return self._correctorType
         
-    def correctLocalizations(self):
-        pass
+    def correctLocalizations(self, df):
+        """Correct the localizations using the spline fits to fiducial tracks.
+        
+        WARNING: To keep memory usage efficient, the input DataFrame is deleted
+        immediately after it's copied.
+        
+        Parameters
+        ----------
+        df     : Pandas DataFrame
+            The input DataFrame for processing.
+            
+        Returns
+        -------
+        corrdf : Pandas DataFrame
+            The corrected DataFrame.
+        
+        """
+        corrdf = df.copy()
+        del(df)        
+        
+        x = self._coordCols[0]
+        y = self._coordCols[1]        
+        
+        xc = self.driftComputer.avgSpline.lookup(corrdf.frame,
+                                                 ['xS'] * corrdf.frame.size)
+        yc = self.driftComputer.avgSpline.lookup(corrdf.frame,
+                                                 ['yS'] * corrdf.frame.size)
+        
+        corrdf['dx'] = xc
+        corrdf['dy'] = yc
+        corrdf[x]  = corrdf[x] - xc
+        corrdf[y]  = corrdf[y] - yc
+        
+        return corrdf
     
-    def interactiveSearch(self, df, gridSize = 100, unitConvFactor = 1./1000,
+    def doInteractiveSearch(self, df, gridSize = 100, unitConvFactor = 1./1000,
                           unitLabel = 'microns'):
         """Interactively find fiducials in the histogram images.
         
@@ -1951,6 +1983,10 @@ class MergeFang(MergeStats):
         procdf = pd.concat(dataToJoin, axis = 1)
         
         return procdf
+        
+"""Errors
+-------------------------------------------------------------------------------
+"""
 
 class UseTrajectoryError(Exception):
     """Raised when drift computer has invalid indexes to fiducial trajectories.
