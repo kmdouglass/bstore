@@ -64,21 +64,14 @@ B-Store is efficient and fast because its scope is limited to SMLM data organiza
 + Provide database-like storage for core facilities.
 + Generate any data or results for you. (Sorry.)
 
-If you would like to compute localizations from raw images, there are a number of available software packages that have been developed by great people. A good place to start learning about them is here: [SMLM Software Benchmarking by the Biomedical Imaging Group at EPFL](http://bigwww.epfl.ch/smlm/index.html#&panel1-1).
-
-Microscope hardware and acquisition control is often performed inside either commercial or custom-written software packages. A great open source project with a lot of support and that we personally use is [Micro-Manager](https://micro-manager.org/).
-
-If you are a core facility manager and looking for a database system for fluorescence microscopy data, [OMERO](https://www.openmicroscopy.org/site) is a well-developed project that may suit your needs. Additionally, there has been some discussion on a SMLM standard format and incorporating it into OMERO (see this thread at http://lists.openmicroscopy.org.uk/pipermail/ome-devel/2015-July/003410.html). In our experience, OMERO requires infrastructure in the form of hardware and personnel that small labs may not be able to satisfy. Furthermore, this standard format does not yet exist as of June, 2016. Partly for these reasons, we developed B-Store for people like ourselves who want a minimal, no-fuss SMLM data management system. In anticipation of a standard SMLM format, B-Store is designed to be as agnostic to file formats as possible so that it may adapt as the field evolves.
-
 # How do I use B-Store?
 First start a Jupyter notebook session:
 ```sh
 jupyter notebook
 ```
-
 **Remember to change to the environment where you installed B-Store
   with the command `source activate <ENV NAME>` (Linux/OSX) or
-  `activate <ENV NAME>` (Windows).
+  `activate <ENV NAME>` (Windows).**
 
 A minimal example for building a database goes like this:
 
