@@ -287,8 +287,7 @@ class HDFDatabase(Database):
                         
                     datasets.append(parser.getBasicInfo())
         except:
-            import sys
-            print("Unexpected error:", sys.exc_info()[0])
+            print("Unexpected error in build():", sys.exc_info()[0])
         finally:
             # Report on all the datasets that were parsed
             buildResults = self._sortDatasets(datasets)
@@ -640,8 +639,7 @@ class HDFDatabase(Database):
                 hdf.put(key, atom.data, format = 'table',
                         data_columns = True, index = False)
             except:
-                import sys
-                print("Unexpected error:", sys.exc_info()[0])
+                print("Unexpected error in put():", sys.exc_info()[0])
             finally:
                 hdf.close()
                 
@@ -669,8 +667,7 @@ class HDFDatabase(Database):
                 hdf[key].attrs[atomPrefix +'Version'] = \
                                                    config.__bstore_Version__
             except:
-                import sys
-                print("Unexpected error:", sys.exc_info()[0])
+                print("Unexpected error in put():", sys.exc_info()[0])
             finally:
                 hdf.close()
         elif atom.datasetType == 'locMetadata':

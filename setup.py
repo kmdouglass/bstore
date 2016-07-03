@@ -17,7 +17,8 @@ config = {
                          'numpy',
                          'scipy',
                          'matplotlib',
-                         'h5py'],
+                         'h5py',
+						 'tables'],
     'packages'        : ['bstore'],
     'scripts'         : [],
     'name'            : 'bstore'

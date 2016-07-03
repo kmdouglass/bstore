@@ -27,7 +27,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy matplotlib scikit-learn pandas h5py
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy matplotlib scikit-learn tables h5py pandas
   - source activate test-environment
   - conda install -c soft-matter trackpy
 

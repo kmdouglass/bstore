@@ -15,5 +15,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Fixed broken links in README.md.
+- Added tables dependency for Windows builds.
 
 [Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...HEAD
