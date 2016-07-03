@@ -887,7 +887,7 @@ class FiducialDriftCorrect(DriftCorrect):
             # looking for them again in the raw localizations.
             fiducialLocs = self.driftComputer.fiducialLocs
         
-        # TODO: Cluster localizations if desired
+        # Cluster here localizations if desired
         
         # Remove localizations inside the search regions from the DataFrame
         if self._removeFiducials:
