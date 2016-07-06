@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - fiducialLocs DataFrame belonging to `ComputeTrajectories` is now
   automatically sorted, which allows for multi-indexing.
+- Database build no longer fails completely when placing metadata
+  into the database and localization results files are missing.
 
 ## [v0.1.0b-rev3]
 ### Added
