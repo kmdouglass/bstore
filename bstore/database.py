@@ -274,31 +274,39 @@ class HDFDatabase(Database):
                     self.put(parser.getDatabaseAtom())
                     
                 datasets.append(parser.getBasicInfo())
+        except:
+            print("Unexpected error in build() while building locResults:",
+                  sys.exc_info()[0])
+        
+        # Place all other data into the database
+        del(files['locResults'])
+        for currType in files.keys(): 
             
-            # Place all other data into the database
-            del(files['locResults'])
-            for currType in files.keys(): 
-                
-                for currFile in files[currType]:
+            for currFile in files[currType]:
+                try:
                     parser.parseFilename(currFile, datasetType = currType)
-                    
+                
                     if not dryRun:
                         self.put(parser.getDatabaseAtom())
-                        
+                    
                     datasets.append(parser.getBasicInfo())
-        except:
-            print("Unexpected error in build():", sys.exc_info()[0])
-        finally:
-            # Report on all the datasets that were parsed
-            buildResults = self._sortDatasets(datasets)
-            
-            if buildResults is not None:
-                print('{0:d} files were successfully parsed.'.format(
-                                                            len(buildResults)))
-            else:
-                print('0 files were successfully parsed.')
+                except LocResultsDoNotExist:
+                    # Do not fail the build if metadata cannot be put.
+                    continue
+                except:
+                    print("Unexpected error in build():",
+                          sys.exc_info()[0])
+
+        # Report on all the datasets that were parsed
+        buildResults = self._sortDatasets(datasets)
+
+        if buildResults is not None:
+            print('{0:d} files were successfully parsed.'.format(
+                                                        len(buildResults)))
+        else:
+            print('0 files were successfully parsed.')
                 
-            return buildResults
+        return buildResults
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.

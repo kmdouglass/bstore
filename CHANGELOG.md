@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Changed
 - Simplified the code for the OverlayClusters multiprocessor.
+- Individual fiducial plots now all use the same y-axis limits values.
+
+### Fixed
+- fiducialLocs DataFrame belonging to `ComputeTrajectories` is now
+  automatically sorted, which allows for multi-indexing.
+- Database build no longer fails completely when placing metadata
+  into the database and localization results files are missing.
 
 ## [v0.1.0b-rev3]
 ### Added

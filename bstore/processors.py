@@ -85,8 +85,12 @@ class ComputeTrajectories(metaclass = ABCMeta):
         """Checks that the fiducial localizations are formatted correctly.
         
         """
-        assert 'region_id' in fiducialData.index.names, \
-                      'fiducialLocs DataFrame requires index named "region_id"'
+        if fiducialData is not None:
+            assert 'region_id' in fiducialData.index.names, \
+                'fiducialLocs DataFrame requires index named "region_id"'
+                          
+            # Sort the multi-index to allow slicing
+            fiducialData.sort_index(inplace = True)
         
         self._fiducialData = fiducialData
         
@@ -752,6 +756,14 @@ class DefaultDriftComputer(ComputeTrajectories):
             Index of the spline to plot. (0-index)
         
         """
+        # Set the y-axis based on the average spline
+        minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()        
+        minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max() 
+        minxy -= 45
+        maxxy += 45
+        minyy -= 45
+        maxyy += 45
+        
         if self.fiducialLocs is None:
             raise ZeroFiducials(
                 'Zero fiducials are currently saved with this processor.')
@@ -795,6 +807,7 @@ class DefaultDriftComputer(ComputeTrajectories):
                      color = 'red')
             axx.set_ylabel('x-position')
             axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
+            axx.set_ylim((minxy, maxxy))
                      
             axy.plot(locs['frame'],
                      locs[y] - y0,
@@ -807,6 +820,7 @@ class DefaultDriftComputer(ComputeTrajectories):
                      color = 'red')
             axy.set_xlabel('Frame number')
             axy.set_ylabel('y-position')
+            axy.set_ylim((minyy, maxyy))
             plt.show()
         
 class FiducialDriftCorrect(DriftCorrect):
@@ -892,7 +906,7 @@ class FiducialDriftCorrect(DriftCorrect):
             # looking for them again in the raw localizations.
             fiducialLocs = self.driftComputer.fiducialLocs
         
-        # Cluster here localizations if desired
+        # TODO: Cluster here localizations if desired
         
         # Remove localizations inside the search regions from the DataFrame
         if self._removeFiducials:
