@@ -85,11 +85,12 @@ class ComputeTrajectories(metaclass = ABCMeta):
         """Checks that the fiducial localizations are formatted correctly.
         
         """
-        assert 'region_id' in fiducialData.index.names, \
-                      'fiducialLocs DataFrame requires index named "region_id"'
-                      
-        # Sort the multi-index to allow slicing
-        fiducialData.sort_index(inplace = True)
+        if fiducialData is not None:
+            assert 'region_id' in fiducialData.index.names, \
+                'fiducialLocs DataFrame requires index named "region_id"'
+                          
+            # Sort the multi-index to allow slicing
+            fiducialData.sort_index(inplace = True)
         
         self._fiducialData = fiducialData
         
@@ -758,10 +759,10 @@ class DefaultDriftComputer(ComputeTrajectories):
         # Set the y-axis based on the average spline
         minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()        
         minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max() 
-        minxy -= 25
-        maxxy += 25
-        minyy -= 25
-        maxyy += 25
+        minxy -= 45
+        maxxy += 45
+        minyy -= 45
+        maxyy += 45
         
         if self.fiducialLocs is None:
             raise ZeroFiducials(
