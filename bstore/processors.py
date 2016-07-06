@@ -87,6 +87,9 @@ class ComputeTrajectories(metaclass = ABCMeta):
         """
         assert 'region_id' in fiducialData.index.names, \
                       'fiducialLocs DataFrame requires index named "region_id"'
+                      
+        # Sort the multi-index to allow slicing
+        fiducialData.sort_index(inplace = True)
         
         self._fiducialData = fiducialData
         
@@ -276,19 +279,23 @@ class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
     """
-    def __init__(self, idLabel  = 'cluster_id',
-                 coordCols      = ['x', 'y'],
-                 statsFunctions = None):
+    
+    # The name to append to the center coordinate column names
+    centerName = '_center'
+    
+    def __init__(self, idLabel    = 'cluster_id',
+                 coordCols        = ['x', 'y'],
+                 statsFunctions   = None):
         """Set the column name for the cluster ID numbers.
         
         Parameters
         ----------
-        idLabel        : str
+        idLabel          : str
             The column name containing cluster ID's.
-        coordCols      : list of string
+        coordCols        : list of string
             A list containing the column names containing the localization
             coordinates.
-        statsFunctions : dict of name/function pairs
+        statsFunctions   : dict of name/function pairs
             A dictionary containing column names and functions for computing
             custom statistics from the clustered localizations. The keys in
             dictionary determine the name of the customized column and the
@@ -296,11 +303,12 @@ class ComputeClusterStats:
             coordinates of the localizations in each cluster.
         
         """
-        self._coordCols = coordCols
         self._idLabel   = idLabel
         self._statsFunctions = {'radius_of_gyration' : self._radiusOfGyration,
                                 'eccentricity'       : self._eccentricity,
                                 'convex_hull'        : self._convexHull}
+                                
+        self.coordCols = coordCols
         
         # Add the input functions to the defaults if they were supplied
         if statsFunctions:                      
@@ -329,21 +337,21 @@ class ComputeClusterStats:
         groups = df.groupby(self._idLabel)
         
         # Computes the default statistics for each cluster
-        tempResultsCoM    = groups[self._coordCols].agg(np.mean)
+        tempResultsCoM    = groups[self.coordCols].agg(np.mean)
         tempResultsLength = pd.Series(groups.size())
         
         # Compute the custom statistics for each cluster and set
         # the column name to the dictionary key
         tempResultsCustom = []
         for name, func in self._statsFunctions.items():        
-            temp      = groups.apply(func, self._coordCols)
+            temp      = groups.apply(func, self.coordCols)
             temp.name = name # The name of the column is now the dictionary key
             tempResultsCustom.append(temp)
 
         # Appends '_center' to the names of the coordinate columns
         # and renames the series
-        newCoordCols = [col + '_center' for col in self._coordCols]
-        nameMapping  = dict(zip(self._coordCols, newCoordCols))
+        newCoordCols = [col + self.centerName for col in self.coordCols]
+        nameMapping  = dict(zip(self.coordCols, newCoordCols))
         
         tempResultsCoM.rename(columns = nameMapping,
                               inplace = True)
@@ -747,6 +755,14 @@ class DefaultDriftComputer(ComputeTrajectories):
             Index of the spline to plot. (0-index)
         
         """
+        # Set the y-axis based on the average spline
+        minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()        
+        minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max() 
+        minxy -= 25
+        maxxy += 25
+        minyy -= 25
+        maxyy += 25
+        
         if self.fiducialLocs is None:
             raise ZeroFiducials(
                 'Zero fiducials are currently saved with this processor.')
@@ -790,6 +806,7 @@ class DefaultDriftComputer(ComputeTrajectories):
                      color = 'red')
             axx.set_ylabel('x-position')
             axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
+            axx.set_ylim((minxy, maxxy))
                      
             axy.plot(locs['frame'],
                      locs[y] - y0,
@@ -802,6 +819,7 @@ class DefaultDriftComputer(ComputeTrajectories):
                      color = 'red')
             axy.set_xlabel('Frame number')
             axy.set_ylabel('y-position')
+            axy.set_ylim((minyy, maxyy))
             plt.show()
         
 class FiducialDriftCorrect(DriftCorrect):
@@ -887,7 +905,7 @@ class FiducialDriftCorrect(DriftCorrect):
             # looking for them again in the raw localizations.
             fiducialLocs = self.driftComputer.fiducialLocs
         
-        # Cluster here localizations if desired
+        # TODO: Cluster here localizations if desired
         
         # Remove localizations inside the search regions from the DataFrame
         if self._removeFiducials:
