@@ -276,19 +276,23 @@ class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
     """
-    def __init__(self, idLabel  = 'cluster_id',
-                 coordCols      = ['x', 'y'],
-                 statsFunctions = None):
+    
+    # The name to append to the center coordinate column names
+    centerName = '_center'
+    
+    def __init__(self, idLabel    = 'cluster_id',
+                 coordCols        = ['x', 'y'],
+                 statsFunctions   = None):
         """Set the column name for the cluster ID numbers.
         
         Parameters
         ----------
-        idLabel        : str
+        idLabel          : str
             The column name containing cluster ID's.
-        coordCols      : list of string
+        coordCols        : list of string
             A list containing the column names containing the localization
             coordinates.
-        statsFunctions : dict of name/function pairs
+        statsFunctions   : dict of name/function pairs
             A dictionary containing column names and functions for computing
             custom statistics from the clustered localizations. The keys in
             dictionary determine the name of the customized column and the
@@ -296,11 +300,12 @@ class ComputeClusterStats:
             coordinates of the localizations in each cluster.
         
         """
-        self._coordCols = coordCols
         self._idLabel   = idLabel
         self._statsFunctions = {'radius_of_gyration' : self._radiusOfGyration,
                                 'eccentricity'       : self._eccentricity,
                                 'convex_hull'        : self._convexHull}
+                                
+        self.coordCols = coordCols
         
         # Add the input functions to the defaults if they were supplied
         if statsFunctions:                      
@@ -329,21 +334,21 @@ class ComputeClusterStats:
         groups = df.groupby(self._idLabel)
         
         # Computes the default statistics for each cluster
-        tempResultsCoM    = groups[self._coordCols].agg(np.mean)
+        tempResultsCoM    = groups[self.coordCols].agg(np.mean)
         tempResultsLength = pd.Series(groups.size())
         
         # Compute the custom statistics for each cluster and set
         # the column name to the dictionary key
         tempResultsCustom = []
         for name, func in self._statsFunctions.items():        
-            temp      = groups.apply(func, self._coordCols)
+            temp      = groups.apply(func, self.coordCols)
             temp.name = name # The name of the column is now the dictionary key
             tempResultsCustom.append(temp)
 
         # Appends '_center' to the names of the coordinate columns
         # and renames the series
-        newCoordCols = [col + '_center' for col in self._coordCols]
-        nameMapping  = dict(zip(self._coordCols, newCoordCols))
+        newCoordCols = [col + self.centerName for col in self.coordCols]
+        nameMapping  = dict(zip(self.coordCols, newCoordCols))
         
         tempResultsCoM.rename(columns = nameMapping,
                               inplace = True)

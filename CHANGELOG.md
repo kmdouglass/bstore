@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Changed
+- Simplified the code for the OverlayClusters multiprocessor.
+
+## [v0.1.0b-rev3]
 ### Added
 - CHANGELOG.md.
 - `ComputeTrajectories` metaclass and `DefaultDriftComputer` subclass
@@ -17,4 +21,5 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...HEAD
+[v0.1.0b-rev3]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...v0.1.0b-rev3
