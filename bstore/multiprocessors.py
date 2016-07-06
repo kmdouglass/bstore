@@ -105,6 +105,10 @@ class OverlayClusters:
                                                  coordCols = self.coordCols)
             stats     = statsComp(locs)
             
+            # Ignore the filter and annotate columns
+            self.filterCol   = None            
+            self.annotateCol = None
+            
             # Override the center coordinate column names
             centerSuffix = statsComp.centerName
             x, y         = self.coordCols[0], self.coordCols[1]
@@ -116,13 +120,6 @@ class OverlayClusters:
                ('Error: No cluster ID column found in localization DataFrame. '
                 'Searched for column name '
                 '\' {0:s} \'.'.format(self.clusterIDCol))
-        
-        # TODO: Delete these lines that are commented out.
-        # Apply the initial filter to the data
-        #if numberFilter is not None:
-        #    # A slice of the localization DataFrame is made here;
-        #    # The original is not overwritten.
-        #    stats.loc[stats['number_of_localizations'] <= numberFilter, self.annotateCol] = False
         
         # Find the cluster ID information
         self._extractClusterID(stats)     
@@ -142,11 +139,12 @@ class OverlayClusters:
             
             """
             if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']:
-                # Add a numeric label to the cluster
-                stats.loc[self.currentCluster, self.annotateCol] = \
+                if self.annotateCol is not None:                
+                    # Add a numeric label to the cluster
+                    stats.loc[self.currentCluster, self.annotateCol] = \
                                                                  int(event.key)
-                self._currentClusterIndex += 1
-                self._drawCurrentCluster(locs)
+                    self._currentClusterIndex += 1
+                    self._drawCurrentCluster(locs)
             
             if event.key in ['b', 'B']:
                 # Go back one cluster.
@@ -161,16 +159,20 @@ class OverlayClusters:
                     self._drawCurrentCluster(locs)
             
             if event.key in [' ']:
-                # Set switchColumn to True for this cluster and go to the next.
-                stats.loc[self.currentCluster, self.annotateCol] = True
-                self._currentClusterIndex += 1
-                self._drawCurrentCluster(locs)
+                if self.annotateCol is not None:
+                    # Set annotateCol to True for this cluster
+                    # and go to the next.
+                    stats.loc[self.currentCluster, self.annotateCol] = True
+                    self._currentClusterIndex += 1
+                    self._drawCurrentCluster(locs)
                 
             if event.key in ['r', 'R']:
-                # Set switchColumn to True for this cluster and go to the next.
-                stats.loc[self.currentCluster, self.annotateCol] = False
-                self._currentClusterIndex += 1
-                self._drawCurrentCluster(locs)
+                if self.annotateCol is not None:
+                    # Set switchColumn to True for this cluster
+                    # and go to the next.
+                    stats.loc[self.currentCluster, self.annotateCol] = False
+                    self._currentClusterIndex += 1
+                    self._drawCurrentCluster(locs)
                 
         self._fig.canvas.mpl_connect('close_event', onClose)
         plt.connect('key_press_event',
@@ -257,6 +259,18 @@ class OverlayClusters:
         idCol     = self.clusterIDCol
         filterCol = self.filterCol
         
+        if wfImage is None:
+            centerColor = 'black'
+        else:
+            centerColor = 'white'
+            
+        if self.filterCol is None:
+            plotx = stats.loc[:, xc] / self._pixelSize
+            ploty = stats.loc[:, yc] / self._pixelSize
+        else:
+            plotx = stats.loc[stats[filterCol] != False, xc] / self._pixelSize
+            ploty = stats.loc[stats[filterCol] != False, yc] / self._pixelSize    
+        
         # Reset the current cluster to zero
         self._currentClusterIndex = 0
         self.currentCluster       = self.clusterIDs[self._currentClusterIndex]        
@@ -268,25 +282,27 @@ class OverlayClusters:
         self._ax1 = ax1    
         
         # Draw the cluster centers
-        ax0.imshow(wfImage,
-                   cmap          = 'inferno',
-                   interpolation = 'nearest',
-                   #vmin          = np.max(wfImage) / 3,
-                   vmax          = np.max(wfImage) / 2)
-                   #vmax          = np.max(wfImage))
-        ax0.scatter(stats.loc[stats[filterCol] != False, xc] / self._pixelSize,
-                    stats.loc[stats[filterCol] != False, yc] / self._pixelSize,
+        if wfImage is not None:
+            ax0.imshow(wfImage,
+                       cmap          = 'inferno',
+                       interpolation = 'nearest',
+                       #vmin          = np.max(wfImage) / 3,
+                       vmax          = np.max(wfImage) / 2)
+                       #vmax          = np.max(wfImage))
+
+        ax0.scatter(plotx, 
+                    ploty,
                     s     = 1,
-                    color = 'white')
+                    color = centerColor)
         self._clusterCenter, = ax0.plot([],
                                         [],
                                         'oy',
                                         markersize      = 10,
                                         fillstyle       = 'none',
                                         markeredgewidth = 2.5)
-                    
-        ax0.set_xlim(0, wfImage.shape[1])
-        ax0.set_ylim(0, wfImage.shape[0])
+        if wfImage is not None:            
+            ax0.set_xlim(0, wfImage.shape[1])
+            ax0.set_ylim(0, wfImage.shape[0])
         ax0.set_title('Cluster centers')
         ax0.set_xlabel('x-position, pixel')
         ax0.set_ylabel('y-position, pixel')
@@ -294,21 +310,22 @@ class OverlayClusters:
         
         # Draw the zoomed region of the current cluster
         self._clusterLocs, = ax1.plot([], [], '.c')
-        ax1.imshow(wfImage,
-                   cmap          = 'inferno',
-                   interpolation = 'nearest',
-                   #vmin          = np.max(wfImage) / 3,
-                   vmax          = np.max(wfImage) / 2)
-                   #vmax          = np.max(wfImage))
+        if wfImage is not None:
+            ax1.imshow(wfImage,
+                       cmap          = 'inferno',
+                       interpolation = 'nearest',
+                       #vmin          = np.max(wfImage) / 3,
+                       vmax          = np.max(wfImage) / 2)
+                       #vmax          = np.max(wfImage))
         # Plot unclustered localizations
         ax1.scatter(locs[locs[idCol] == -1][x] / self._pixelSize,
                     locs[locs[idCol] == -1][y] / self._pixelSize,
                     s = 4,
-                    color = 'white')
+                    color = 'magenta')
         
         # Plot the cluster centers
-        ax1.scatter(stats.loc[stats[filterCol] != False, xc] / self._pixelSize,
-                    stats.loc[stats[filterCol] != False, yc] / self._pixelSize,
+        ax1.scatter(plotx,
+                    ploty,
                     s = 30,
                     color = 'green')
         ax1.set_xlabel('x-position, pixel')
