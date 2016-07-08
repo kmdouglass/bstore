@@ -4,7 +4,6 @@ import numpy             as np
 import matplotlib.pyplot as plt
 import re
 from abc                import ABCMeta, abstractmethod, abstractproperty
-from pathlib            import Path
 from sklearn.cluster    import DBSCAN
 from operator           import *
 from scipy.signal       import gaussian
@@ -497,6 +496,13 @@ class ConvertHeader:
 class DefaultDriftComputer(ComputeTrajectories):
     """The default algorithm for computing a drift trajectory.
     
+    The default drift computer fits a cubic smoothing spline to
+    localizations from fiducial regions and averages the splines from multiple
+    fiducials. It allows users to set the frame where the trajectories are
+    equal to zero in x and y, to adjust the smoothing window parameters, and
+    to select what trajectories are used to compute the final trajectory that
+    is stored inside the avgSpline attribute.
+    
     Attributes
     ----------
     avgSpline           : Pandas DataFrame
@@ -524,7 +530,6 @@ class DefaultDriftComputer(ComputeTrajectories):
         don't overlap well near the beginning.
         
     """
-    # TODO: Explain this algorithm in the docstring above.
     
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
                  smoothingWindowSize = 600, smoothingFilterSize = 400,
@@ -936,7 +941,7 @@ class FiducialDriftCorrect(DriftCorrect):
             # looking for them again in the raw localizations.
             fiducialLocs = self.driftComputer.fiducialLocs
         
-        # TODO: Cluster here localizations if desired
+        # Add clustering of localizations here if needed
         
         # Remove localizations inside the search regions from the DataFrame
         if self._removeFiducials:
@@ -1373,86 +1378,3 @@ class ZeroFiducialRegions(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-        
-if __name__ == '__main__':
-    example = 'merge'
-
-    # Set the directory to the data file and load it into a DataFrame
-    from pathlib import Path
-    p  = Path('../test-data/Telomeres/pSuper_1/pSuper_1_locResults.dat')
-    df = pd.read_csv(str(p))
-    
-    if example == 'convert':
-        # Define the input and output formats for the localization file
-        inputFormat  = FormatThunderSTORM()
-        outputFormat = FormatLEB()
-        converter    = ConvertHeader(inputFormat, outputFormat)
-        
-        # Convert the file into a new format
-        convertedDF  = converter(df)
-    
-    elif example == 'cluster':        
-        # Set the DBSCAN parameters and the columns for clustering
-        minSamples = 50
-        eps        = 20
-        coordCols  = ['x [nm]', 'y [nm]']
-        
-        # Initialize the processor
-        clusterMaker = Cluster(minSamples, eps, coordCols)
-        
-        # Perform the clustering and return a DataFrame as a result
-        clusteredDF  = clusterMaker(df)
-        
-    elif example == 'fiducialDriftCorrect':
-        # Load data with fiducials present
-        fileName = Path('../test-data/acTub_COT_gain100_30ms/acTub_COT_gain100_30ms.csv')
-        with open(str(fileName), 'r') as file:
-            df = pd.read_csv(file)
-            
-        # Reduce number of columns (for debugging)
-        #newdf = df[df['frame'] < 2000].copy()
-        
-        mergeRadius      = 90 # same units as x, y (typically nm)
-        offTime          = 3  # units of frames
-        minSegmentLength = 30 # units of frames
-        
-        # Initialize the drift corrector
-        corrector = FiducialDriftCorrect(mergeRadius      = mergeRadius,
-                                         offTime          = offTime,
-                                         minSegmentLength = minSegmentLength)
-                                         
-        # Perform drift correction
-        correctedDF = corrector(df)
-        
-    elif example == 'filter':
-       # Initialize the filter
-        myFilter = Filter('loglikelihood', '<', 250)
-        
-        # Filter the data by keeping rows with loglikelihood less than or equal
-        # to 250
-        filteredDF = myFilter(df)
-        
-    elif example == 'merge':
-        # Convert test-data headers
-        # (this is not neccessary if data is already in the LEB format)       
-        inputFormat  = FormatThunderSTORM()
-        outputFormat = FormatLEB()
-        converter    = ConvertHeader(inputFormat, outputFormat)
-        cdf          = converter(df)       
-        
-        # Intial filtering on the data
-        cdf = cdf[cdf['loglikelihood'] <= 250]
-        cdf = cdf[cdf['loglikelihood'] >= 0]
-        cdf = cdf[(cdf['x'] >= 0) & (df['y'] >= 0)]
-        
-        # Set the off time for the data merging in units of frames
-        tOff = 1
-        
-        # Initialize the processor
-        merger = Merge(tOff = tOff)
-        
-        # Perform the merging
-        mergedDF = merger(cdf)
-        
-        mergedDF.to_csv('temp.csv',sep = ',', index = False)
-        
