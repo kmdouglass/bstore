@@ -5,10 +5,15 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Simplified the code for the OverlayClusters multiprocessor.
 - Individual fiducial plots now all use the same y-axis limits values.
+- Default value for the zeroFrame parameter of `DefaultDriftComputer`
+  is now 1000 instead of 0. A warning is raised if zeroFrame lies
+  outside the allowable range of frame numbers.
 
 ### Fixed
 - fiducialLocs DataFrame belonging to `ComputeTrajectories` is now
   automatically sorted, which allows for multi-indexing.
+- Fixed bug in `DefaultDriftComputer` related the y-axis offset of the
+  splines and fiducial localizations.
 - Database build no longer fails completely when placing metadata
   into the database and localization results files are missing.
 

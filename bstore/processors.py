@@ -528,7 +528,7 @@ class DefaultDriftComputer(ComputeTrajectories):
     
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
                  smoothingWindowSize = 600, smoothingFilterSize = 400,
-                 useTrajectories = [], zeroFrame = 0):
+                 useTrajectories = [], zeroFrame = 1000):
         """Initialize the default drift computer.
         
         Parameters
@@ -558,6 +558,47 @@ class DefaultDriftComputer(ComputeTrajectories):
         self.useTrajectories     = useTrajectories
         self.zeroFrame           = zeroFrame
         super(ComputeTrajectories, self).__init__()
+        
+    def _computeOffsets(self, locs):
+        """Compute the offsets for fiducial trajectories based on zeroFrame.
+        
+        Parameters
+        ----------
+        locs : Pandas DataFrame
+            Localizations from a single fiducial region.
+            
+        Returns
+        -------
+        x0, y0 : tuple of int
+            The offsets to subtract from the localizations belonging to a
+            fiducial.
+        
+        """
+        avgOffset = 50
+        x, y = self.coordCols[0], self.coordCols[1]
+        startFrame, stopFrame = locs[self.frameCol].min(), \
+                                locs[self.frameCol].max()
+                                
+        if self.zeroFrame > stopFrame or self.zeroFrame < startFrame:
+            warnings.warn(('Warning: zeroFrame ({0:d}) is outside the '
+                           'allowable range of frame numbers in this dataset '
+                           '({1:d} - {2:d}). Try a different zeroFrame value'
+                           'by adjusting driftComputer.zeroFrame.'
+                           ''.format(self.zeroFrame, startFrame + avgOffset,
+                                     stopFrame - avgOffset)))
+        
+        # Average the localizations around the zeroFrame value
+        x0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][x].mean()
+        y0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][y].mean()
+                
+        if (x0 is np.nan) or (y0 is np.nan):
+            warnings.warn('Could not determine an offset value; '
+                          'setting offsets to zero.')
+            x0, y0 = 0, 0
+        
+        return x0, y0
         
     def _movingAverage(self, series, windowSize = 100, sigma = 3):
         """Estimate the weights for the smoothing spline.
@@ -607,16 +648,8 @@ class DefaultDriftComputer(ComputeTrajectories):
             Maximum frame number in full dataset
             
         """
-        
         # Build list of evaluated splines between the absolute max and 
-        # min frames.
-        if self.zeroFrame > stopFrame:
-            warnings.warn(('Warning: zeroFrame ({0:d}) is greater than the '
-                           'maximum frame number in this dataset ({1:d})'
-                           'Setting zeroFrame to zero.'
-                           ''.format(self.zeroFrame, stopFrame)))
-            self.zeroFrame = 0
-                           
+        # min frames.                   
         frames     = np.arange(startFrame, stopFrame + 1, 1)
         numSplines = len(self.splines)
         
@@ -624,15 +657,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         fullRangeSplines = {'xS' : np.array([self.splines[i]['xS'](frames)
                                                  for i in range(numSplines)]),
                             'yS' : np.array([self.splines[i]['yS'](frames)
-                                                 for i in range(numSplines)])}
-        
-        # Shift each spline at zeroFrame to (x = 0, y = 0) by subtracting its
-        # value at frame number zeroFrame
-        for key in fullRangeSplines.keys():
-            for ctr, spline in enumerate(fullRangeSplines[key]):
-                firstFrameValue = spline[self.zeroFrame]
-                fullRangeSplines[key][ctr] = fullRangeSplines[key][ctr] - \
-                                                                firstFrameValue  
+                                                 for i in range(numSplines)])} 
         
         # Create the mask area if only certain fiducials are to be averaged
         if not self.useTrajectories:
@@ -719,22 +744,26 @@ class DefaultDriftComputer(ComputeTrajectories):
             windowSize      = self.smoothingWindowSize
             sigma           = self.smoothingFilterSize
             
+            # Shift the localization(s) at zeroFrame to (x = 0, y = 0) by
+            # subtracting its value at frame number zeroFrame
+            x0, y0 = self._computeOffsets(currRegionLocs)
+            
             # Determine the appropriate weighting factors
-            _, varx = self._movingAverage(currRegionLocs[x],
+            _, varx = self._movingAverage(currRegionLocs[x] - x0,
                                           windowSize = windowSize,
                                           sigma      = sigma)
-            _, vary = self._movingAverage(currRegionLocs[y],
+            _, vary = self._movingAverage(currRegionLocs[y] - y0,
                                           windowSize = windowSize,
                                           sigma      = sigma)
             
             # Perform spline fits. Extrapolate using boundary values (const)
             extrapMethod = 'const'
             xSpline = UnivariateSpline(currRegionLocs[frameID].as_matrix(),
-                                       currRegionLocs[x].as_matrix(),
+                                       currRegionLocs[x].as_matrix() - x0,
                                        w   = 1/np.sqrt(varx),
                                        ext = extrapMethod)
             ySpline = UnivariateSpline(currRegionLocs[frameID].as_matrix(),
-                                       currRegionLocs[y].as_matrix(),
+                                       currRegionLocs[y].as_matrix() - y0,
                                        w   = 1/np.sqrt(vary),
                                        ext = extrapMethod)
             
@@ -787,16 +816,17 @@ class DefaultDriftComputer(ComputeTrajectories):
                                          drop_level = False)
             
             # Shift fiducial trajectories to zero at their start
-            frame0 = locs['frame'].iloc[[self.zeroFrame]].as_matrix()
-            x0 = self.splines[fid]['xS'](frame0)
-            y0 = self.splines[fid]['yS'](frame0)            
+            #frame0 = locs['frame'].iloc[[self.zeroFrame]].as_matrix()
+            #x0 = self.splines[fid]['xS'](frame0)
+            #y0 = self.splines[fid]['yS'](frame0)      
+            x0, y0 = self._computeOffsets(locs)
             
             if (fid in self.useTrajectories) or (not self.useTrajectories):
                 markerColor = 'blue'
             else:
                 markerColor = '#999999' # gray
             
-            axx.plot(locs['frame'],
+            axx.plot(locs[self.frameCol],
                      locs[x] - x0,
                      '.',
                      color = markerColor,
@@ -809,7 +839,7 @@ class DefaultDriftComputer(ComputeTrajectories):
             axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
             axx.set_ylim((minxy, maxxy))
                      
-            axy.plot(locs['frame'],
+            axy.plot(locs[self.frameCol],
                      locs[y] - y0,
                      '.',
                      color = markerColor,
