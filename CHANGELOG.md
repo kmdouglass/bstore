@@ -1,7 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v0.1.0]
+### Added
+- COPYRIGHT.txt
+
 ### Changed
 - Simplified the code for the OverlayClusters multiprocessor.
 - Individual fiducial plots now all use the same y-axis limits values.
@@ -33,5 +36,6 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0b...HEAD
+[v0.1.0b]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0b
 [v0.1.0b-rev3]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...v0.1.0b-rev3

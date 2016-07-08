@@ -1,3 +1,7 @@
+# © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Switzerland, Laboratory of Experimental Biophysics, 2016
+# See the LICENSE.txt file for more details.
+
 import json
 import pathlib
 import re

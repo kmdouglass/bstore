@@ -1,3 +1,7 @@
+# © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Switzerland, Laboratory of Experimental Biophysics, 2016
+# See the LICENSE.txt file for more details.
+
 from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
 from pandas import HDFStore, read_hdf
