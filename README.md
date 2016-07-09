@@ -12,10 +12,10 @@ Lightweight data management and analysis tools for single-molecule microscopy.
   - [What problem does B-Store solve?](#what-problem-does-b-store-solve)
   - [What are the design criteria that guide B-Store's development?](#what-are-the-design-criteria-that-guide-b-stores-development)
   - [What doesn't B-Store do?](#what-doesnt-b-store-do)
-- [How do I use B-Store?](#how-do-i-use-b-store)
 - [Installation](#installation)
   - [Linux / OSX](#linux--osx)
   - [Windows](#windows)
+- [How do I use B-Store?](#how-do-i-use-b-store)
 - [What is the logic behind the B-Store design?](#what-is-the-logic-behind-the-b-store-design)
   - [What language is B-Store written in?](#what-language-is-b-store-written-in)
   - [I want to use B-Store, but I don't know Python.](#i-want-to-use-b-store-but-i-dont-know-python)
@@ -62,6 +62,27 @@ B-Store is efficient and fast because its scope is limited to SMLM data organiza
 + Control microscopy hardware.
 + Provide database-like storage for core facilities.
 + Generate any data or results for you. (Sorry.)
+
+# Installation
+B-Store is most easily installed from the [Anaconda Cloud package repository](https://anaconda.org/kmdouglass/bstore). If you don't already have Anaconda installed, you may download it for Python 3.5 and greater from https://www.continuum.io/downloads. Once installed, run the commands from the terminal listed below for your system. (If you're on Windows, use the Anaconda Prompt that is supplied with Anaconda.)
+
+*Note that these commands will install B-Store into an environment named bstore that is independent of your default environment. When you want to activate this environment to use B-Store, simply type `source activate bstore` in the Linux/OSX terminal or `activate bstore` in the Windows Anaconda Prompt.*
+
+## Linux / OSX
+```sh
+conda update conda
+conda create --name bstore jupyter
+source activate bstore
+conda install -c kmdouglass -c soft-matter bstore
+```
+
+## Windows
+```sh
+conda update conda
+conda create --name bstore jupyter
+activate bstore
+conda install -c kmdouglass -c soft-matter bstore
+```
 
 # How do I use B-Store?
 First start a Jupyter notebook session:
@@ -119,26 +140,6 @@ The output will be a number of .csv files arranged in a subfolder containing loc
 
 Of course there are many more options available than in these minimal examples. You can find out more in the [examples folder](https://github.com/kmdouglass/bstore/tree/master/examples).
 
-# Installation
-B-Store is most easily installed from the [Anaconda Cloud package repository](https://anaconda.org/kmdouglass/bstore). If you don't already have Anaconda installed, you may download it for Python 3.5 and greater from https://www.continuum.io/downloads. Once installed, run the commands from the terminal listed below for your system. (If you're on Windows, use the Anaconda Prompt that is supplied with Anaconda.)
-
-*Note that these commands will install B-Store into an environment named bstore that is independent of your default environment. When you want to activate this environment to use B-Store, simply type `source activate bstore` in the Linux/OSX terminal or `activate bstore` in the Windows Anaconda Prompt.*
-
-## Linux / OSX
-```sh
-conda update conda
-conda create --name bstore jupyter
-source activate bstore
-conda install -c kmdouglass -c soft-matter bstore
-```
-
-## Windows
-```sh
-conda update conda
-conda create --name bstore jupyter
-activate bstore
-conda install -c kmdouglass -c soft-matter bstore
-```
 
 # What is the logic behind the B-Store design?
 B-Store is designed to search specified directories on your computer for files associated with an SMLM experiment, such as those containing raw localizations and widefield images. These files are passed through a `Parser`, which converts them into a format suitable for insertion into a database. It does this by ensuring that the files satisfy the requirements of an interface known as a `DatabaseAtom`. Data that implements this interface may pass into and out of the database; data that does not implement the interface cannot. You can think of the `DatabaseAtom` interface like a guard post at a government research facility. Only people with an ID badge for that facility (the interface) may enter. In principle, B-Store does not care about the data itself or the details of the database (HDF, SQL, etc.).
@@ -191,18 +192,26 @@ A fantastic movie explaining how this works using the blinking lights of the Eif
 # Acknowledgements
 ## Authors
 + [Kyle Douglass](http://kmdouglass.github.io) - primary author
-+ [Niklas Berliner](https://github.com/nberliner) - contributor
++ [Niklas Berliner](https://github.com/nberliner)
++ [Marcel Stefko](https://github.com/MStefko)
 
 ## People and Organizations
-+ [Suliana Manley](http://leb.epfl.ch) - Principal investigator
-+ Christian Sieben - Bug testing and idea development
-+ Marcel Stefko
++ [Suliana Manley](http://leb.epfl.ch) - principal investigator
++ Christian Sieben
++ Aleksandra Vancevska
 + [SystemsX.ch](http://www.systemsx.ch/) - Funding
 
 ## Software
-+ [trackpy](http://soft-matter.github.io/trackpy/v0.3.0/) - Localization merging
 + [Python](https://www.python.org/community/)
 + [Anaconda](https://www.continuum.io/why-anaconda)
++ [Pandas](http://pandas.pydata.org/)
++ [Jupyter](http://jupyter.org/)
++ [trackpy](http://soft-matter.github.io/trackpy/v0.3.0/)
++ [NumPy](http://www.numpy.org/)
++ [SciPy](https://www.scipy.org/)
++ [matplotlib](http://matplotlib.org/)
++ [h5py](http://www.h5py.org/)
++ [scikit-learn](http://scikit-learn.org/stable/)
 
 # What does the 'B' stand for?
 Blink.
