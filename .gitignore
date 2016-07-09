@@ -4,3 +4,4 @@ examples/.ipynb_checkpoints/
 playground/.ipynb_checkpoints/
 bstore/tests/test_files/*
 *__pycache__*
+*~

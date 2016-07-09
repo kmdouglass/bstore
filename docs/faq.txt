@@ -1,0 +1,90 @@
+.. -*- mode: rst -*-
+   
+**************************
+Frequently Asked Questions
+**************************
+
+:Author: Kyle M. Douglass	 
+:Address: EPFL
+          BSP 425 (Cubotron UNIL)
+          Route de la Sorge
+	  1015 Lausanne
+	  Switzerland
+:Contact: kyle.m.douglass@gmail.com
+:organization: École Polytechnique Fédérale de Lausanne (EPFL)
+:status: in progress
+
+:abstract:
+
+   This document answers frequently asked questions regarding B-Store,
+   a lightweight data management system for single molecule
+   localization microscopy (SMLM).
+   
+.. meta::
+   :keywords: faq
+   :description lang=en: Frequently asked questions about B-Store, a
+      lightweight data management system for single molecule
+      localization microscopy.
+	      
+.. contents:: Table of Contents
+
+What is B-Store?
+================
+
+B-Store is a lightweight data management and analysis library for
+single molecule localization microscopy (SMLM). It serves two primary
+roles:
+
+    1. To organize SMLM data inside a database for fast and easy
+       information retrieval and storage.
+    2. To facilitate the analysis of high content SMLM datasets.
+
+What problem does B-Store solve?
+--------------------------------
+
+High content SMLM experiments can produce hundreds or even thousands
+of files containing multiple types of data (images, raw localizations,
+acquisition information, etc.). B-Store automatically sorts and stores
+this information in a database for rapid retrieval and analysis,
+removing any need to manually maintain the data yourself.
+
+What are the design criteria for B-Store?
+-----------------------------------------
+
+To realize these roles, B-Store is designed to meet these important
+criteria:
+
+    + Experimental datasets must be combined into a database-like
+      structure that is easily readable by both humans and computers.
+    + Access and processing of data must be fast, regardless of the
+      size of the dataset.
+    + Data provenance must be preserved throughout the organization
+      and analysis pipeline.
+    + B-Store should not enforce standards that force scientists to
+      adopt file formats, naming conventions, or software packages
+      that differ from the ones they already use, except when it is
+      absolutely necessary to achieve its roles.
+    + B-Store should be extensible to adapt to the changing needs of
+      scientists using SMLM.
+    + Above all else, B-Store should make it easy to organize and
+      document data and analysis pipelines to improve the
+      reproducibility of SMLM experiments.
+
+Of course, the changing needs of scientists means that B-Store will
+always be evolving to meet these criteria.
+
+What doesn't B-Store do?
+------------------------
+
+B-Store is efficient and fast because its scope is limited to SMLM
+data organization and analysis. In particular, B-Store does not:
+
+    + Calculate localizations from raw images.
+    + Control microscopy hardware.
+    + Provide database-like storage for core facilities.
+    + Generate any data or results for you. (Sorry.)
+
+How do I use B-Store?
+=====================
+
+
