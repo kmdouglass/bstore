@@ -4,15 +4,11 @@
 Frequently Asked Questions
 **************************
 
-:Author: Kyle M. Douglass	 
-:Address: EPFL
-   BSP 425 (Cubotron UNIL)
-   Route de la Sorge
-   1015 Lausanne
-   Switzerland
+:Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
 :status: in progress
+:date: 2016-07-10
 
 :abstract:
 
@@ -87,12 +83,12 @@ data organization and analysis. In particular, B-Store does not:
 How do I use B-Store?
 =====================
 
-B-Store is currently comprised of a set of set of functions, classes,
-and interfaces that are written in Python. You therefore can use
-B-Store in any environment that runs Python code, including:
+B-Store is currently comprised of a set of functions, classes, and
+interfaces that are written in Python. You therefore can use B-Store
+in any environment that runs Python code, including:
 
-+ `Jupyter Notebooks <http://jupyter.org/>`
-+ `IPython <https://ipython.org/>`
++ `Jupyter Notebooks <http://jupyter.org/>`_
++ `IPython <https://ipython.org/>`_
 + .py scripts
     
 Is there a GUI interface?
@@ -109,7 +105,7 @@ ways.
 
 The easiest way is to explore the Jupyter notebooks in the `examples
 folder
-<https://github.com/kmdouglass/bstore/tree/master/examples>_`. Find an
+<https://github.com/kmdouglass/bstore/tree/master/examples>`_. Find an
 example that does what you want, then modify the relevant parts, such
 as file names. Then, simply run the notebook.
 
@@ -163,11 +159,6 @@ numerous scientific, open source Python libraries like numpy and
 matplotlib. If you can't do something in B-Store, you can likely still
 use these libraries to achieve what you want.
 
-What is the logic of the B-Store code?
---------------------------------------
-
-**TODO**
-
 What is the logic of the B-Store database?
 ------------------------------------------
 
@@ -182,7 +173,9 @@ that does not implement the interface cannot. You can think of the
 DatabaseAtom interface like a guard post at a government research
 facility. Only people with an ID badge for that facility (the
 interface) may enter. In principle, B-Store does not care about the
-data itself or the details of the database (HDF, SQL, etc.).
+data itself or the details of the database (HDF, SQL, etc.). At the
+moment, however, B-Store only supports databases contained in HDF
+files.
 
 At the time this README file was written, the DatabaseAtom interface
 consisted of the following properties:
@@ -227,9 +220,89 @@ hierarchically arranged datasets, each belonging to a different
 acquisition group, and each uniquely identified by the conditions of
 the acquisition.
 
-.. image:: https://github.com/kmdouglass/bstore/blob/master/design/dataset_logic.png
+.. image:: ../images/dataset_logic.png
    :scale: 50%
    :align: center
+
+What is the logic behind the B-Store code?
+------------------------------------------
+
+The B-Store code base is divided into five separate modules:
+
+1. parsers
+2. database
+3. batch
+4. processors
+5. multiprocessors
+
+The first two modules, parsers and database, contain all the code for
+organizing SMLM datasets into a database. The last three modules,
+batch, processors, and multiprocessors, are primarily used to for
+extracting data from B-Store databases and performing (semi-)automated
+analyses.
+
+Parsers
++++++++
+
+A parser reads files from a SMLM acquisition and produces a
+DatabaseAtom--an object that can be inserted into a B-Store
+database. This object will have mandatory and possibly optional fields
+for uniquely identifying the data within the database.
+
+Database
+++++++++
+
+The database module contains code for building databases from raw
+data. It relies on a parser for translating files into a format that
+it knows how to work with.
+
+Batch
++++++
+
+The batch module contains routines for performing automated analyses
+with B-Store databases. It allows you to build simple analysis
+pipelines for extracting just the data you need from the database.
+
+Processors
+++++++++++
+
+Processors are objects that take just a few parameters. When called,
+they accept a single argument (usually a Pandas DataFrame) as an input
+and produce an object of the same datatype as an output with its data
+having been modified.
+
+Examples of processors include common SMLM analysis steps such as
+Filter, Merge, and Cluster.
+
+Multiprocessors
++++++++++++++++
+
+Multiprocessors are similar to processors. They differ in that they
+take multiple inputs to produce an output. One multiprocessor is
+called OverlayClusters, which overlays clusters of localizations onto
+a widefield image for visual inspection and anotation of cluster
+analyses.
+
+What is single molecule localization microscopy (SMLM)?
+=======================================================
+
+SMLM is a suite of super-resolution fluorescence microscopy techniques
+for imaging microscopic structures (like cells and organelles) with
+resolutions below the diffraction limit of light. A number of SMLM
+techniques exist, such as fPALM, PALM, STORM, and PAINT. In these
+microscopies, fluorescent molecules are made to "blink" on and off. A
+final image or dataset is computed by recording the positions of every
+blink for a period of time and adding together all the positions in
+the end.
+
+SMLM is a powerful tool for helping scientists understand biology and
+chemistry at nanometer length scales. It is particularly well-suited
+for structural biology and for tracking single fluorescent molecules
+in time.
+
+A fantastic movie explaining how this works using the blinking lights
+of the Eiffel tower was created by Ricardo Henriques. You can watch it
+here: `<https://www.youtube.com/watch?v=RE70GuMCzww>`_
   
 What does the "B" stand for?
 ============================

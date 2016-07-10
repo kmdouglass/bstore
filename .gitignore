@@ -5,3 +5,4 @@ playground/.ipynb_checkpoints/
 bstore/tests/test_files/*
 *__pycache__*
 *~
+docs/_build/*

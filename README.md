@@ -165,7 +165,7 @@ There are three important advantages to enforcing an interface such as this.
 
 The logic of this interface is described graphically below. The raw data on top pass through the `Parser` and into the database, where they are organized into acquisition groups. Each group is identified by a name called a **prefix**. Within the group, a dataset possesses an **acquisition ID** and a **dataset type**. An acqusition group is a set of datasets that were acquired during an experiment. A single dataset may optionally contain multiple fields of view (**positions**), wavelengths (**channels**), or axial **slices**. The database is therefore a collection of hierarchically arranged datasets, each belonging to a different acquisition group, and each uniquely identified by the conditions of the acquisition.
 
-<img src="design/dataset_logic.png" width = 50%>
+<img src="images/dataset_logic.png" width = 50%>
 
 ## What language is B-Store written in?
 B-Store is written in the [Python](https://www.python.org/) programming language (version 3) and relies heavily on a datatype known as a DataFrame. DataFrames and their functionality are provided by the [Pandas](http://pandas.pydata.org/) library and in many ways work like Excel spreadsheets but are much, much faster. Pandas is highly optimized and used extensively for both normal and big data analytics at companies and research institutions across the globe.
