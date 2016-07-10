@@ -7,7 +7,7 @@ Acknowledgments
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:status: in progress
+:revision: $Revision: 0 $
 :date: 2016-07-10
 
 :abstract:
@@ -16,7 +16,7 @@ Acknowledgments
    possible.
    
 .. meta::
-   :keywords: faq
+   :keywords: acknowledgments
    :description lang=en: People and organizations that made B-Store
                          possible.
 	      
@@ -29,8 +29,8 @@ Authors
 - Niklas Berliner
 - Marcel Stefko
 
-Contributors
-============
+People
+======
 
 - `Suliana Manley <http://leb.epfl.ch>`_
 - Christian Sieben

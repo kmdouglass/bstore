@@ -7,7 +7,7 @@ Frequently Asked Questions
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:status: in progress
+:revision: $Revision: 0 $
 :date: 2016-07-10
 
 :abstract:
