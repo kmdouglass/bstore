@@ -2,28 +2,40 @@
    Sun Jul 10 15:15:41 2016.  You can adapt this file completely to
    your liking, but it should at least contain the root `toctree`
    directive.
+
 *******
 B-Store
 *******
 
+:Author: Kyle M. Douglass
+:Contact: kyle.m.douglass@gmail.com
+:organization: École Polytechnique Fédérale de Lausanne (EPFL)
+:revision: $Revision: 0 $
+:date: 2016-07-11
+ 
+.. meta::
+   :keywords: faq
+   :description lang=en: Frequently asked questions about B-Store, a
+      lightweight data management system for single molecule
+      localization microscopy.
+
+
 Lightweight database management and analysis tools for single molecule
 microscopy.
 
-
-General Purpose Help
-====================
+Using B-Store
+=============
 
 .. toctree::
    :maxdepth: 2
 
+   quickstart
+   database
+   analysis
    faq
    acknowledgments
 
-Programming
-===========
-
-.. toctree::
-   :maxdepth: 2
+.. Programming -- add this section later
 
 Indices and tables
 ==================

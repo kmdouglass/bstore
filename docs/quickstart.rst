@@ -1,30 +1,27 @@
 .. -*- mode: rst -*-
    
 ***********
-B-Store API
+Quick Start
 ***********
 
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
 :status: in progress
-:date: 2016-07-10
+:date: 2016-07-11
 
 :abstract:
 
-   This page serves as the starting point for the B-Store API
-   reference.
+   This quick start guide shows how to get up and running with B-Store
+   as quickly as possible.
    
 .. meta::
-   :keywords: b-store, api, programming
-   :description lang=en: B-Store API
+   :keywords: quickstart
+   :description lang=en: Quick Start guide for B-Store.
 	      
 .. contents:: Table of Contents
 
-Modules
-=======
-
-.. automodule:: bstore.parsers
-   :members:
+Overview of B-Store
+===================
 
 
