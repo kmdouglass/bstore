@@ -7,3 +7,4 @@ scipy
 matplotlib
 h5py
 tables
+python-dateutil
