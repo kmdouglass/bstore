@@ -15,8 +15,12 @@
 
 import sys
 import os
+from unittest.mock import MagicMock
 
-import mock
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
  
 MOCK_MODULES = [
     'numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot',
@@ -24,8 +28,7 @@ MOCK_MODULES = [
     'scipy.ndimage', 'scipy.interpolate', 'matplotlib.widgets',
     'tables'
 ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

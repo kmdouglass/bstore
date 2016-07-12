@@ -1,0 +1,9 @@
+nose
+scikit-learn
+pandas
+trackpy
+numpy
+scipy
+matplotlib
+h5py
+tables
