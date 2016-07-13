@@ -270,17 +270,18 @@ class HDFDatabase(Database):
         
         # Ensure that locResults get put first so the metadata has
         # a place to go.
-        try:
-            for dataset in files['locResults']:
+        for dataset in files['locResults']:
+            try:
                 parser.parseFilename(dataset, datasetType = 'locResults')
                 
                 if not dryRun:
                     self.put(parser.getDatabaseAtom())
                     
                 datasets.append(parser.getBasicInfo())
-        except:
-            print("Unexpected error in build() while building locResults:",
-                  sys.exc_info()[0])
+            except Exception as err:
+                print("Unexpected error in build() while building locResults:",
+                      sys.exc_info()[0])
+                print(err)
         
         # Place all other data into the database
         del(files['locResults'])
@@ -297,9 +298,10 @@ class HDFDatabase(Database):
                 except LocResultsDoNotExist:
                     # Do not fail the build if metadata cannot be put.
                     continue
-                except:
+                except Exception as err:
                     print("Unexpected error in build():",
                           sys.exc_info()[0])
+                    print(err)
 
         # Report on all the datasets that were parsed
         buildResults = self._sortDatasets(datasets)

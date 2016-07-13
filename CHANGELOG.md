@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 - docs folder
+
+### Changed
+- Exceptions caught during database builds now describe the source of
+  the error in more detail.
 	
 ## [v0.1.0]
 ### Added
