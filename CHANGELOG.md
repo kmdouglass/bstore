@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Exceptions caught during database builds now describe the source of
   the error in more detail.
+- README.md was condensed. Most information was moved to RTD.
 	
 ## [v0.1.0]
 ### Added
