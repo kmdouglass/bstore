@@ -283,6 +283,21 @@ called OverlayClusters, which overlays clusters of localizations onto
 a widefield image for visual inspection and anotation of cluster
 analyses.
 
+Gotcha's
+========
+
+Spaces in column names
+++++++++++++++++++++++
+
+The library that B-Store uses to write to HDF files (`PyTables`_)
+often has problems with spaces inside the names of DataFrame
+columns. We therefore recommend not using spaces. A workaround to this
+is to use the `ConvertHeader`_ processor to change column names during
+insertion into and retrieval from the database.
+
+.. _PyTables: http://www.pytables.org/
+.. _ConvertHeader: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.processors.ConvertHeader
+
 What is single molecule localization microscopy (SMLM)?
 =======================================================
 
@@ -303,7 +318,7 @@ in time.
 A fantastic movie explaining how this works using the blinking lights
 of the Eiffel tower was created by Ricardo Henriques. You can watch it
 here: `<https://www.youtube.com/watch?v=RE70GuMCzww>`_
-  
+
 What does the "B" stand for?
 ============================
 
