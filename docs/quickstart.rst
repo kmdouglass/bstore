@@ -21,20 +21,33 @@ Quick Start
 	      
 .. contents:: Table of Contents
 
-Overview of the Workflow
-========================
+Installation
+============
+
+Installation is most easily performed using the Anaconda package
+manager::
+
+  conda update conda
+  conda install -c kmdouglass -c soft-matter bstore
+
+Alternatively, the source code for B-Store may be cloned from
+https://github.com/kmdouglass/bstore/. A list of dependencies may be
+found inside the *requirements.txt* file inside the repository.
+      
+Workflow Summary
+================
 
 The B-Store workflow is divided between these two tasks: 
 
 1. Sort and place all the files from a single molecule localization
    microscopy (SMLM) acquisition into a database.
-2. Access this database for simple batch analyses.
+2. Access this database for batch analyses.
 
-B-Store uses popular scientific Python libraries for manipulating SMLM
+B-Store uses popular scientific Python libraries for working with SMLM
 data. Most notably, it uses `Pandas DataFrames`_ for working with
 tabulated localization data and the standard `json module`_ for
-handling metadata. Images are treated as `NumPy arrays`_. If you can't do
-something with B-Store, chances are you can implement a custom
+handling metadata. Images are treated as `NumPy arrays`_. If you can't
+do something with B-Store, chances are you can implement a custom
 solution using another Python library.
 
 .. _Pandas DataFrames: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
@@ -49,22 +62,9 @@ Jupyter Notebook Examples
 
 If you find that this quickstart guide insufficient, you can find more
 examples inside the Jupyter Notebooks at the `B-Store GitHub
-repository.`_
+repository`_.
 
 .. _B-Store GitHub repository: https://github.com/kmdouglass/bstore/tree/master/examples
-
-Installation
-============
-
-Installation is most easily performed using the Anaconda package
-manager::
-
-  conda update conda
-  conda install -c kmdouglass -c soft-matter bstore
-
-Alternatively, the source code for B-Store may be cloned from
-https://github.com/kmdouglass/bstore/. A list of dependencies may be
-found inside the *requirements.txt* file inside the repository.
 
 Working with B-Store
 ====================
@@ -104,7 +104,7 @@ dataset will have the following ID's:
 
 1. *prefix* - 'HeLa_Cells'
 2. *acqID* - 1
-3. *datasetType* - 'locResults'
+3. *datasetType* - 'locResults'::
 
 .. highlight:: python
    >>> import bstore.parsers as parsers
@@ -154,7 +154,7 @@ files and subdirectories of acquisition data.
    >>> parser = parsers.MMParser()
 
 Next, we create a `HDFDatabase`_ instance. This class is used to
-interact with and create B-Store databases.
+interact with and create B-Store databases.::
 
 .. highlight:: python
    >>> dbName = 'myFirstDatabase.h5'
@@ -162,7 +162,8 @@ interact with and create B-Store databases.
 
 Finally, we create the database by sending the parser, the parent
 directory of the acqusition files, and an optional string telling the
-parser how to find localization files to the **build** method of myDB.
+parser how to find localization files to the **build** method of
+myDB.::
 
 .. highlight:: python
    >>> myDB.build(parser, dataDirectory,
@@ -192,7 +193,7 @@ datasets listed above. (If you want to investigate the contents of the
 HDF file, we recommend the `HDFView utility`_.)
 
 .. _HDFDatabase: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.database.HDFDatabase
-.. _HDFView: https://www.hdfgroup.org/HDF5/Tutor/hdfview.html
+.. _HDFView utility: https://www.hdfgroup.org/HDF5/Tutor/hdfview.html
 
 Batch Analysis from a B-Store Database
 ++++++++++++++++++++++++++++++++++++++
@@ -205,7 +206,7 @@ As an example, let's say you want to extract all the localization
 files inside the database we just created and filter out localizations
 with precisions that are greater than 15 nm and loglikelihoods that
 are greater than 250. We do this by first building an analysis
-pipeline containing **processors** to apply in sequence to the data.
+pipeline containing **processors** to apply in sequence to the data.::
 
 .. highlight:: python
    >>> from bstore import batch, processors
@@ -215,7 +216,7 @@ pipeline containing **processors** to apply in sequence to the data.
 
 Next, use an **HDFBatchProcessor** to access the database, pull out
 all localization files, and apply the filters. The results are saved
-as .csv files for later use and analysis.
+as .csv files for later use and analysis.::
 
 .. highlight:: python
    >>> bp = batch.HDFBatchProcessor(dbName, pipeline)
