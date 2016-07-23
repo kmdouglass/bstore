@@ -41,7 +41,7 @@ The B-Store workflow is divided between these two tasks:
 
 1. Sort and place all the files from a single molecule localization
    microscopy (SMLM) acquisition into a database.
-2. Access this database for batch analyses.
+2. Automatically access this database for batch analyses.
 
 B-Store uses popular scientific Python libraries for working with SMLM
 data. Most notably, it uses `Pandas DataFrames`_ for working with
@@ -75,8 +75,8 @@ code.
 
 `Jupyter Notebooks`_ are a great way to interactively work with
 B-Store and are very common in the scientific Python community. They
-are free, powerful, and provide a great way to document your work and
-share it with others. Alternatively, you may use any other Python
+are free, powerful, and provide a convenient way to document your work
+and share it with others. Alternatively, you may use any other Python
 interpreter to work with B-Store.
 
 .. _Jupyter Notebooks: http://jupyter.org/
@@ -145,9 +145,8 @@ Let's say you have data from an experiment that can be parsed using
 the **MMParser**. (Test data for this example may be found at
 https://github.com/kmdouglass/bstore_test_files/tree/master/test_experiment_2
 .) First, we setup the parser and choose the directory containing
-files and subdirectories of acquisition data.
+files and subdirectories of acquisition data.::
 
-.. highlight:: python
    >>> from bstore import database, parsers
    >>> from pathlib import Path
    >>> dataDirectory = Path('bstore_test_files/test_experiment_2')
@@ -156,16 +155,16 @@ files and subdirectories of acquisition data.
 Next, we create a `HDFDatabase`_ instance. This class is used to
 interact with and create B-Store databases.::
 
-.. highlight:: python
    >>> dbName = 'myFirstDatabase.h5'
    >>> myDB   = database.HDFDatabase(dbName)
 
 Finally, we create the database by sending the parser, the parent
 directory of the acqusition files, and an optional string telling the
 parser how to find localization files to the **build** method of
-myDB.::
+myDB.
 
-.. highlight:: python
+::
+
    >>> myDB.build(parser, dataDirectory,
    ...            locResultsString = 'locResults_processed.csv')
    16 files were successfully parsed.
@@ -208,7 +207,6 @@ with precisions that are greater than 15 nm and loglikelihoods that
 are greater than 250. We do this by first building an analysis
 pipeline containing **processors** to apply in sequence to the data.::
 
-.. highlight:: python
    >>> from bstore import batch, processors
    >>> precisionFilter = processors.Filter('precision', '<', 15)
    >>> llhFilter = processors.Filter('loglikelihood', '<=', 250)
@@ -218,7 +216,6 @@ Next, use an **HDFBatchProcessor** to access the database, pull out
 all localization files, and apply the filters. The results are saved
 as .csv files for later use and analysis.::
 
-.. highlight:: python
    >>> bp = batch.HDFBatchProcessor(dbName, pipeline)
    >>> bp.go()
    Output directory does not exist. Creating it...
