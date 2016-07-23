@@ -106,7 +106,9 @@ dataset will have the following ID's:
 2. *acqID* - 1
 3. *datasetType* - 'locResults'
 
-::
+You can follow along by entering the following code into the Python
+interpreter of your choice.::
+
    >>> import bstore.parsers as parsers
    >>> sp = parsers.SimpleParser()
    >>> sp.parseFilename('HeLa_Cells_1.csv')
