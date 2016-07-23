@@ -55,34 +55,35 @@ by other parts of B-Store.
 Dataset IDs
 -----------
 
-A dataset is uniquely defined by the following fields (required fields
-are in **bold**).
+A dataset is uniquely defined by the following fields (the first
+three--prefix, acqID, and datasetType-- are required).
 
-**prefix**
+prefix
     A descriptive name given to the dataset.
 
-**acqID**
+acqID
     An integer that specifies the acquisition number of the dataset.
 
-**datasetType**
+datasetType
     A string. Currently must be one of 'locResults', 'locMetadata', or
     'widefieldImage'. The up-to-date list of accepted strings is in
     `config.py`_ in the variable __Types_Of_Atoms__.
 
 channelID
-    A string that specifies the fluorescence channel that the dataset
-    was acquired in. The list of channel IDs is in `config.py`_ in the
-    variable __Channel_Identifier__.
+    (optional) A string that specifies the fluorescence channel that
+    the dataset was acquired in. The list of channel IDs is in
+    `config.py`_ in the variable __Channel_Identifier__.
 
 dateID
-    A string in the format YYYY-MM-DD.
+    (optional) A string in the format YYYY-MM-DD.
 
 posID 
-    A one or two-element tuple of integers specifying the position
-    of the field of view of the dataset.
+    (optional) A one or two-element tuple of integers specifying the
+    position of the field of view of the dataset.
 
 sliceID
-    An integer identifying the the axial slice of the dataset.
+    (optional) An integer identifying the the axial slice of the
+    dataset.
 
 .. _config.py: https://github.com/kmdouglass/bstore/blob/master/bstore/config.py
 
