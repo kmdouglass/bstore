@@ -7,8 +7,8 @@ Frequently Asked Questions
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 0 $
-:date: 2016-07-10
+:revision: $Revision: 1 $
+:date: 2016-07-23
 
 :abstract:
 
@@ -141,8 +141,32 @@ B-Store was designed to be extensible. If you have an idea, code, or
 even a comment about how to improve it, we would love to hear about
 it!
 
-Send an e-mail to kyle.m.douglass@gmail.com describing what you would
-like to do and we will reply within a few days.
+A great place to start contributing is by posting questions or
+comments to the `B-Store mailing list`_.
+
+.. _B-Store mailing list: https://groups.google.com/forum/#!forum/b-store
+
+How do I add my custom code to the B-Store project?
+---------------------------------------------------
+
+If you want to modify the B-Store code, you can start by forking `the
+repository`_ on GitHub. According to `GitHub's documentation`_, 
+
+    A fork is a copy of a repository. Forking a repository allows you
+    to freely experiment with changes without affecting the original
+    project.
+
+After forking the repository, go ahead and make your changes, write
+some tests to be sure that your changes work like you expect them to,
+and then issue a `pull request`_. The B-Store developers will review
+your suggested changes and, if they like them, will incorporate them
+into the B-Store project. With your permission your name will be added
+to the `authors list`_.
+
+.. _the repository: https://github.com/kmdouglass/bstore
+.. _GitHub's documentation: https://help.github.com/articles/fork-a-repo/
+.. _pull request: https://help.github.com/articles/using-pull-requests/
+.. _authors list: http://b-store.readthedocs.io/en/latest/acknowledgments.html#authors
 
 What language is B-Store written in?
 ------------------------------------
@@ -283,11 +307,26 @@ called OverlayClusters, which overlays clusters of localizations onto
 a widefield image for visual inspection and anotation of cluster
 analyses.
 
+What testing framework is used by the B-Store developers?
+---------------------------------------------------------
+
+Unit tests for B-Store are written as functions with utilities
+provided by Python's `nose`_ package. Each module in B-Store has its
+own .py file containing these tests. They are stored in the
+`bstore/tests`_ folder in the B-Store root directory.
+
+.. _nose: http://nose.readthedocs.io/en/latest/
+.. _bstore/tests: https://github.com/kmdouglass/bstore/tree/master/bstore/tests
+
+If you contribute to B-Store, we ask that you write unit tests for
+your code so that the developers can better understand what it's
+supposed to do before merging it into the main project.
+
 Gotcha's
 ========
 
 Spaces in column names
-++++++++++++++++++++++
+----------------------
 
 The library that B-Store uses to write to HDF files (`PyTables`_)
 often has problems with spaces inside the names of DataFrame

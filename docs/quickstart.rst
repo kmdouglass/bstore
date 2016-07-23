@@ -7,8 +7,8 @@ Quick Start
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:status: in progress
-:date: 2016-07-22
+:revision: $Revision: 0 $
+:date: 2016-07-23
 
 :abstract:
 
@@ -104,9 +104,9 @@ dataset will have the following ID's:
 
 1. *prefix* - 'HeLa_Cells'
 2. *acqID* - 1
-3. *datasetType* - 'locResults'::
+3. *datasetType* - 'locResults'
 
-.. highlight:: python
+::
    >>> import bstore.parsers as parsers
    >>> sp = parsers.SimpleParser()
    >>> sp.parseFilename('HeLa_Cells_1.csv')
@@ -161,9 +161,7 @@ interact with and create B-Store databases.::
 Finally, we create the database by sending the parser, the parent
 directory of the acqusition files, and an optional string telling the
 parser how to find localization files to the **build** method of
-myDB.
-
-::
+myDB.::
 
    >>> myDB.build(parser, dataDirectory,
    ...            locResultsString = 'locResults_processed.csv')
