@@ -155,8 +155,8 @@ example`_.
 .. _Parser metaclass: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.parsers.Parser
 .. _Jupyter notebook example: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%203%20-%20Writing%20custom%20parsers.ipynb
 
-Database Types
-==============
+HDF Databases
+=============
 
 In the B-Store code, a generic database is represented by the
 `Database`_ class. This is a metaclass that specifies all the
@@ -212,7 +212,25 @@ This group contains three different datasets: localizations
 (locResults_A647_Pos0), a widefield image (widefieldImage_A647_Pos0),
 and metadata describing how the localizations were obtained. Each
 dataset has two optional identifiers: a **channelID** of A647 and a
-**posID** of 0.
+**posID** of 0. The dataset keys--if they are specified--follow the
+format **datasetType_channelID_posID_sliceID**. 
+
+If the **dateID** is specified, then another layer of the hierarchy
+will be found between the acquisition group and the individual
+acquisitions within the group. This feature allows experiments from
+the same sample but different days to be identified. For example, if a
+dateID of '2016-06-30' is specified for the HeLaL_Control group, then
+the key to the localizations becomes::
+
+  HeLaL_Control/d2016_06_30/HeLaL_Control_1/locResults_A647_Pos0
+
+The 'd' signifies a date and underscores are used in the HDF file to
+satisfy the natural naming conventions of `PyTables`_. In general, you
+won't have to worry about this somewhat strange formatting and simply
+always specify your dateIDs as 'YYYY-MM-DD' when creating your
+datasets.
+
+.. _PyTables: http://www.pytables.org/
 
 As seen in the next figure, the actual localization data is stored as
 a table inside the locResults_A647_Pos0 group. Metadata is attached as
