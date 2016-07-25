@@ -65,7 +65,10 @@ microscopy (SMLM). It serves two primary roles:
 2. To facilitate the analysis of high content SMLM datasets.
 
 As an example, you can see how SMLM data is organized by B-Store
-inside a database in the HDF format below:
+inside a database in the HDF format below. (The software used to view
+the database is not B-Store, but
+[HDFView](https://www.hdfgroup.org/products/java/hdfview/) from the
+HDF Group.)
 
 <img src="images/database_example_2.png">
 
