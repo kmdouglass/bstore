@@ -67,7 +67,7 @@ microscopy (SMLM). It serves two primary roles:
 As an example, you can see how SMLM data is organized by B-Store into
 an HDF database in the image below:
 
-<img src="images/database_example_2.png" width = 50%>
+<img src="images/database_example_2.png">
 
 Please see the [FAQ](http://b-store.readthedocs.io/en/latest/faq.html)
 for more information.
