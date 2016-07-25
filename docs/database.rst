@@ -111,6 +111,50 @@ and the other 'widefieldImage'.
 Finally, the optional identifiers can further divide datasets that
 have the same prefix, acqID, and datasetTypes.
 
+A Venn diagram of sorts that explains this hierarchy is seen below. On
+top, you have your raw data files as inputs to a parser, which both
+assigns dataset IDs and converts the data into a format suitable for
+insertion into the database. A single acquisition group is identified
+by a **prefix** (and optionally a **dateID**). Within this group, each
+dataset has a unique **acqID** and **datasetType** to set it apart
+from other datasets within the same group. Finally, the other optional
+IDs give you more control over how the data is organized within the
+group.
+
+.. image:: ../images/dataset_logic.png
+   :scale: 50%
+   :align: center
+
+The Role of Parsers in Databases
+--------------------------------
+
+As mentioned above, a B-Store parser is an object that performs two
+roles:
+
+1. Assign dataset IDs to a dataset
+2. Convert the data in the dataset into a format that may be inserted
+   into a B-Store database
+
+Since different labs often have very different ways to generate their
+data, parsers were designed to be very flexible objects. The only
+requirement of a parser is that it implements the functions described
+by the `Parser metaclass`_; these functions specify the kinds of
+outputs a Parser must provide. The types of inputs, however, are not
+specified. This means that you can write a parser to convert any type
+of data that you would like into a dataset (as long as it fits within
+one of the datasetTypes). Furthermore, exactly how dataset IDs are
+assigned remains up to you. If you want your parser to label every
+single dataset with a prefix of 'Bob' then you can do that, though
+obviously the utility of such a feature will be in question.
+
+This flexibility comes at a cost, however. If the built-in parsers do
+not work for your data, then it will be necessary to write your
+own. An example of how to do this is provided as a `Jupyter notebook
+example`_.
+
+.. _Parser metaclass: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.parsers.Parser
+.. _Jupyter notebook example: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%203%20-%20Writing%20custom%20parsers.ipynb
+
 Database Types
 ==============
 
@@ -148,4 +192,51 @@ sorted inside a B-Store database.
 
 .. _HDFView: https://www.hdfgroup.org/products/java/hdfview/
 
+Organization within an HDF database
+-----------------------------------
 
+The figure below is a screenshot from HDFView of the B-Store test
+database located in test_experiment/test_experiment_db.h5 in the
+`B-Store test files repository`_. On left side of the window, you can
+see a hierarchy of the groups stored inside this database. There are
+two acqusition groups with prefixes **HeLaL_Control** and
+**HeLaS_Control**. Inside the HeLaL_Control group, you can see that
+there is one single acquisition (labeled with an **acqID** of 1).
+
+.. image:: ../images/database_example_1.png
+   :align: center
+
+.. _B-Store test files repository: https://github.com/kmdouglass/bstore_test_files/blob/master/test_experiment/test_experiment_db.h5
+
+This group contains three different datasets: localizations
+(locResults_A647_Pos0), a widefield image (widefieldImage_A647_Pos0),
+and metadata describing how the localizations were obtained. Each
+dataset has two optional identifiers: a **channelID** of A647 and a
+**posID** of 0.
+
+As seen in the next figure, the actual localization data is stored as
+a table inside the locResults_A647_Pos0 group. Metadata is attached as
+`HDF attributes`_ to the group as strings in JSON format. All SMLM
+metadata starts with the string defined in the variable
+__HDF_Metadata_Prefix__ in config.py; this variable is currently set
+to 'SMLM_Metadata_'.
+
+.. image:: ../images/database_example_2.png
+   :align: center
+
+.. _HDF attributes: https://www.hdfgroup.org/HDF5/doc1.6/UG/13_Attributes.html
+
+This mode of organization was chosen for a few reasons:
+
+1. The data is organized in a way that is easily read by both humans
+   and machines. This means we can understand the organization of the
+   data without any knowledge of how the database was
+   created.
+2. B-Store dataset IDs can be inferred from the HDF key that points to
+   the data. Machines can parse the HDF key to extract the dataset
+   IDs, which is done, for example, when the function
+   `HDFDatabase.query()`_ is executed.
+3. We take advantage of features provided by the HDF format, such as
+   attributes and groups.
+
+.. _HDFDatabase.query(): http://b-store.readthedocs.io/en/latest/bstore.html#bstore.database.HDFDatabase.query
