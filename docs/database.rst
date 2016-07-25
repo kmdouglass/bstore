@@ -7,8 +7,8 @@ B-Store Databases
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:status: in progress
-:date: 2016-07-23
+:revision: $Revision: 0 $
+:date: 2016-07-25
 
 :abstract:
 
@@ -105,7 +105,7 @@ datasetType's, then they will be understood to have come from the same
 field of view. This allows widefield images to be grouped with their
 corresponding localizations within the database. As an example, we
 might have two datasets in our database where both have 'HeLa' as a
-prefix and 1 as the acqID, but one has 'locResults' as its datsetType
+prefix and 1 as the acqID, but one has 'locResults' as its datasetType
 and the other 'widefieldImage'.
 
 Finally, the optional identifiers can further divide datasets that
@@ -210,13 +210,16 @@ there is one single acquisition (labeled with an **acqID** of 1).
 
 This group contains three different datasets: localizations
 (locResults_A647_Pos0), a widefield image (widefieldImage_A647_Pos0),
-and metadata describing how the localizations were obtained. Each
-dataset has two optional identifiers: a **channelID** of A647 and a
-**posID** of 0. The dataset keys--if they are specified--follow the
-format **datasetType_channelID_posID_sliceID**. 
+and metadata describing how the localizations were obtained. (The
+metadata is not directly visible in this image because it's stored as
+attributes of the locResults_A647_Pos0 group.) Each dataset has two
+optional identifiers: a **channelID** of A647 and a **posID**
+of 0. The dataset keys--if they are specified--follow the format
+**datasetType_channelID_posID_sliceID**. Because no sliceID is
+specified, it is absent from the name of the group.
 
 If the **dateID** is specified, then another layer of the hierarchy
-will be found between the acquisition group and the individual
+will be found between the acquisition parent group and the individual
 acquisitions within the group. This feature allows experiments from
 the same sample but different days to be identified. For example, if a
 dateID of '2016-06-30' is specified for the HeLaL_Control group, then
@@ -224,25 +227,28 @@ the key to the localizations becomes::
 
   HeLaL_Control/d2016_06_30/HeLaL_Control_1/locResults_A647_Pos0
 
-The 'd' signifies a date and underscores are used in the HDF file to
-satisfy the natural naming conventions of `PyTables`_. In general, you
-won't have to worry about this somewhat strange formatting and simply
-always specify your dateIDs as 'YYYY-MM-DD' when creating your
-datasets.
+The 'd' signifies a date and underscores are used in the HDF group
+name to satisfy the natural naming conventions of `PyTables`_. In
+general, you won't have to worry about this somewhat strange
+formatting and simply always specify your dateIDs as 'YYYY-MM-DD' when
+creating your datasets. The HDFDatabase class will take care of the
+format conversions for you.
 
 .. _PyTables: http://www.pytables.org/
 
 As seen in the next figure, the actual localization data is stored as
 a table inside the locResults_A647_Pos0 group. Metadata is attached as
-`HDF attributes`_ to the group as strings in JSON format. All SMLM
-metadata starts with the string defined in the variable
-__HDF_Metadata_Prefix__ in config.py; this variable is currently set
-to 'SMLM_Metadata_'.
+`HDF attributes`_ of the group; their values are in `JSON`_
+format. All SMLM metadata starts with the string defined in the
+variable __HDF_Metadata_Prefix__ in `config.py`_; this variable is
+currently set to 'SMLM_Metadata_'.
 
 .. image:: ../images/database_example_2.png
    :align: center
 
 .. _HDF attributes: https://www.hdfgroup.org/HDF5/doc1.6/UG/13_Attributes.html
+.. _JSON: http://www.json.org/
+.. _config.py: https://github.com/kmdouglass/bstore/blob/master/bstore/config.py
 
 This mode of organization was chosen for a few reasons:
 
