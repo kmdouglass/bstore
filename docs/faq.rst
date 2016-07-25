@@ -7,8 +7,8 @@ Frequently Asked Questions
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 1 $
-:date: 2016-07-23
+:revision: $Revision: 2 $
+:date: 2016-07-25
 
 :abstract:
 
@@ -261,7 +261,7 @@ The B-Store code base is divided into five separate modules:
 
 The first two modules, parsers and database, contain all the code for
 organizing SMLM datasets into a database. The last three modules,
-batch, processors, and multiprocessors, are primarily used to for
+batch, processors, and multiprocessors, are primarily used for
 extracting data from B-Store databases and performing (semi-)automated
 analyses.
 
