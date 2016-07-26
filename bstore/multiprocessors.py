@@ -13,7 +13,108 @@ DataFrames, such as localizations in multiple channels, widefield images, etc.
 import numpy             as np
 import matplotlib.pyplot as plt
 from bstore import processors as proc
+from scipy.signal import fftconvolve
+from scipy.ndimage import zoom
 
+class AlignToWidefield:
+    """Aligns localizations to a corresponding widefield image.
+    
+    AlignToWidefield is a multiprocessor that estimates by how much a
+    set of localizations is shifted relative to a corresponding
+    widefield image. It works by computing a 2D histogram from the
+    localizations and cross-correlating it with an upsampled version of
+    the widefield image. The result is a two-element tuple of the
+    estimated shifts in units of the x- and y-localization
+    coordinates.
+    
+    The cross-correlation is performed using fftconvolve from
+    scipy.signal; this means it is an estimate of the global offset
+    between the 2D histogram and the widefield image. Small, field-
+    dependent deviations between the localizations and widefield
+    image should therefore be expected.
+    
+    Parameters
+    ----------
+    coordCols      : list of str
+        The x- and y-coordinate column labels.
+    upsampleFactor : int
+        The amount of upsampling to perform on the widefield image. For
+        example, a factor of 5 means 1 pixel is transformed into 5.
+    
+    Attributes
+    ----------
+    coordCols      : list of str
+        The x- and y-coordinate column labels.
+    pixelSize      : float
+        The linear size of a pixel in the same units at the localizations.
+    upsampleFactor : int
+        The amount of upsampling to perform on the widefield image. For
+        example, a factor of 5 means 1 pixel is transformed into 5.
+
+    """
+    def __init__(self, coordCols = ['x', 'y'], pixelSize = 108.0,
+                 upsampleFactor = 5):
+        self.coordCols      = coordCols
+        self.pixelSize      = pixelSize
+        self.upsampleFactor = upsampleFactor
+        
+    def __call__(self, locs, wfImage):
+        """Align a set of localizations to a widefield image.
+        
+        Parameters
+        ----------
+        locs    : Pandas DataFrame
+            The DataFrame containing the localizations. x- and y-column
+            labels are specified in self.coordCols.
+        wfImage : array of int or array of float 
+            The widefield image to align the localizations to.
+        
+        Returns
+        -------
+        offsets : tuple of float
+            The estimated offset between the localizations and widefield
+            image. The first element is the offset in x and the second
+            in y. These should be subtracted from the input localizations
+            to align them to the widefield image.
+            
+        """
+        upsampleFactor = self.upsampleFactor
+        
+        # Bin the localizations into a 2D histogram;
+        # x corresponds to rows for histogram2d
+        binsX = np.arange(0, upsampleFactor * wfImage.shape[0] + 1, 1) \
+                                            * self.pixelSize / upsampleFactor
+        binsY = np.arange(0, upsampleFactor * wfImage.shape[1] + 1, 1) \
+                                            * self.pixelSize / upsampleFactor
+        H, _, _ = np.histogram2d(locs[self.coordCols[0]],
+                                 locs[self.coordCols[1]],
+                                 bins = [binsX, binsY])
+                           
+        # Upsample and flip the image to align it to the histogram;
+        # then compute the cross correlation
+        crossCorr = fftconvolve(H,
+                                zoom(np.transpose(wfImage)[::-1, ::-1], 
+                                     upsampleFactor, order = 0),
+                                mode = 'same')
+        
+        # Find the maximum of the cross correlation
+        centerLoc = np.unravel_index(np.argmax(crossCorr), crossCorr.shape)
+
+        # Find the center of the widefield image
+        imgCorr = fftconvolve(zoom(np.transpose(wfImage)[::-1, ::-1], 
+                                   upsampleFactor, order = 0),
+                              zoom(np.transpose(wfImage)[::-1, ::-1], 
+                                   upsampleFactor, order = 0),
+                              mode = 'same')
+        centerWF = np.unravel_index(np.argmax(imgCorr), imgCorr.shape)
+                              
+        # Find the shift between the images
+        dx = (centerLoc[1] - centerWF[1]) / upsampleFactor * self.pixelSize
+        dy = (centerLoc[0] - centerWF[0]) / upsampleFactor * self.pixelSize
+        
+        offsets = (dx, dy)
+        return offsets
+    
 class OverlayClusters:
     """Produces overlays of clustered localizations on widefield images.
     
@@ -203,15 +304,17 @@ class OverlayClusters:
         zoomHalfSize = np.floor(self._zoomSize / 2)
         
         # Get the current cluster
+        # Half a pixel is subtracted because matplotlib places the first
+        # pixel's center at (0,0), rather than its corner.
         coords = \
             locs[locs[self.clusterIDCol] == self.currentCluster][[x, y]]
-        xMean  = coords[x].mean() / self._pixelSize
-        yMean  = coords[y].mean() / self._pixelSize
+        xMean  = (coords[x].mean() / self._pixelSize) - 0.5
+        yMean  = (coords[y].mean() / self._pixelSize) - 0.5
         
-        # Draw the current cluster zoom to it
+        # Draw the current cluster zoom to it; same half pixel shift as above
         self._clusterCenter.set_data([xMean], [yMean])
-        self._clusterLocs.set_data(coords[x] / self._pixelSize,
-                                   coords[y] / self._pixelSize)         
+        self._clusterLocs.set_data(coords[x] / self._pixelSize - 0.5,
+                                   coords[y] / self._pixelSize - 0.5)         
         ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
         ax1.set_ylim(yMean - zoomHalfSize, yMean + zoomHalfSize)
         ax1.set_title(('Current cluster ID: {0:d} : Index {1:d} / {2:d}'
@@ -322,14 +425,17 @@ class OverlayClusters:
                        vmax          = np.max(wfImage) / 2)
                        #vmax          = np.max(wfImage))
         # Plot unclustered localizations
-        ax1.scatter(locs[locs[idCol] == -1][x] / self._pixelSize,
-                    locs[locs[idCol] == -1][y] / self._pixelSize,
+        # Half a pixel is subtracted because matplotlib places the first
+        # pixel's center at (0,0), rather than its corner.
+        ax1.scatter(locs[locs[idCol] == -1][x] / self._pixelSize - 0.5,
+                    locs[locs[idCol] == -1][y] / self._pixelSize - 0.5,
                     s = 4,
                     color = 'magenta')
         
         # Plot the cluster centers
-        ax1.scatter(plotx,
-                    ploty,
+        # Constants of 0.5 is explained a few lines above.
+        ax1.scatter(plotx - 0.5,
+                    ploty - 0.5,
                     s = 30,
                     color = 'green')
         ax1.set_xlabel('x-position, pixel')

@@ -4,11 +4,18 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 - docs folder
+- AlignToWidefield multiprocessor for aligning localizations to a
+  widefield image.
 
 ### Changed
 - Exceptions caught during database builds now describe the source of
   the error in more detail.
 - README.md was condensed. Most information was moved to RTD.
+- OverlayClusters multiprocessor shifts displayed localizations by
+  half a pixel in each direction towards the origin. This accounts for
+  the fact that matplotlib's imshow places pixel centers at the
+  integer coordinates, not the pixel edges. The shifts are only
+  applied for visualization; they do not affect the input DataFrame.
 	
 ## [v0.1.0]
 ### Added
