@@ -37,6 +37,8 @@ class AlignToWidefield:
     ----------
     coordCols      : list of str
         The x- and y-coordinate column labels.
+    pixelSize      : float
+        The linear size of a pixel in the same units at the localizations.
     upsampleFactor : int
         The amount of upsampling to perform on the widefield image. For
         example, a factor of 5 means 1 pixel is transformed into 5.
