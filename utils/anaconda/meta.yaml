@@ -1,10 +1,10 @@
 # conda build <DIR_WITH_THIS_FILE> --channel soft-matter
 package:
   name: bstore
-  version: "0.1.0"
+  version: "0.2.0b"
 
 source:
-  git_rev: v0.1.0
+  git_rev: v0.2.0b
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
@@ -17,7 +17,7 @@ requirements:
     - scipy
     - matplotlib
     - scikit-learn
-    - pandas
+    - pandas=0.18.0
     - h5py
     - pytables
     - trackpy
@@ -31,7 +31,7 @@ requirements:
     - scikit-learn
     - pytables
     - h5py
-    - pandas
+    - pandas=0.18.0
     - trackpy
 
 test:
