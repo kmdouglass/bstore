@@ -16,7 +16,12 @@ All notable changes to this project will be documented in this file.
   the fact that matplotlib's imshow places pixel centers at the
   integer coordinates, not the pixel edges. The shifts are only
   applied for visualization; they do not affect the input DataFrame.
-	
+
+### Fixed
+- .travis.yml now force installs pandas=0.18.0 so build tests
+  pass. This is intended to be a temporary fix to
+  [this trackpy issue](https://github.com/soft-matter/trackpy/issues/389).
+
 ## [v0.1.0]
 ### Added
 - COPYRIGHT.txt

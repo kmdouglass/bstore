@@ -42,5 +42,5 @@ def test_AlignToWidefield():
     dx, dy  = aligner(locs, wfImage)
     
     # Correct shifts were determined in an interactive session
-    assert_equal(round(dx), -194.0)
-    assert_equal(round(dy), -173.0)
+    assert_equal(round(dy), -194.0)
+    assert_equal(round(dx), -173.0)

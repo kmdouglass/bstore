@@ -110,9 +110,11 @@ class AlignToWidefield:
                               mode = 'same')
         centerWF = np.unravel_index(np.argmax(imgCorr), imgCorr.shape)
                               
-        # Find the shift between the images
-        dx = (centerLoc[1] - centerWF[1]) / upsampleFactor * self.pixelSize
-        dy = (centerLoc[0] - centerWF[0]) / upsampleFactor * self.pixelSize
+        # Find the shift between the images.
+        # dx -> rows, dy -> cols because the image was transposed during
+        # fftconvolve operation.
+        dy = (centerLoc[1] - centerWF[1]) / upsampleFactor * self.pixelSize
+        dx = (centerLoc[0] - centerWF[0]) / upsampleFactor * self.pixelSize
         
         offsets = (dx, dy)
         return offsets
