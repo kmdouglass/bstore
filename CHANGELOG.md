@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [v0.2.0b]
 ### Added
 - docs folder
 - AlignToWidefield multiprocessor for aligning localizations to a
@@ -18,10 +20,11 @@ All notable changes to this project will be documented in this file.
   applied for visualization; they do not affect the input DataFrame.
 
 ### Fixed
-- .travis.yml now force installs pandas=0.18.0 so build tests
-  pass. This is intended to be a temporary fix to
-  [this trackpy issue](https://github.com/soft-matter/trackpy/issues/389).
-
+- Anaconda downloads are forced to use Pandas 0.18.0 until the recent
+  bug related to Pandas and trackpy is fixed. See
+  https://github.com/soft-matter/trackpy/issues/389 for more
+  information.
+	
 ## [v0.1.0]
 ### Added
 - COPYRIGHT.txt
@@ -57,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.0b...HEAD
+[v0.2.0b]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.2.0b
 [v0.1.0]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0
 [v0.1.0b-rev3]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...v0.1.0b-rev3
