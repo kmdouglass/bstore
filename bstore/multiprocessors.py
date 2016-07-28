@@ -131,6 +131,64 @@ class OverlayClusters:
     ID between 0 and 9 or a True/False value, allowing for users to perform
     manual filtering or segmentation, for example.
     
+    Parameters
+    ----------
+    annotateCol     : str
+        Name of the column in stats for deciding whether a cluster is
+        retained for analysis.
+    clusterIDCol    : str
+        Name of the column containing the cluster id number.
+    coordCols       : list of str
+        The x- and y-coordinate column labels.
+    coordCenterCols : list of str
+        The x- and y-center column labels. This should be not be changed
+        unless you provide your own stats DataFrame when calling this class
+        and the labels are different than the default.
+    filterCol       : str
+        The name of a column containing boolean data in the 'stats'
+        DataFrame. Only rows with a value of True in this column will be
+        displayed.
+    pixelSize       : float
+        The physical size of a pixel. For converting the localization units
+        to pixels.
+    xShift          : float
+       Offset to apply to the localizations and clusters in x.
+    yShift          : float
+       Offset to apply to the localizations and clusters in y.
+    zoomSize        : int
+        The linear size of the zoomed region around a cluster in pixels.
+            
+    Attributes
+    ----------
+    annotateCol     : str
+        Name of the column in stats for deciding whether a cluster is
+        retained for analysis.
+    clusterIDCol    : str
+        Name of the column containing the cluster id number.
+    clusterIDs      : Pandas Series
+        Contains the integer indexes to the clusters.
+    coordCols       : list of str
+        The x- and y-coordinate column labels.
+    coordCenterCols : list of str
+        The x- and y-center column labels. This should be not be changed
+        unless you provide your own stats DataFrame when calling this class
+        and the labels are different than the default.
+    currentCluster  : int
+        The index of the cluster being analyzed.
+    filterCol       : str
+        The name of a column containing boolean data in the 'stats'
+        DataFrame. Only rows with a value of True in this column will be
+        displayed.
+    pixelSize       : float
+        The physical size of a pixel. For converting the localization units
+        to pixels.
+    xShift          : float
+       Offset to apply to the localizations and clusters in x.
+    yShift          : float
+       Offset to apply to the localizations and clusters in y.
+    zoomSize        : int
+        The linear size of the zoomed region around a cluster in pixels.
+    
     """
     def __init__(self,
                  annotateCol     = None,
@@ -139,37 +197,19 @@ class OverlayClusters:
                  coordCenterCols = ['x_center', 'y_center'],
                  filterCol       = None,
                  pixelSize       = 108,
+                 xShift          = 0,
+                 yShift          = 0,
                  zoomSize        = 21):
                      
-        """Setup the OverlayClusters processor.
-        
-        Parameters
-        ----------
-        annotateCol    : str
-            Name of the column in stats for deciding whether a cluster is
-            retained for analysis.
-        clusterIDCol   : str
-            Name of the column containing the cluster id number.
-        coordCols      : list of str
-            The x- and y-coordinate column labels.
-        filterCol      : str
-            The name of a column containing boolean data in the 'stats'
-            DataFrame. Only rows with a value of True in this column will be
-            displayed.
-        pixelSize      : float
-            The physical size of a pixel. For converting the localization units
-            to pixels.
-        zoomSize       : int
-            The linear size of the zoomed region around a cluster in pixels.
-            
-        """
         self.annotateCol     = annotateCol
         self.clusterIDCol    = clusterIDCol
         self.coordCols       = coordCols
         self.coordCenterCols = coordCenterCols
         self.filterCol       = filterCol
-        self._pixelSize      = pixelSize
-        self._zoomSize       = zoomSize
+        self.pixelSize       = pixelSize
+        self.xShift          = xShift
+        self.yShift          = yShift
+        self.zoomSize        = zoomSize
         
         # Holds information on the current cluster being analyzed
         self._currentClusterIndex = 0
@@ -207,6 +247,8 @@ class OverlayClusters:
             A DataFrame object with the merged localizations.
             
         """
+        # Ensure that the original DataFrames are preserved.
+        x, y = self.coordCols[0], self.coordCols[1]
         centerNameTemp = None
         if stats is None:
             # Compute the cluster statistics if none were provided.
@@ -220,7 +262,6 @@ class OverlayClusters:
             
             # Override the center coordinate column names
             centerSuffix = statsComp.centerName
-            x, y         = self.coordCols[0], self.coordCols[1]
             centerNameTemp       = self.coordCenterCols
             self.coordCenterCols = [x + centerSuffix, y + centerSuffix]
         
@@ -305,20 +346,22 @@ class OverlayClusters:
         
         self.currentCluster = self.clusterIDs[self._currentClusterIndex]
         ax1          = self._ax1
-        zoomHalfSize = np.floor(self._zoomSize / 2)
+        zoomHalfSize = np.floor(self.zoomSize / 2)
         
         # Get the current cluster
         # Half a pixel is subtracted because matplotlib places the first
         # pixel's center at (0,0), rather than its corner.
         coords = \
             locs[locs[self.clusterIDCol] == self.currentCluster][[x, y]]
-        xMean  = (coords[x].mean() / self._pixelSize) - 0.5
-        yMean  = (coords[y].mean() / self._pixelSize) - 0.5
+        xMean  = ((coords[x].mean() - self.xShift) / self.pixelSize) - 0.5
+        yMean  = ((coords[y].mean() - self.yShift) / self.pixelSize) - 0.5
         
         # Draw the current cluster zoom to it; same half pixel shift as above
         self._clusterCenter.set_data([xMean], [yMean])
-        self._clusterLocs.set_data(coords[x] / self._pixelSize - 0.5,
-                                   coords[y] / self._pixelSize - 0.5)         
+        self._clusterLocs.set_data((coords[x] - self.xShift) \
+                                                        / self.pixelSize - 0.5,
+                                   (coords[y] - self.yShift) \
+                                                        / self.pixelSize - 0.5)         
         ax1.set_xlim(xMean - zoomHalfSize, xMean + zoomHalfSize)
         ax1.set_ylim(yMean - zoomHalfSize, yMean + zoomHalfSize)
         ax1.set_title(('Current cluster ID: {0:d} : Index {1:d} / {2:d}'
@@ -376,11 +419,13 @@ class OverlayClusters:
             centerColor = 'white'
             
         if self.filterCol is None:
-            plotx = stats.loc[:, xc] / self._pixelSize
-            ploty = stats.loc[:, yc] / self._pixelSize
+            plotx = (stats.loc[:, xc] - self.xShift) / self.pixelSize
+            ploty = (stats.loc[:, yc] - self.yShift) / self.pixelSize
         else:
-            plotx = stats.loc[stats[filterCol] != False, xc] / self._pixelSize
-            ploty = stats.loc[stats[filterCol] != False, yc] / self._pixelSize    
+            plotx = (stats.loc[stats[filterCol] != False, xc] - self.xShift) \
+                                                               / self.pixelSize
+            ploty = (stats.loc[stats[filterCol] != False, yc] - self.yShift) \
+                                                               / self.pixelSize    
         
         # Reset the current cluster to zero
         self._currentClusterIndex = 0
@@ -431,8 +476,10 @@ class OverlayClusters:
         # Plot unclustered localizations
         # Half a pixel is subtracted because matplotlib places the first
         # pixel's center at (0,0), rather than its corner.
-        ax1.scatter(locs[locs[idCol] == -1][x] / self._pixelSize - 0.5,
-                    locs[locs[idCol] == -1][y] / self._pixelSize - 0.5,
+        ax1.scatter((locs[locs[idCol] == -1][x] - self.xShift) \
+                                                        / self.pixelSize - 0.5,
+                    (locs[locs[idCol] == -1][y] - self.yShift) \
+                                                        / self.pixelSize - 0.5,
                     s = 4,
                     color = 'magenta')
         
