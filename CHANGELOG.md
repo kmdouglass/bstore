@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [v0.1.1]
 ### Added
 - docs folder
 - AlignToWidefield multiprocessor for aligning localizations to a
@@ -58,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.1...HEAD
+[v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0
 [v0.1.0b-rev3]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...v0.1.0b-rev3

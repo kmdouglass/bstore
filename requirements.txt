@@ -3,7 +3,7 @@ scikit-learn
 pandas
 trackpy
 numpy
-scipy
+scipy<=0.17.1
 matplotlib
 h5py
 tables
