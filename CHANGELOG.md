@@ -20,8 +20,8 @@ All notable changes to this project will be documented in this file.
   applied for visualization; they do not affect the input DataFrame.
 
 ### Fixed
-- Anaconda downloads are forced to use Pandas<0.18.0 until the recent
-  bug related to Pandas and trackpy is fixed. See
+- Anaconda downloads are forced to use scipy<=0.17.1 until the recent
+  bug related to Pandas, Scipy, and trackpy is fixed. See
   https://github.com/soft-matter/trackpy/issues/389 for more
   information.
 	
