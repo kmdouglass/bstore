@@ -23,15 +23,9 @@ def _checkType(typeString):
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
                                                                    typeString))
 
-class DatasetError(Exception):
-    """Error raised when a bad datasetType is passed.
-    
-    """
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
+"""Metaclasses
+-------------------------------------------------------------------------------
+"""
 class DatabaseAtom(metaclass = ABCMeta):
     """Represents one organizational unit in the database.
     
@@ -213,6 +207,10 @@ class Dataset(DatabaseAtom):
     def datasetType(self):
         return self._datasetType
 
+"""
+Concrete classes
+-------------------------------------------------------------------------------
+"""
 class HDFDatabase(Database):
     """An HDFDatabase structure for managing SMLM data.
     
@@ -766,6 +764,18 @@ class HDFDatabase(Database):
         else:
             return None
             
+"""Exceptions
+-------------------------------------------------------------------------------
+"""
+class DatasetError(Exception):
+    """Error raised when a bad datasetType is passed.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+          
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
     

@@ -21,20 +21,76 @@ import warnings
 """Metaclasses
 -------------------------------------------------------------------------------
 """
+class ComputeTrajectories(metaclass = ABCMeta):
+    """Basic functionality for computing drift trajectories from fiducials.
+    
+    Attributes
+    ----------
+    fiducialLocs : Pandas DataFrame
+        The localizations for individual fiducials.  
+    
+    """
+    def __init__(self):
+        """Initializes the trajectory computer.
+        
+        """
+        self._fiducialData = None
+        
+    @property
+    def fiducialLocs(self):
+        """DataFrame holding the localizations for individual fiducials.
+        
+        """
+        return self._fiducialData
+        
+    @fiducialLocs.setter
+    def fiducialLocs(self, fiducialData):
+        """Checks that the fiducial localizations are formatted correctly.
+        
+        """
+        if fiducialData is not None:
+            assert 'region_id' in fiducialData.index.names, \
+                'fiducialLocs DataFrame requires index named "region_id"'
+                          
+            # Sort the multi-index to allow slicing
+            fiducialData.sort_index(inplace = True)
+        
+        self._fiducialData = fiducialData
+        
+    def clearFiducialLocs(self):
+        """Clears any currently held localization data.
+        
+        """
+        self._fiducialData = None
+        
+    @abstractmethod
+    def computeDriftTrajectory(self):
+        """Computes the drift trajectory.
+        
+        """
+        pass
+    
 class DriftCorrect(metaclass = ABCMeta):
     """Basic functionality for a drift correction processor.
     
+    Attributes
+    ----------
+    correctorType : string
+        Identifies the type of drift corrector for a specific class.
+    driftTrajectory : Pandas DataFrame
+        x,y pairs each possessing a unique frame number.
+    
     """
     @abstractproperty
-    def driftTrajectory(self):
-        """A list of x,y pairs with each possessing a unique frame number.
+    def correctorType(self):
+        """Identifies the type of drift corrector for a specific class.
         
         """
         pass
     
     @abstractproperty
-    def correctorType(self):
-        """Identifies the type of drift corrector for a specific class.
+    def driftTrajectory(self):
+        """A list of x,y pairs with each possessing a unique frame number.
         
         """
         pass
@@ -58,51 +114,7 @@ class DriftCorrect(metaclass = ABCMeta):
         """Writes the state of the drift corrector to a file.
         
         """
-        pass
-
-class ComputeTrajectories(metaclass = ABCMeta):
-    """Basic functionality for computing drift trajectories from fiducials.
-    
-    """
-    def __init__(self):
-        """Initializes the trajectory computer.
-        
-        """
-        self._fiducialData = None
-        
-    def clearFiducialLocs(self):
-        """Clears any currently held localization data.
-        
-        """
-        self._fiducialData = None
-    
-    @property
-    def fiducialLocs(self):
-        """DataFrame holding the localizations for individual fiducials.
-        
-        """
-        return self._fiducialData
-    
-    @fiducialLocs.setter
-    def fiducialLocs(self, fiducialData):
-        """Checks that the fiducial localizations are formatted correctly.
-        
-        """
-        if fiducialData is not None:
-            assert 'region_id' in fiducialData.index.names, \
-                'fiducialLocs DataFrame requires index named "region_id"'
-                          
-            # Sort the multi-index to allow slicing
-            fiducialData.sort_index(inplace = True)
-        
-        self._fiducialData = fiducialData
-        
-    @abstractmethod
-    def computeDriftTrajectory(self):
-        """Computes the drift trajectory.
-        
-        """
-        pass  
+        pass 
     
 class MergeStats(metaclass = ABCMeta):
     """Basic functionality for computing statistics from merged localizations.
@@ -136,6 +148,7 @@ class MergeStats(metaclass = ABCMeta):
         wAvg : float
             The weighted average over the grouped data in 'coordinate',
             weighted by the square root of values in the 'photons' column.
+            
         """
         positions = group[coordinate]
         photons   = group[photonsCol]
@@ -144,8 +157,7 @@ class MergeStats(metaclass = ABCMeta):
                / photons.apply(np.sqrt).sum()
                
         return wAvg
-
-
+        
 """
 Concrete classes
 -------------------------------------------------------------------------------
@@ -156,13 +168,27 @@ class AddColumn:
     AddColumn adds a column to a DataFrame and initializes every row to the
     same value.
     
+    Parameters
+    ----------
+    columnName   : str
+        The name of the new column.
+    defaultValue : mixed datatype
+        The default value to assign to each row of the new column.
+        
+    Attributes
+    ----------
+    columnName   : str
+        The name of the new column.
+    defaultValue : mixed datatype
+        The default value to assign to each row of the new column.
+    
     """
     def __init__(self, columnName, defaultValue = True):
         self.columnName   = columnName
         self.defaultValue = defaultValue
     
     def __call__(self, df):
-        """Clean up the data.
+        """Add the new column to the DataFrame.
         
         Parameters
         ----------
@@ -229,20 +255,17 @@ class CleanUp:
 class Cluster:
     """Clusters the localizations into spatial clusters.
     
+    Parameters
+    ----------
+    minSamples : int
+        Minimum number of samples within one neighborhood radius.
+    eps        : float
+        The neighborhood radius defining a cluster.
+    coordCols  : list of str
+        The columns of the data to be clustered in the format ['x', 'y'].
+    
     """
     def __init__(self, minSamples = 50, eps = 20, coordCols = ['x', 'y']):
-        """Set the DBSCAN parameters and list the columns in the data denoting
-        the localizations' spatial coordinates.
-        
-        Parameters
-        ----------
-        minSamples : int
-            Minimum number of samples within one neighborhood radius.
-        eps        : float
-            The neighborhood radius defining a cluster.
-        coordCols  : list of str
-            The columns of the data to be clustered.
-        """
         self._minSamples = minSamples
         self._eps        = eps
         self._coordCols  = coordCols
@@ -262,7 +285,8 @@ class Cluster:
         Returns
         -------
         procdf : DataFrame
-            A DataFrame object with the same information but new column names.
+            A DataFrame object with containing a new column indicating the
+            cluster ID.
         
         """
         columnsToCluster = self._coordCols
@@ -282,6 +306,20 @@ class Cluster:
 class ComputeClusterStats:
     """Computes statistics for clusters of localizations.
     
+    Parameters
+    ----------
+    idLabel          : str
+        The column name containing cluster ID's.
+    coordCols        : list of string
+        A list containing the column names containing the localization
+        coordinates.
+    statsFunctions   : dict of name/function pairs
+        A dictionary containing column names and functions for computing
+        custom statistics from the clustered localizations. The keys in
+        dictionary determine the name of the customized column and the
+        value contains a function that computes a number from the
+        coordinates of the localizations in each cluster.
+    
     """
     
     # The name to append to the center coordinate column names
@@ -290,23 +328,6 @@ class ComputeClusterStats:
     def __init__(self, idLabel    = 'cluster_id',
                  coordCols        = ['x', 'y'],
                  statsFunctions   = None):
-        """Set the column name for the cluster ID numbers.
-        
-        Parameters
-        ----------
-        idLabel          : str
-            The column name containing cluster ID's.
-        coordCols        : list of string
-            A list containing the column names containing the localization
-            coordinates.
-        statsFunctions   : dict of name/function pairs
-            A dictionary containing column names and functions for computing
-            custom statistics from the clustered localizations. The keys in
-            dictionary determine the name of the customized column and the
-            value contains a function that computes a number from the
-            coordinates of the localizations in each cluster.
-        
-        """
         self._idLabel   = idLabel
         self._statsFunctions = {'radius_of_gyration' : self._radiusOfGyration,
                                 'eccentricity'       : self._eccentricity,
@@ -378,8 +399,11 @@ class ComputeClusterStats:
         
         Parameters
         ----------
-        group : Pandas GroupBy
-            The clustered localizations.   
+        group       : Pandas GroupBy
+            The clustered localizations.
+        coordinates : list of str
+            The columns to use for performing the computation; typically these
+            containg the localization coordinates.
             
         Returns
         -------
@@ -400,7 +424,10 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The clustered localizations.   
+            The clustered localizations.
+        coordinates : list of str
+            The columns to use for performing the computation; typically these
+            containg the localization coordinates.
             
         Returns
         -------
@@ -423,7 +450,10 @@ class ComputeClusterStats:
         Parameters
         ----------
         group : Pandas GroupBy
-            The clustered localizations. 
+            The clustered localizations.
+        coordinates : list of str
+            The columns to use for performing the computation; typically these
+            containg the localization coordinates.
         
         Returns
         -------
@@ -454,9 +484,15 @@ class ComputeClusterStats:
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
     
+    Parameters
+    ----------
+    mapping      : FormatMap
+        A two-way dictionary for converting from column name to another.
+    
     Attributes
     ----------
     mapping      : FormatMap
+        A two-way dictionary for converting from column name to another.
     
     """
     def __init__(self, mapping = FormatMap(config.__Format_Default__)):
@@ -507,16 +543,41 @@ class DefaultDriftComputer(ComputeTrajectories):
     to select what trajectories are used to compute the final trajectory that
     is stored inside the avgSpline attribute.
     
+    Parameters
+    ----------
+    coordCols           : list str
+        List of strings identifying the x- and y-coordinate column names
+        in that order.
+    frameCol            : str
+        Name of the column identifying the column containing the frames.
+    smoothingWindowSize   : float
+        Moving average window size in frames for spline fitting.
+    smoothingFilterSize   : float
+        Moving average Gaussian kernel width in frames for spline fitting.
+    useTrajectories : list of int
+        List of integers corresponding to the fiducial trajectories to use
+        when computing the average trajectory. If empty, all trajectories
+        are used.
+    zeroFrame       : int
+        Frame where all individual drift trajectories are equal to zero.
+        This may be adjusted to help correct fiducial trajectories that
+        don't overlap well near the beginning.
+    
     Attributes
     ----------
     avgSpline           : Pandas DataFrame
         DataFrame with 'frame' index column and 'xS' and 'yS' position
         coordinate columns representing the drift of the sample during the
         acquisition.
+    coordCols           : list str
+        List of strings identifying the x- and y-coordinate column names
+        in that order.
     fiducialData        : Pandas DataFrame
         DataFrame with a 'region_id' column denoting localizations from
         different regions of the original dataset. This is created by the
         parent ComputeTrajectories class.
+    frameCol            : str
+        Name of the column identifying the column containing the frames.
     smoothingWindowSize : float
         Moving average window size in frames for spline fitting.
     smoothingFilterSize : float
@@ -534,32 +595,10 @@ class DefaultDriftComputer(ComputeTrajectories):
         don't overlap well near the beginning.
         
     """
-    
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
                  smoothingWindowSize = 600, smoothingFilterSize = 400,
                  useTrajectories = [], zeroFrame = 1000):
-        """Initialize the default drift computer.
-        
-        Parameters
-        ----------
-        coordCols           : list str
-            List of strings identifying the x- and y-coordinate column names
-            in that order.
-        frameCol            : str
-            Name of the column identifying the column containing the frames.
-        smoothingWindowSize   : float
-            Moving average window size in frames for spline fitting.
-        smoothingFilterSize   : float
-            Moving average Gaussian kernel width in frames for spline fitting.
-        useTrajectories : list of int
-            List of integers corresponding to the fiducial trajectories to use
-            when computing the average trajectory. If empty, all trajectories
-            are used.
-        zeroFrame       : int
-            Frame where all individual drift trajectories are equal to zero.
-            This may be adjusted to help correct fiducial trajectories that
-            don't overlap well near the beginning.
-        """
+
         self.coordCols = coordCols
         self.frameCol  = frameCol
         self.smoothingWindowSize = smoothingWindowSize
@@ -567,76 +606,6 @@ class DefaultDriftComputer(ComputeTrajectories):
         self.useTrajectories     = useTrajectories
         self.zeroFrame           = zeroFrame
         super(ComputeTrajectories, self).__init__()
-        
-    def _computeOffsets(self, locs):
-        """Compute the offsets for fiducial trajectories based on zeroFrame.
-        
-        Parameters
-        ----------
-        locs : Pandas DataFrame
-            Localizations from a single fiducial region.
-            
-        Returns
-        -------
-        x0, y0 : tuple of int
-            The offsets to subtract from the localizations belonging to a
-            fiducial.
-        
-        """
-        avgOffset = 50
-        x, y = self.coordCols[0], self.coordCols[1]
-        startFrame, stopFrame = locs[self.frameCol].min(), \
-                                locs[self.frameCol].max()
-                                
-        if self.zeroFrame > stopFrame or self.zeroFrame < startFrame:
-            warnings.warn(('Warning: zeroFrame ({0:d}) is outside the '
-                           'allowable range of frame numbers in this dataset '
-                           '({1:d} - {2:d}). Try a different zeroFrame value'
-                           'by adjusting driftComputer.zeroFrame.'
-                           ''.format(self.zeroFrame, startFrame + avgOffset,
-                                     stopFrame - avgOffset)))
-        
-        # Average the localizations around the zeroFrame value
-        x0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
-                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][x].mean()
-        y0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
-                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][y].mean()
-                
-        if (x0 is np.nan) or (y0 is np.nan):
-            warnings.warn('Could not determine an offset value; '
-                          'setting offsets to zero.')
-            x0, y0 = 0, 0
-        
-        return x0, y0
-        
-    def _movingAverage(self, series, windowSize = 100, sigma = 3):
-        """Estimate the weights for the smoothing spline.
-        
-        Parameters
-        ----------
-        series     : array of int
-            Discrete samples from a time series.
-        windowSize : int
-            Size of the moving average window in frames (or time).
-        sigma      : int
-            Size of the Gaussian averaging kernel in frames (or time).
-            
-        Returns
-        -------
-        average : float
-            The moving window average.
-        var     : float
-            The variance of the data within the sumoving window.
-        
-        References
-        ----------
-        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
-        
-        """
-        b       = gaussian(windowSize, sigma)
-        average = filters.convolve1d(series, b/b.sum())
-        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
-        return average, var
         
     def combineCurves(self, startFrame, stopFrame):
         """Average the splines from different fiducials together.
@@ -725,6 +694,47 @@ class DefaultDriftComputer(ComputeTrajectories):
 
         return self.avgSpline
         
+    def _computeOffsets(self, locs):
+        """Compute the offsets for fiducial trajectories based on zeroFrame.
+        
+        Parameters
+        ----------
+        locs : Pandas DataFrame
+            Localizations from a single fiducial region.
+            
+        Returns
+        -------
+        x0, y0 : tuple of int
+            The offsets to subtract from the localizations belonging to a
+            fiducial.
+        
+        """
+        avgOffset = 50
+        x, y = self.coordCols[0], self.coordCols[1]
+        startFrame, stopFrame = locs[self.frameCol].min(), \
+                                locs[self.frameCol].max()
+                                
+        if self.zeroFrame > stopFrame or self.zeroFrame < startFrame:
+            warnings.warn(('Warning: zeroFrame ({0:d}) is outside the '
+                           'allowable range of frame numbers in this dataset '
+                           '({1:d} - {2:d}). Try a different zeroFrame value'
+                           'by adjusting driftComputer.zeroFrame.'
+                           ''.format(self.zeroFrame, startFrame + avgOffset,
+                                     stopFrame - avgOffset)))
+        
+        # Average the localizations around the zeroFrame value
+        x0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][x].mean()
+        y0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][y].mean()
+                
+        if (x0 is np.nan) or (y0 is np.nan):
+            warnings.warn('Could not determine an offset value; '
+                          'setting offsets to zero.')
+            x0, y0 = 0, 0
+        
+        return x0, y0
+        
     def fitCurves(self):
         """Fits individual splines to each fiducial.
                
@@ -781,6 +791,35 @@ class DefaultDriftComputer(ComputeTrajectories):
                                  'yS'       : ySpline,
                                  'minFrame' : minFrame,
                                  'maxFrame' : maxFrame})
+
+    def _movingAverage(self, series, windowSize = 100, sigma = 3):
+        """Estimate the weights for the smoothing spline.
+        
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in frames (or time).
+        sigma      : int
+            Size of the Gaussian averaging kernel in frames (or time).
+            
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the sumoving window.
+        
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+        
+        """
+        b       = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b/b.sum())
+        var     = filters.convolve1d(np.power(series-average,2), b/b.sum())
+        return average, var
                                  
     def plotFiducials(self, splineNumber = None):
         """Make a plot of each fiducial track and the average spline fit.
@@ -865,35 +904,40 @@ class DefaultDriftComputer(ComputeTrajectories):
 class FiducialDriftCorrect(DriftCorrect):
     """Correct localizations for lateral drift using fiducials.
     
+    Parameters
+    ----------
+    interactiveSearch : bool
+        Determines whether the user will interactively find fiducials.
+        Setting this to False means that fiducials are found automatically,
+        although this is not always reliable.
+    coordCols         : list str
+        List of strings identifying the x- and y-coordinate column names
+        in that order.
+    frameCol          : str
+        Name of the column identifying the column containing the frames.
+    removeFiducials   : bool
+        Determines whether localizations belonging to fiducials are
+        dropped from the input DataFrame when the processor is called.
+        This is ignored if interactiveSearch is False.
+    driftComputer     : instance of ComputeTrajectories
+        Function for computing the drift trajectory from fiducial
+        localizations. If 'None', the default function utilizing
+        smoothing splines is used.
+        
+    Attributes
+    ----------
+    driftComputer     : ComputeTrajectories
+        The algorithm for determining trajectories from fiducials.
+    interactiveSearch : bool
+        Should a window open allowing the user to identify fiducials when this
+        processor is called?
+    
     """
     _correctorType = 'FiducialDriftCorrect'    
     
     def __init__(self, interactiveSearch = True, coordCols = ['x', 'y'],
                  frameCol = 'frame', removeFiducials = True,
                  driftComputer = None):
-        """Initialize the processor.
-        
-        Parameters
-        ----------
-        interactiveSearch : bool
-            Determines whether the user will interactively find fiducials.
-            Setting this to False means that fiducials are found automatically,
-            although this is not always reliable.
-        coordCols         : list str
-            List of strings identifying the x- and y-coordinate column names
-            in that order.
-        frameCol          : str
-            Name of the column identifying the column containing the frames.
-        removeFiducials   : bool
-            Determines whether localizations belonging to fiducials are
-            dropped from the input DataFrame when the processor is called.
-            This is ignored if interactiveSearch is False.
-        driftComputer     : instance of ComputeTrajectories
-            Function for computing the drift trajectory from fiducial
-            localizations. If 'None', the default function utilizing
-            smoothing splines is used.
-        
-        """
         # Assign class properties based on input arguments
         self.interactiveSearch = interactiveSearch
         self._coordCols        = coordCols
@@ -966,48 +1010,11 @@ class FiducialDriftCorrect(DriftCorrect):
         procdf = self.correctLocalizations(procdf)
         
         return procdf
-            
-    def _extractLocsFromRegions(self, df):
-        """Reduce the size of the search area for automatic fiducial detection.
+
+    @property
+    def correctorType(self):
+        return self._correctorType
         
-        Parameters
-        ----------
-        df           : Pandas DataFrame
-            DataFrame that will be spatially filtered.
-        
-        Returns
-        -------
-        locsInRegions : Pandas DataFrame
-            DataFrame containing localizations only within the select regions.
-        
-        """
-        # If search regions are not defined, raise an error
-        if not self._fidRegions[0]['xMin']:
-            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
-        
-        locsInRegions = []
-        numRegions    = len(self._fidRegions)
-        for regionNumber in range(numRegions):
-            xMin = self._fidRegions[regionNumber]['xMin']
-            xMax = self._fidRegions[regionNumber]['xMax']
-            yMin = self._fidRegions[regionNumber]['yMin']
-            yMax = self._fidRegions[regionNumber]['yMax']
-        
-            # Isolate the localizations within the current region
-            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
-                                  (df[self._coordCols[0]] < xMax) &
-                                  (df[self._coordCols[1]] > yMin) &
-                                  (df[self._coordCols[1]] < yMax)].copy()
-                                  
-            # Add a multi-index identifying the region number
-            locsInCurrRegion['region_id'] = regionNumber
-            locsInCurrRegion.set_index(['region_id'], append = True,
-                                       inplace = True)
-            
-            locsInRegions.append(locsInCurrRegion)
-        
-        return pd.concat(locsInRegions)
-    
     @property
     def driftTrajectory(self):
         return self._driftTrajectory
@@ -1024,10 +1031,6 @@ class FiducialDriftCorrect(DriftCorrect):
             trajectory.
         """
         self._driftTrajectory = value
-        
-    @property
-    def correctorType(self):
-        return self._correctorType
         
     def correctLocalizations(self, df):
         """Correct the localizations using the spline fits to fiducial tracks.
@@ -1148,6 +1151,47 @@ class FiducialDriftCorrect(DriftCorrect):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fig.canvas.start_event_loop_default()
+            
+    def _extractLocsFromRegions(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+        
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+        
+        Returns
+        -------
+        locsInRegions : Pandas DataFrame
+            DataFrame containing localizations only within the select regions.
+        
+        """
+        # If search regions are not defined, raise an error
+        if not self._fidRegions[0]['xMin']:
+            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
+        
+        locsInRegions = []
+        numRegions    = len(self._fidRegions)
+        for regionNumber in range(numRegions):
+            xMin = self._fidRegions[regionNumber]['xMin']
+            xMax = self._fidRegions[regionNumber]['xMax']
+            yMin = self._fidRegions[regionNumber]['yMin']
+            yMax = self._fidRegions[regionNumber]['yMax']
+        
+            # Isolate the localizations within the current region
+            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
+                                  (df[self._coordCols[0]] < xMax) &
+                                  (df[self._coordCols[1]] > yMin) &
+                                  (df[self._coordCols[1]] < yMax)].copy()
+                                  
+            # Add a multi-index identifying the region number
+            locsInCurrRegion['region_id'] = regionNumber
+            locsInCurrRegion.set_index(['region_id'], append = True,
+                                       inplace = True)
+            
+            locsInRegions.append(locsInCurrRegion)
+        
+        return pd.concat(locsInRegions)
     
     def readSettings(self):
         pass
@@ -1163,6 +1207,16 @@ class Filter:
     value in the column. Rows that correspond to a value for 'False' in the
     mask are removed from the DataFrame.
     
+    Parameters
+    ----------
+    columnName      : str
+    operator        : str
+        A string matching an operator defined in the _operatorMap dict.
+        Examples include '+', '<=' and '>'.
+    filterParameter : float
+    resetIndex      : bool
+        Should the returned index be reset?
+    
     """   
     
     _operatorMap = {'<'  : lt,
@@ -1173,19 +1227,7 @@ class Filter:
                     '>'  : gt}    
     
     def __init__(self, columnName, operator, filterParameter, resetIndex = True):
-        """Define the data column and filter operation to perform.
-        
-        Parameters
-        ----------
-        columnName      : str
-        operator        : str
-            A string matching an operator defined in the _operatorMap dict.
-            Examples include '+', '<=' and '>'.
-        filterParameter : float
-        resetIndex      : bool
-            Should the returned index be reset?
-        
-        """
+
         try:
             self._operator    = self._operatorMap[operator]
         except KeyError:
@@ -1227,6 +1269,32 @@ class Filter:
 class Merge:
     """Merges nearby localizations in subsequent frames into one localization.
     
+    The merge radius is the distance around a localization that another
+    localization must be in space for the two to become merged. The off
+    time is the maximum number of frames that a localization can be absent
+    from before the its track in time is terminated.
+    
+    Parameters
+    ----------
+    autoFindMergeRadius : bool (default: False)
+        If True, this will set the merge radius to three times the mean
+        localization precision in the dataset.
+    tOff                : int
+        The maximum time that a localization can vanish. Units are frames.
+    mergeRadius         : float (default: 50)
+        The maximum distance between localizations in space for them to be
+        considered as one. Units are the same as x, y, and z. This is
+        ignored if autoFindMergeRadius is True.
+    statsComputer       : MergeStats
+        Instance of a concrete MergeStats class for computing the
+        merged localization statistics. statsComputer is None by default,
+        which means that only particle ID's will be appended to the
+        DataFrame and merged statistics will not be calculated. This
+        allows handling of custom DataFrame columns and statistics.
+    precisionColumn     : str (default: 'precision')
+        The name of the column containing the localization precision. This
+        is ignored if autoFindMergeRadius is False.
+    
     """
     def __init__(self,
                  tOff                = 1,
@@ -1234,34 +1302,7 @@ class Merge:
                  autoFindMergeRadius = False,
                  statsComputer       = None,
                  precisionColumn     = 'precision'):
-        """Set or calculate the merge radius and set the off time.
-        
-        The merge radius is the distance around a localization that another
-        localization must be in space for the two to become merged. The off
-        time is the maximum number of frames that a localization can be absent
-        from before the its track in time is terminated.
-        
-        Parameters
-        ----------
-        autoFindMergeRadius : bool (default: False)
-            If True, this will set the merge radius to three times the mean
-            localization precision in the dataset.
-        tOff                : int
-            The maximum time that a localization can vanish. Units are frames.
-        mergeRadius         : float (default: 50)
-            The maximum distance between localizations in space for them to be
-            considered as one. Units are the same as x, y, and z. This is
-            ignored if autoFindMergeRadius is True.
-        statsComputer       : MergeStats
-            Instance of a concrete MergeStats class for computing the
-            merged localization statistics. statsComputer is None by default,
-            which means that only particle ID's will be appended to the
-            DataFrame and merged statistics will not be calculated. This
-            allows handling of custom DataFrame columns and statistics.
-        precisionColumn     : str (default: 'precision')
-            The name of the column containing the localization precision. This
-            is ignored if autoFindMergeRadius is False.
-        """
+                     
         self._autoFindMergeRadius = autoFindMergeRadius
         self._tOff                = tOff
         self._mergeRadius         = mergeRadius
