@@ -1352,10 +1352,9 @@ class MergeFang(MergeStats):
         
         return procdf
         
-"""Errors
+"""Exceptions
 -------------------------------------------------------------------------------
 """
-
 class UseTrajectoryError(Exception):
     """Raised when drift computer has invalid indexes to fiducial trajectories.
     

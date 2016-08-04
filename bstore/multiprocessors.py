@@ -36,9 +36,9 @@ class AlignToWidefield:
     Parameters
     ----------
     coordCols      : list of str
-        The x- and y-coordinate column labels.
+        The x- and y-coordinate column labels in the format ['x', 'y'].
     pixelSize      : float
-        The linear size of a pixel in the same units at the localizations.
+        The linear size of a pixel in the same units as the localizations.
     upsampleFactor : int
         The amount of upsampling to perform on the widefield image. For
         example, a factor of 5 means 1 pixel is transformed into 5.
@@ -128,8 +128,8 @@ class OverlayClusters:
     step through each cluster with the keyboard.
     
     It also allows for annotating clusters by labeling clusters with a numeric
-    ID between 0 and 9 or a True/False value, allowing for users to perform
-    manual filtering or segmentation, for example.
+    ID between 0 and 9 or a True/False value, allowing users to perform
+    manual filtering or classification, for example.
     
     Parameters
     ----------
@@ -139,7 +139,7 @@ class OverlayClusters:
     clusterIDCol    : str
         Name of the column containing the cluster id number.
     coordCols       : list of str
-        The x- and y-coordinate column labels.
+        The x- and y-coordinate column labels in the format ['x', 'y'].
     coordCenterCols : list of str
         The x- and y-center column labels. This should be not be changed
         unless you provide your own stats DataFrame when calling this class
@@ -165,8 +165,6 @@ class OverlayClusters:
         retained for analysis.
     clusterIDCol    : str
         Name of the column containing the cluster id number.
-    clusterIDs      : Pandas Series
-        Contains the integer indexes to the clusters.
     coordCols       : list of str
         The x- and y-coordinate column labels.
     coordCenterCols : list of str
@@ -213,8 +211,8 @@ class OverlayClusters:
         
         # Holds information on the current cluster being analyzed
         self._currentClusterIndex = 0
+        self._clusterIDs          = []
         self.currentCluster       = []
-        self.clusterIDs           = []
         
         # Holds information on the current figure
         self._fig           = None
@@ -229,6 +227,12 @@ class OverlayClusters:
         and a zoomed region around a particular cluster. The user may use the
         keyboard to go forward and backward through the clusters.
         
+        If an annotate column was supplied, the user may be change the value
+        in that column and row corresponding to the current cluster by
+        entering a numeric value or True/False (currently mapped to the
+        <Space bar> and <r> keys). Otherwise, the user may simply step through
+        each cluster.
+        
         Parameters
         ----------
         locs         : DataFrame
@@ -236,15 +240,10 @@ class OverlayClusters:
         stats        : Pandas DataFrame
             DataFrame containing at least two columns: one for the cluster
             center x-coordinates and one for the y-coordinates. This DataFrame
-            will be computed if none is provided. (The cluster centers are
+            will be computed if None is provided. (The cluster centers are
             used for plotting, so these stats need to be computed.)
         wfImage    : Numpy Array
-            Allows the user to specify the wfImage
-            
-        Returns
-        -------
-        procdf : DataFrame
-            A DataFrame object with the merged localizations.
+            The widefield image to overlay the clusters onto.
             
         """
         # Ensure that the original DataFrames are preserved.
@@ -304,7 +303,7 @@ class OverlayClusters:
             
             if event.key in ['g', 'G']:
                 # Go forward one cluster
-                if self._currentClusterIndex != len(self.clusterIDs) - 1:
+                if self._currentClusterIndex != len(self._clusterIDs) - 1:
                     self._currentClusterIndex +=1
                     self._drawCurrentCluster(locs)
             
@@ -336,15 +335,20 @@ class OverlayClusters:
     def _drawCurrentCluster(self, locs):
         """Draws the current cluster onto the figure.
         
+        Parameters
+        ----------
+        locs : Pandas DataFrame
+            The localizations to plot.
+        
         """
         x, y = self.coordCols[0], self.coordCols[1]
         
         # Check for end of clusters
-        if self._currentClusterIndex >= len(self.clusterIDs):
+        if self._currentClusterIndex >= len(self._clusterIDs):
             plt.close(self._fig)
             return None
         
-        self.currentCluster = self.clusterIDs[self._currentClusterIndex]
+        self.currentCluster = self._clusterIDs[self._currentClusterIndex]
         ax1          = self._ax1
         zoomHalfSize = np.floor(self.zoomSize / 2)
         
@@ -367,7 +371,7 @@ class OverlayClusters:
         ax1.set_title(('Current cluster ID: {0:d} : Index {1:d} / {2:d}'
                        ''.format((self.currentCluster),
                                  (self._currentClusterIndex) ,
-                                 len(self.clusterIDs) - 1)))
+                                 len(self._clusterIDs) - 1)))
         self._fig.canvas.draw()
         
     def _extractClusterID(self, stats):
@@ -376,24 +380,24 @@ class OverlayClusters:
         Parameters
         ----------
         stats : Pandas DataFrame
-            Localization information.
+            Information about each cluster.
             
         """
         # Get the cluster IDs except for the noise, which has ID -1, and those
         # whose 'annotateCols' are already set to false.
         if (not self.filterCol) and (not self.annotateCol):
-            self.clusterIDs = stats[stats.index != -1].index.unique()
+            self._clusterIDs = stats[stats.index != -1].index.unique()
         elif not self.filterCol:
-            self.clusterIDs = stats[(stats.index != -1)
+            self._clusterIDs = stats[(stats.index != -1)
             & (stats[self.annotateCol] != False)].index.unique()
         elif not self.annotateCol:
-            self.clusterIDs = stats[(stats.index != -1)
+            self._clusterIDs = stats[(stats.index != -1)
             & (stats[self.filterCol] != False)].index.unique()
         else:
-            self.clusterIDs = stats[(stats.index != -1)
+            self._clusterIDs = stats[(stats.index != -1)
                 & (stats[self.annotateCol] != False)
                 & (stats[self.filterCol] != False)].index.unique()
-        self.currentCluster = np.min(self.clusterIDs)
+        self.currentCluster = np.min(self._clusterIDs)
         
     def _initCanvas(self, locs, wfImage, stats):
         """Draws the initial canvas for the localizations and other data.
@@ -429,7 +433,7 @@ class OverlayClusters:
         
         # Reset the current cluster to zero
         self._currentClusterIndex = 0
-        self.currentCluster       = self.clusterIDs[self._currentClusterIndex]        
+        self.currentCluster       = self._clusterIDs[self._currentClusterIndex]        
         
         # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)
