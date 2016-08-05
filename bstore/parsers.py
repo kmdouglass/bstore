@@ -206,12 +206,10 @@ class MMParser(Parser):
         The string identifying the widefield image number.
     
     """
-
+    # This dictionary contains all the channel identifiers MMParser
+    # knows natively.
     channelIdentifier = config.__Channel_Identifier__ 
-    """
-    channelIdentifier   : dict
-        All of the channel identifiers that the MMParser recognizes.
-    """
+    
                          
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']

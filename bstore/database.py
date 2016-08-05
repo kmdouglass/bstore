@@ -198,9 +198,56 @@ class DatabaseAtom(metaclass = ABCMeta):
 class Dataset(DatabaseAtom):
     """A concrete realization of a DatabaseAtom.
     
+    Parameters
+    ----------
+    prefix      : str
+        The descriptive name given to the dataset by the user.
+    acqID       : int
+        The number identifying the Multi-D acquisition for a given prefix
+        name.
+    datasetType : str
+        The type of data contained in the dataset. Can be one of
+        'locResults', 'locMetadata', or 'widefieldImage'.
+    data        : mixed
+        The actual microscopy data.
+    channelID   : str
+        The color channel associated with the dataset.
+    dateID      : str
+        The date of the acquistion in the format YYYY-mm-dd.
+    posID       : int, or (int, int)
+        The position identifier. It is a single element tuple if positions
+        were manually set; otherwise, it's a 2-tuple indicating the x and y
+        identifiers.
+    sliceID     : int
+        The number identifying the z-axis slice of the dataset.
+    
+    Attributes
+    ----------
+    prefix      : str
+        The descriptive name given to the dataset by the user.
+    acqID       : int
+        The number identifying the Multi-D acquisition for a given prefix
+        name.
+    datasetType : str
+        The type of data contained in the dataset. Can be one of
+        'locResults', 'locMetadata', or 'widefieldImage'.
+    data        : mixed
+        The actual microscopy data.
+    channelID   : str
+        The color channel associated with the dataset.
+    dateID      : str
+        The date of the acquistion in the format YYYY-mm-dd.
+    posID       : int, or (int, int)
+        The position identifier. It is a single element tuple if positions
+        were manually set; otherwise, it's a 2-tuple indicating the x and y
+        identifiers.
+    sliceID     : int
+        The number identifying the z-axis slice of the dataset.
+    
     """
     def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None, posID = None, sliceID = None):
+                 channelID = None, dateID = None,
+                 posID = None, sliceID = None):
         super(Dataset, self).__init__(prefix, acqID, datasetType, data,
                                       channelID = channelID,
                                       dateID    = dateID,
@@ -224,6 +271,10 @@ class Dataset(DatabaseAtom):
         self._data = value
         
     @property
+    def datasetType(self):
+        return self._datasetType
+        
+    @property
     def dateID(self):
         return self._dateID
     
@@ -238,17 +289,9 @@ class Dataset(DatabaseAtom):
     @property
     def sliceID(self):
         return self._sliceID
-    
-    @property
-    def datasetType(self):
-        return self._datasetType
 
-"""
-Concrete classes
--------------------------------------------------------------------------------
-"""
 class HDFDatabase(Database):
-    """An HDFDatabase structure for managing SMLM data.
+    """A HDFDatabase structure for managing SMLM data.
     
     """
     @property
@@ -492,6 +535,62 @@ class HDFDatabase(Database):
         else:
             return acqKey + '/locResults' + otherIDs
             
+    def get(self, dsID):
+        """Returns an atomic dataset matching dsID from the database.
+        
+        Parameters
+        ----------
+        dsID       : dict or DatabaseAtom
+            Either key-value pairs uniquely identifying the dataset in
+            the database or a DatabaseAtom with a possibly empty 'data'
+            field that may be used to identify the dataset.
+            
+        Returns
+        -------
+        returnDS : Dataset
+        
+        """
+        if not isinstance(dsID, DatabaseAtom):
+            try:
+                acqID       = dsID['acqID']
+                channelID   = dsID['channelID']
+                dateID      = dsID['dateID']
+                posID       = dsID['posID']
+                prefix      = dsID['prefix']
+                sliceID     = dsID['sliceID']
+                datasetType = dsID['datasetType']
+            except KeyError as e:
+                print(('There is an error with the dict supplied to get(). '
+                       'The following keys may be incorrect:'))
+                print(e.args)
+                raise
+        else:
+            prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
+                                                                 dsID.getInfo()
+            
+        # Use returnDS to get the key pointing to the dataset
+        returnDS = Dataset(prefix, acqID, datasetType, None,
+                           channelID = channelID, dateID = dateID,
+                           posID = posID, sliceID = sliceID)
+        hdfKey   = self._genKey(returnDS)
+
+        # Ensure that the key exists        
+        try:
+            self._checkKeyExistence(returnDS)
+        except HDF5KeyExists:
+            pass
+        
+        if datasetType == 'locResults':
+            returnDS.data = read_hdf(self._dbName, key = hdfKey)
+        if datasetType == 'locMetadata':
+            returnDS.data = self._getLocMetadata(hdfKey)
+        if datasetType == 'widefieldImage':
+            #TODO: Write test case for this
+            hdfKey = hdfKey + '/widefield_' + channelID
+            returnDS.data = self._getWidefieldImage(hdfKey)
+            
+        return returnDS
+            
     def _getLocMetadata(self, hdfKey):
         """Returns the primary dataset ID's used by bstore.
         
@@ -558,114 +657,7 @@ class HDFDatabase(Database):
             return img
         finally:
             file.close()
-    
-    def _putLocMetadata(self, atom):
-        """Writes localization metadata into the database.
-        
-        Parameters
-        ----------
-        atom   : DatabaseAtom
             
-        """
-        mdFlag = config.__HDF_Metadata_Prefix__
-        
-        assert atom.datasetType == 'locMetadata', \
-            'Error: atom\'s datasetType is not \'locMetadata\''
-        dataset = self._genKey(atom)
-        
-        try:
-            hdf = h5py.File(self._dbName, mode = 'a')
-                
-            # Loop through metadata and write each attribute to the key
-            for currKey in atom.data.keys():
-                attrKey = '{0:s}{1:s}'.format(mdFlag, currKey)
-                attrVal = json.dumps(atom.data[currKey])
-                hdf[dataset].attrs[attrKey] = attrVal
-        except KeyError:
-            # Raised when the hdf5 key does not exist in the database.
-            ids = json.dumps(atom.getInfoDict())
-            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
-                                        'No localization results exist with '
-                                        'these atomic IDs: ' + ids))
-        finally:
-            hdf.close()
-            
-    def _putWidefieldImage(self, atom):
-        """Writes a widefield image into the database.
-        
-        Parameters
-        ----------
-        atom   : DatabaseAtom
-        """
-        assert atom.datasetType == 'widefieldImage', \
-            'Error: atom\'s datasetType is not \'widefieldImage\''
-        dataset = self._genKey(atom) + '/widefield_' + atom.channelID
-        
-        try:
-            hdf = h5py.File(self._dbName, mode = 'a')
-            
-            hdf.create_dataset(dataset,
-                               atom.data.shape,
-                               data = atom.data)
-        finally:
-            hdf.close()
-        
-    def get(self, dsID):
-        """Returns an atomic dataset matching dsID from the database.
-        
-        Parameters
-        ----------
-        dsID       : dict or DatabaseAtom
-            Either key-value pairs uniquely identifying the dataset in
-            the database or a DatabaseAtom with a possibly empty 'data'
-            field that may be used to identify the dataset.
-            
-        Returns
-        -------
-        returnDS : Dataset
-        
-        """
-        if not isinstance(dsID, DatabaseAtom):
-            try:
-                acqID       = dsID['acqID']
-                channelID   = dsID['channelID']
-                dateID      = dsID['dateID']
-                posID       = dsID['posID']
-                prefix      = dsID['prefix']
-                sliceID     = dsID['sliceID']
-                datasetType = dsID['datasetType']
-            except KeyError as e:
-                print(('There is an error with the dict supplied to get(). '
-                       'The following keys may be incorrect:'))
-                print(e.args)
-                raise
-        else:
-            prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
-                                                                 dsID.getInfo()
-            
-        # Use returnDS to get the key pointing to the dataset
-        returnDS = Dataset(prefix, acqID, datasetType, None,
-                           channelID = channelID, dateID = dateID,
-                           posID = posID, sliceID = sliceID)
-        hdfKey   = self._genKey(returnDS)
-
-        # Ensure that the key exists        
-        try:
-            self._checkKeyExistence(returnDS)
-        except HDF5KeyExists:
-            pass
-        
-        if datasetType == 'locResults':
-            returnDS.data = read_hdf(self._dbName, key = hdfKey)
-        if datasetType == 'locMetadata':
-            returnDS.data = self._getLocMetadata(hdfKey)
-        if datasetType == 'widefieldImage':
-            #TODO: Write test case for this
-            hdfKey = hdfKey + '/widefield_' + channelID
-            returnDS.data = self._getWidefieldImage(hdfKey)
-            
-        return returnDS
-        
     def put(self, atom):
         """Writes a single database atom into the database.
         
@@ -724,6 +716,58 @@ class HDFDatabase(Database):
             # TODO: widefield images should also have SMLM ID's attached
             # to their parent groups (not datasets)
             self._putWidefieldImage(atom)
+    
+    def _putLocMetadata(self, atom):
+        """Writes localization metadata into the database.
+        
+        Parameters
+        ----------
+        atom   : DatabaseAtom
+            
+        """
+        mdFlag = config.__HDF_Metadata_Prefix__
+        
+        assert atom.datasetType == 'locMetadata', \
+            'Error: atom\'s datasetType is not \'locMetadata\''
+        dataset = self._genKey(atom)
+        
+        try:
+            hdf = h5py.File(self._dbName, mode = 'a')
+                
+            # Loop through metadata and write each attribute to the key
+            for currKey in atom.data.keys():
+                attrKey = '{0:s}{1:s}'.format(mdFlag, currKey)
+                attrVal = json.dumps(atom.data[currKey])
+                hdf[dataset].attrs[attrKey] = attrVal
+        except KeyError:
+            # Raised when the hdf5 key does not exist in the database.
+            ids = json.dumps(atom.getInfoDict())
+            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
+                                        'No localization results exist with '
+                                        'these atomic IDs: ' + ids))
+        finally:
+            hdf.close()
+            
+    def _putWidefieldImage(self, atom):
+        """Writes a widefield image into the database.
+        
+        Parameters
+        ----------
+        atom   : Dataset
+        
+        """
+        assert atom.datasetType == 'widefieldImage', \
+            'Error: atom\'s datasetType is not \'widefieldImage\''
+        dataset = self._genKey(atom) + '/widefield_' + atom.channelID
+        
+        try:
+            hdf = h5py.File(self._dbName, mode = 'a')
+            
+            hdf.create_dataset(dataset,
+                               atom.data.shape,
+                               data = atom.data)
+        finally:
+            hdf.close()
             
     def query(self, datasetType = 'locResults'):
         """Returns a set of database atoms inside this database.
@@ -761,7 +805,7 @@ class HDFDatabase(Database):
             f.close()
         
         # Read attributes of each key in resultGroups for SMLM_*
-        # and convert them to a datasetAtom ID.
+        # and convert them to a dataset ID.
         # Note: If you use Path and Not PurePosixPath, '/' will
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
