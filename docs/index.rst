@@ -10,8 +10,8 @@ B-Store
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 0 $
-:date: 2016-07-11
+:revision: $Revision: 1 $
+:date: 2016-08-05
  
 .. meta::
    :keywords: faq
@@ -35,12 +35,13 @@ Using B-Store
    faq
    acknowledgments
 
-.. Programming -- add this section later
+Programming
+===========
+* :ref:`modindex`
 
-Indices and tables
-==================
+Misc.
+=====
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 
