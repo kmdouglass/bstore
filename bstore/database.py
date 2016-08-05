@@ -26,105 +26,16 @@ def _checkType(typeString):
 """Metaclasses
 -------------------------------------------------------------------------------
 """
-class DatabaseAtom(metaclass = ABCMeta):
-    """Represents one organizational unit in the database.
-    
-    """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        if acqID is None:
-            raise ValueError('acqID cannot be \'None\'.')
-                
-        if datasetType is None:
-            raise ValueError('datasetType cannot be \'None\'.')
-            
-        # dateID should follow the format YYYY-MM-DD
-        # Note that Python's 'and' short circuits, so the order here
-        # is important. pattern.match(None) will raise a TypeError
-        pattern = re.compile('\d{4}-\d{2}-\d{2}')
-        if dateID and not pattern.match(dateID):
-            raise ValueError(('Error: The date is not of the format '
-                              'YYYY-MM-DD.'))
-
-        _checkType(datasetType)
-            
-        self._acqID       = acqID
-        self._channelID   = channelID
-        self._data        = data
-        self._posID       = posID
-        self._prefix      = prefix
-        self._sliceID     = sliceID
-        self._datasetType = datasetType
-        self._dateID      = dateID
-        
-    def getInfo(self):
-        """Returns the dataset information (without the data) as a tuple.
-        
-        """
-        return self._prefix, self._acqID, self._datasetType, \
-               self._channelID, self._dateID, self._posID, self._sliceID
-               
-    def getInfoDict(self):
-        """Returns the dataset information (without the data) as a dict.
-        
-        """
-        atomicIDs = {'acqID'       : self._acqID,
-                     'channelID'   : self._channelID,
-                     'posID'       : self._posID,
-                     'prefix'      : self._prefix,
-                     'sliceID'     : self._sliceID,
-                     'datasetType' : self._datasetType,
-                     'dateID'      : self._dateID}
-        return atomicIDs
-        
-    @abstractproperty
-    def acqID(self):
-        pass
-    
-    @abstractproperty
-    def channelID(self):
-        pass
-    
-    @abstractproperty
-    def data(self):
-        pass
-    
-    @abstractproperty
-    def dateID(self):
-        pass
-    
-    @abstractproperty
-    def posID(self):
-        pass
-    
-    @abstractproperty
-    def prefix(self):
-        pass
-    
-    @abstractproperty
-    def sliceID(self):
-        pass
-    
-    @abstractproperty
-    def datasetType(self):
-        pass
-    
 class Database(metaclass = ABCMeta):
-    """Represents the database structure.
+    """Metaclass representing the database structure.
     
-    Terminology is meant to mirror Pandas HDFStore API where methods
-    are similar.
+    Parameters
+    ----------
+    dbName : str or Path
+        The name of the database file.
     
     """
     def __init__(self, dbName):
-        """Initialize the database.
-        
-        Parameters
-        ----------
-        dbName : str or Path
-        
-        """
         # Convert Path objects to strings
         if isinstance(dbName, PurePath):
             dbName = str(dbName)
@@ -159,6 +70,131 @@ class Database(metaclass = ABCMeta):
         """
         pass
 
+class DatabaseAtom(metaclass = ABCMeta):
+    """Metaclass representing one organizational unit in the database.
+    
+    Parameters
+    ----------
+    prefix      : str
+        The descriptive name given to the dataset by the user.
+    acqID       : int
+        The number identifying the Multi-D acquisition for a given prefix
+        name.
+    datasetType : str
+        The type of data contained in the dataset. Can be one of
+        'locResults', 'locMetadata', or 'widefieldImage'.
+    data        : mixed
+        The actual microscopy data.
+    channelID   : str
+        The color channel associated with the dataset.
+    dateID      : str
+        The date of the acquistion in the format YYYY-mm-dd.
+    posID       : int, or (int, int)
+        The position identifier. It is a single element tuple if positions
+        were manually set; otherwise, it's a 2-tuple indicating the x and y
+        identifiers.
+    sliceID     : int
+        The number identifying the z-axis slice of the dataset.
+    
+    """
+    def __init__(self, prefix, acqID, datasetType, data,
+                 channelID = None, dateID = None,
+                 posID = None, sliceID = None):
+        if acqID is None:
+            raise ValueError('acqID cannot be \'None\'.')
+                
+        if datasetType is None:
+            raise ValueError('datasetType cannot be \'None\'.')
+            
+        # dateID should follow the format YYYY-MM-DD
+        # Note that Python's 'and' short circuits, so the order here
+        # is important. pattern.match(None) will raise a TypeError
+        pattern = re.compile('\d{4}-\d{2}-\d{2}')
+        if dateID and not pattern.match(dateID):
+            raise ValueError(('Error: The date is not of the format '
+                              'YYYY-MM-DD.'))
+
+        _checkType(datasetType)
+            
+        self._acqID       = acqID
+        self._channelID   = channelID
+        self._data        = data
+        self._posID       = posID
+        self._prefix      = prefix
+        self._sliceID     = sliceID
+        self._datasetType = datasetType
+        self._dateID      = dateID
+        
+    @abstractproperty
+    def acqID(self):
+        pass
+    
+    @abstractproperty
+    def channelID(self):
+        pass
+    
+    @abstractproperty
+    def data(self):
+        pass
+    
+    @abstractproperty
+    def datasetType(self):
+        pass
+    
+    @abstractproperty
+    def dateID(self):
+        pass
+    
+    @abstractproperty
+    def posID(self):
+        pass
+    
+    @abstractproperty
+    def prefix(self):
+        pass
+    
+    @abstractproperty
+    def sliceID(self):
+        pass
+        
+    def getInfo(self):
+        """Returns the dataset information (without the data) as a tuple.
+        
+        Returns
+        -------
+        prefix      : str
+        acqID       : int
+        datasetType : str
+        data        : mixed
+        channelID   : str
+        dateID      : str
+        posID       : int, or (int, int)
+        
+        """
+        return self._prefix, self._acqID, self._datasetType, \
+               self._channelID, self._dateID, self._posID, self._sliceID
+               
+    def getInfoDict(self):
+        """Returns the dataset information (without the data) as a dict.
+        
+        Returns
+        -------
+        dsIDs : dict
+            Key-value pairs representing the datasetIDs.
+        
+        """
+        dsIDs = {'acqID'       : self._acqID,
+                 'channelID'   : self._channelID,
+                 'posID'       : self._posID,
+                 'prefix'      : self._prefix,
+                 'sliceID'     : self._sliceID,
+                 'datasetType' : self._datasetType,
+                 'dateID'      : self._dateID}
+        return dsIDs
+
+"""Concrete classes
+-------------------------------------------------------------------------------
+"""
 class Dataset(DatabaseAtom):
     """A concrete realization of a DatabaseAtom.
     
