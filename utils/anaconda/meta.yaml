@@ -33,6 +33,7 @@ requirements:
     - h5py
     - pandas
     - trackpy
+    - tifffile
 
 test:
   imports:
