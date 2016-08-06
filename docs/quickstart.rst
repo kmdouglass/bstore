@@ -7,7 +7,7 @@ Quick Start
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 0 $
+:revision: Revision: 0
 :date: 2016-07-23
 
 :abstract:
