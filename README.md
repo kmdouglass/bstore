@@ -60,9 +60,9 @@ conda install -c kmdouglass -c soft-matter bstore
 management and analysis library for single molecule localization
 microscopy (SMLM). It serves two primary roles:
 
-1. To organize SMLM data inside a database for fast and easy
+1. To structure SMLM data inside a database for fast and easy
    information retrieval and storage.
-2. To facilitate the analysis of high content SMLM datasets.
+2. To facilitate the analysis of high-throughput SMLM datasets.
 
 As an example, you can see how SMLM data is organized by B-Store
 inside a database in the HDF format below. (The software used to view
