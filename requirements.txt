@@ -8,4 +8,4 @@ matplotlib
 h5py
 tables
 python-dateutil
-tifffile
+tifffile==0.9.0
