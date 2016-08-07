@@ -754,6 +754,7 @@ class HDFDatabase(Database):
         Parameters
         ----------
         atom   : Dataset
+            Dataset containing the widefield image to insert into the database.
         
         """
         assert atom.datasetType == 'widefieldImage', \
@@ -768,6 +769,31 @@ class HDFDatabase(Database):
                                data = atom.data)
         finally:
             hdf.close()
+    
+    @staticmethod            
+    def _putWidefieldImageWithTiffTags(writeImageData):
+        """Decorator for writing widefield metadata in addition to image data.
+        
+        Parameters
+        ----------
+        writeImageData        : function       
+            Used to write image data into the database.
+            
+        Returns
+        -------
+        writeImageDataAndTags : function
+            Bound function for writing image data and Tiff tags.
+            
+        """
+        def writeImageDataAndTags(self, tif):
+            """Separates image data from Tiff tags and writes them separately.
+            
+            """
+            writeImageData(self, tif.imgData)
+            
+            # TODO: code to write tags goes here
+            
+        return writeImageDataAndTags
             
     def query(self, datasetType = 'locResults'):
         """Returns a set of database atoms inside this database.
