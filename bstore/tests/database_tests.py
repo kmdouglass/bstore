@@ -560,6 +560,28 @@ def test_HDF_Database_Put_WidefieldImage():
     with h5py.File(myDB._dbName, mode = 'r') as dbFile:
         ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
         
+def test_HDF_Database_Get_WidefieldImage():
+    """A widefield image is properly retrieved from the database.
+    
+    """
+     # Load the database
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+    
+    # Create a dict of IDs for retrieving the dataset     
+    myDSID   = {
+                'acqID'       : 1,
+                'channelID'   : 'A647',
+                'dateID'      : None,
+                'posID'       : (0,),
+                'prefix'      : 'Cos7',
+                'sliceID'     : None,
+                'datasetType' : 'widefieldImage'
+                }
+    
+    img = myDB.get(myDSID)
+    assert_equal(img.data.shape, (512, 512))
+        
 def test_HDF_Database_Put_WidefieldImage_TiffFile():
     """Insertion of widefield image data works when parsed as a TiffFile.
     

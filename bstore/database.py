@@ -27,16 +27,16 @@ def _checkType(typeString):
 """Decorators
 -------------------------------------------------------------------------------
 """          
-def putWidefieldImageWithTiffTags(writeImageData):
-    """Decorator for writing widefield metadata in addition to image data.
+def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
+    """Decorator for writing OME-XML and Micro-Manager metadata + image data.
     
     This effectively serves as a patch to the original code (versions <= 0.1.1)
     where widefieldImages were represented merely as NumPy arrays. No image
     metadata was included in these versions.
     
     This decorator allows the Database to work with both NumPy arrays and
-    TiffFile objects, the latter of which holds Tiff metadata as well as image
-    data. It wraps Database._putWidefieldImage().
+    TiffFile objects, the latter of which holds the Tiff metadata as well as
+    image data. It wraps Database._putWidefieldImage().
     
     Parameters
     ----------
@@ -48,7 +48,12 @@ def putWidefieldImageWithTiffTags(writeImageData):
     writeImageDataAndTags : function
         Bound function for writing image data and Tiff tags.
         
+    References
+    ----------
+    1. https://pypi.python.org/pypi/tifffile
+       
     """
+    # TODO: Write unit tests for writing metadata (after line 611 in test file)
     def writeImageDataAndTags(self, atom):
         """Separates image data from Tiff tags and writes them separately.
         
@@ -66,18 +71,29 @@ def putWidefieldImageWithTiffTags(writeImageData):
             tags = dict(atom.data.pages[0].tags.items())
 
             # Start by writing just the OME-XML
-            keyName = self._genKey(atom) + '/OME-XML'
-            try:
-                hdf = h5py.File(self._dbName, mode = 'a')
+            with h5py.File(self._dbName, mode = 'a') as hdf:
+                dt      = h5py.special_dtype(vlen=str)
+                # Note: omexml data is a byte string; the text is UTF-8 encoded
+                # See http://docs.h5py.org/en/latest/strings.html for more info
+                if 'image_description' in tags:
+                    keyName = self._genKey(atom) + '/OME-XML'
+                    omexml  = tags['image_description'].value
                 
-                omexml = tags['image_description'].value
-                #omexml = omexml.decode('utf-8', 'strict')
+                    hdf.create_dataset(keyName, (1,), dtype = dt, data = omexml)
                 
-                #print(omexml)
-                dt = h5py.special_dtype(vlen=str)
-                hdf.create_dataset(keyName, (1,), dtype = dt, data = omexml)
-            finally:
-                hdf.close()
+                # Micro-Manager device states metadata is a JSON string
+                if 'micromanager_metadata' in tags:
+                    keyName = self._genKey(atom) + '/MM_Metadata'
+                    mmmd    = json.dumps(tags['micromanager_metadata'].value)
+                    
+                    hdf.create_dataset(keyName, (1,), dtype = dt, data = mmmd)
+                
+                # Micro-Manager summary metadata in JSON string
+                if atom.data.is_micromanager:
+                    keyName = self._genKey(atom) + '/MM_Summary_Metadata'
+                    mmsmd   = json.dumps(atom.data.micromanager_metadata)
+                
+                    hdf.create_dataset(keyName, (1,), dtype = dt, data = mmsmd)
             
             # Convert atom.data to a NumPy array before writing image data
             atom.data = atom.data.asarray()
@@ -648,8 +664,7 @@ class HDFDatabase(Database):
         if datasetType == 'locMetadata':
             returnDS.data = self._getLocMetadata(hdfKey)
         if datasetType == 'widefieldImage':
-            #TODO: Write test case for this
-            hdfKey = hdfKey + '/widefield_' + channelID
+            hdfKey = hdfKey + '/image_data'
             returnDS.data = self._getWidefieldImage(hdfKey)
             
         return returnDS
@@ -809,7 +824,7 @@ class HDFDatabase(Database):
         finally:
             hdf.close()
     
-    @putWidefieldImageWithTiffTags        
+    @putWidefieldImageWithMicroscopyTiffTags        
     def _putWidefieldImage(self, atom):
         """Writes a widefield image into the database.
         
