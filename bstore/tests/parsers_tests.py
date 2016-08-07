@@ -17,6 +17,7 @@ from nose.tools import *
 from bstore  import parsers, database
 from bstore  import config
 from pathlib import Path
+from tifffile import TiffFile
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -395,6 +396,22 @@ def test_MMParser_Widefield_Data():
     ds = mmParser.getDatabaseAtom()    
     
     assert_equal(ds.data.shape, (512, 512))
+    
+def test_MMParser_TiffFile():
+    """MMParser loads an image as a TiffFile, not as a numpy array.
+    
+    """
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile   = testDataRoot / Path('parsers_test_files') \
+                               / Path('Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    
+    mmParser = parsers.MMParser(readTiffTags = True)
+    mmParser.parseFilename(inputFile, datasetType)
+    ds = mmParser.getDatabaseAtom()
+    
+    ok_(isinstance(ds.data, TiffFile))
+    assert_equal(ds.data.asarray().shape, (512, 512))
     
 def test_FormatMap():
     """FormatMap provides a basic two-way hash table.

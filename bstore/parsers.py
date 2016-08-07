@@ -11,6 +11,7 @@ import pandas as pd
 from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
 from os.path import splitext
+from tifffile import TiffFile
 import sys
 
 """Metaclasses
@@ -193,6 +194,13 @@ class MMParser(Parser):
     dataGetter : func
         The function defining how to read the various datasetTypes. Should be
         similar to _getDataDefault().
+    readTiffTags : bool
+        Determines whether Tiff tags are read in addition to the image data.
+        This may cause problems if set to true and the image is not a Tiff
+        whose format is supported by tifffile.
+        
+    References
+    # TODO: Add website URL for tifffile
     
     Attributes
     ----------
@@ -200,6 +208,10 @@ class MMParser(Parser):
         All of the channel identifiers that the MMParser recognizes.
     dataGetter          : func
         Optional function for customized reading of data.
+    readTiffTags        : bool
+        Determines whether Tiff tags are read in addition to the image data.
+        This may cause problems if set to true and the image is not a Tiff
+        whose format is supported by tifffile.
     uninitialized       : bool
         Indicates whether the Parser currently possesses parsed information.
     widefieldIdentifier : str
@@ -214,9 +226,11 @@ class MMParser(Parser):
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']
     
-    def __init__(self, dataGetter = None):
+    def __init__(self, dataGetter = None, readTiffTags = False):
         # Start uninitialized because parseFilename has not yet been called
         self.uninitialized = True
+        
+        self.readTiffTags  = readTiffTags
         
         # Allows for customized reading of datasets, such as converting
         # DataFrame column names or for reading non-csv files.
@@ -325,8 +339,12 @@ class MMParser(Parser):
             
         elif self.datasetType == 'widefieldImage':
             # Load the image data only when called
-            img = imread(str(self._fullPath))
-            return img
+            if self.readTiffTags:
+                with TiffFile(str(self._fullPath)) as tif:
+                    return tif
+            else:
+                img = imread(str(self._fullPath))
+                return img
     
     def parseFilename(self, filename, datasetType = 'locResults'):
         """Parse the filename to extract the acquisition information.
