@@ -805,3 +805,47 @@ def test_HDF_Database_GenAtomicID():
     assert_equal(id3.prefix,            'HeLa')
     assert_equal(id3.sliceID,                5)
     assert_equal(id3.datasetType, 'locResults')
+    
+def test_HDF_Database_Query_LocResults():
+    """query() finds the correct locResults datasets in a HDF file.
+    
+    """
+    dbName = testDataRoot / Path('test_experiment/test_experiment_db.h5')
+    myDB   = database.HDFDatabase(dbName)
+    
+    locResults = myDB.query(datasetType = 'locResults')
+    assert_equal(locResults[0].prefix, 'HeLaL_Control')
+    assert_equal(locResults[0].acqID,                1)
+    assert_equal(locResults[0].channelID,       'A647')
+    assert_equal(locResults[0].dateID,            None)
+    assert_equal(locResults[0].posID,             (0,))
+    assert_equal(locResults[0].sliceID,           None)
+    
+    assert_equal(locResults[1].prefix, 'HeLaS_Control')
+    assert_equal(locResults[1].acqID,                2)
+    assert_equal(locResults[1].channelID,       'A647')
+    assert_equal(locResults[1].dateID,            None)
+    assert_equal(locResults[1].posID,             (0,))
+    assert_equal(locResults[1].sliceID,           None)
+    
+def test_HDF_Database_Query_WidefieldImage():
+    """query() finds the correct widefieldImage datasets in a HDF file.
+    
+    """
+    dbName = testDataRoot / Path('test_experiment/test_experiment_db.h5')
+    myDB   = database.HDFDatabase(dbName)
+    
+    widefieldImage = myDB.query(datasetType = 'widefieldImage')
+    assert_equal(widefieldImage[0].prefix, 'HeLaL_Control')
+    assert_equal(widefieldImage[0].acqID,                1)
+    assert_equal(widefieldImage[0].channelID,       'A647')
+    assert_equal(widefieldImage[0].dateID,            None)
+    assert_equal(widefieldImage[0].posID,             (0,))
+    assert_equal(widefieldImage[0].sliceID,           None)
+    
+    assert_equal(widefieldImage[1].prefix, 'HeLaS_Control')
+    assert_equal(widefieldImage[1].acqID,                2)
+    assert_equal(widefieldImage[1].channelID,       'A647')
+    assert_equal(widefieldImage[1].dateID,            None)
+    assert_equal(widefieldImage[1].posID,             (0,))
+    assert_equal(widefieldImage[1].sliceID,           None)

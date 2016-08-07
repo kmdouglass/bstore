@@ -666,6 +666,7 @@ class HDFDatabase(Database):
         if datasetType == 'widefieldImage':
             hdfKey = hdfKey + '/image_data'
             returnDS.data = self._getWidefieldImage(hdfKey)
+            # TODO: Read metadata entries back into a TiffFile object
             
         return returnDS
             
@@ -739,8 +740,7 @@ class HDFDatabase(Database):
         self._checkKeyExistence(atom)
         key = self._genKey(atom)
         
-        # The put routine varies with atom's dataset type
-        # TODO: Check the input DataFrame's columns for compatibility.
+        # The put routine varies with atom's dataset type.
         if atom.datasetType == 'locResults':
             try:
                 hdf = HDFStore(self._dbName)
@@ -834,8 +834,7 @@ class HDFDatabase(Database):
         searchString = datasetType
         
         # Open the hdf file
-        f = h5py.File(self._dbName, 'r')
-        try:
+        with h5py.File(self._dbName, 'r') as f:
             # Extract all localization datasets from the HDF5 file by matching
             # each group to the search string.
             # ('table' not in name) excludes the subgroup inside every
@@ -843,11 +842,11 @@ class HDFDatabase(Database):
             resultGroups = []
             def find_locs(name):
                 """Finds localization files matching the name pattern."""
-                if (searchString in name) and ('table' not in name):
+                # Only look in the last element of the dataset address;
+                # This avoids double counting datasets in subgroups.
+                if (searchString in name.split('/')[-1]):
                     resultGroups.append(name)
             f.visit(find_locs)
-        finally:
-            f.close()
         
         # Read attributes of each key in resultGroups for SMLM_*
         # and convert them to a dataset ID.

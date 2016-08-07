@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file.
   channelID, which made little sense, especially if the channelID was
   not specified.
 
+### Fixed
+- Database.query() no longer returns widefieldImage datasets twice.
+
 ## [v0.1.1]
 ### Added
 - docs folder
