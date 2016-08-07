@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- OME-XML and Micro-Manager metadata is now recorded in the same HDF
+  group as the image data for widefieldImage dataset types.
+
 ### Changed
 - Reformatted docstrings to better match the
   [NumPy format](https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#documenting-classes).
