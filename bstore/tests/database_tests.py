@@ -565,7 +565,7 @@ def test_HDF_Database_Put_WidefieldImage_TiffFile():
     
     """
     # Remake the database
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
     if dbName.exists():
         remove(str(dbName))
     myDB     = database.HDFDatabase(dbName)    

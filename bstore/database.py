@@ -30,6 +30,14 @@ def _checkType(typeString):
 def putWidefieldImageWithTiffTags(writeImageData):
     """Decorator for writing widefield metadata in addition to image data.
     
+    This effectively serves as a patch to the original code (versions <= 0.1.1)
+    where widefieldImages were represented merely as NumPy arrays. No image
+    metadata was included in these versions.
+    
+    This decorator allows the Database to work with both NumPy arrays and
+    TiffFile objects, the latter of which holds Tiff metadata as well as image
+    data. It wraps Database._putWidefieldImage().
+    
     Parameters
     ----------
     writeImageData        : function       
@@ -44,14 +52,36 @@ def putWidefieldImageWithTiffTags(writeImageData):
     def writeImageDataAndTags(self, atom):
         """Separates image data from Tiff tags and writes them separately.
         
+        Parameters
+        ----------
+        atom : DatabaseAtom
+            The atom (or Dataset) to write into the database. If it's a
+            TiffFile, the image metadata will be saved as well.
+        
         """
         if isinstance(atom.data, TiffFile):
             # Write the TiffFile metadata to the HDF file; otherwise do nothing
-            # Convert atom.data to a NumPy array
+            # First, get the Tiff tags; pages[0] assumes there is only one
+            # image in the Tiff file.
+            tags = dict(atom.data.pages[0].tags.items())
+
+            # Start by writing just the OME-XML
+            keyName = self._genKey(atom) + '/OME-XML'
+            try:
+                hdf = h5py.File(self._dbName, mode = 'a')
+                
+                omexml = tags['image_description'].value
+                #omexml = omexml.decode('utf-8', 'strict')
+                
+                #print(omexml)
+                dt = h5py.special_dtype(vlen=str)
+                hdf.create_dataset(keyName, (1,), dtype = dt, data = omexml)
+            finally:
+                hdf.close()
+            
+            # Convert atom.data to a NumPy array before writing image data
             atom.data = atom.data.asarray()
             
-            # TODO: Write metadata
-        
         writeImageData(self, atom)
         
     return writeImageDataAndTags
