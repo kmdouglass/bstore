@@ -196,11 +196,12 @@ class MMParser(Parser):
         similar to _getDataDefault().
     readTiffTags : bool
         Determines whether Tiff tags are read in addition to the image data.
-        This may cause problems if set to true and the image is not a Tiff
+        This may cause problems if set to true and the image is not a Tiff file
         whose format is supported by tifffile.
         
     References
-    # TODO: Add website URL for tifffile
+    ----------
+    1. https://pypi.python.org/pypi/tifffile
     
     Attributes
     ----------
@@ -343,6 +344,7 @@ class MMParser(Parser):
                 with TiffFile(str(self._fullPath)) as tif:
                     return tif
             else:
+                # Read image data as a NumPy array
                 img = imread(str(self._fullPath))
                 return img
     

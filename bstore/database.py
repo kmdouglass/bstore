@@ -671,8 +671,6 @@ class HDFDatabase(Database):
         
         # The put routine varies with atom's dataset type
         # TODO: Check the input DataFrame's columns for compatibility.
-        # TODO: Write test case for key collision when overwriting a widefield
-        # image
         if atom.datasetType == 'locResults':
             try:
                 hdf = HDFStore(self._dbName)
@@ -759,7 +757,7 @@ class HDFDatabase(Database):
         """
         assert atom.datasetType == 'widefieldImage', \
             'Error: atom\'s datasetType is not \'widefieldImage\''
-        dataset = self._genKey(atom) + '/widefield_' + atom.channelID
+        dataset = self._genKey(atom) + '/image_data'
         
         try:
             hdf = h5py.File(self._dbName, mode = 'a')
@@ -789,7 +787,7 @@ class HDFDatabase(Database):
             """Separates image data from Tiff tags and writes them separately.
             
             """
-            writeImageData(self, tif.imgData)
+            writeImageData(self, tif.asarray)
             
             # TODO: code to write tags goes here
             

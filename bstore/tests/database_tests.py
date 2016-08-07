@@ -556,9 +556,30 @@ def test_HDF_Database_Put_WidefieldImage():
     myDB.put(mmParser.getDatabaseAtom())
     
     # Check that the data was put correctly
-    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/widefield_A647'
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/image_data'
     with h5py.File(myDB._dbName, mode = 'r') as dbFile:
         ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
+        
+def test_HDF_Database_Put_WidefieldImage_TiffFile():
+    """Insertion of widefield image data works when parsed as a TiffFile.
+    
+    """
+    # Remake the database
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB     = database.HDFDatabase(dbName)    
+    
+    # Load the widefield image and convert it to an atom
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    mmParser = parsers.MMParser(readTiffTags = True)
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Put the widefield image into the database
+    myDB.put(mmParser.getDatabaseAtom())
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():
@@ -614,6 +635,28 @@ def test_HDF_Database_Check_Key_Existence_LocMetadata():
     
     # Should raise error because metadata exists already
     myDB.put(dsMeta)
+
+@raises(database.HDF5KeyExists)    
+def test_HDF_Database_Check_Key_Existence_WidefieldImage():
+    """An error is raised if using a key that already exists for widefieldImage
+    
+    """
+    # Load the database
+    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    myDB     = database.HDFDatabase(dbName)
+    
+    # Load the widefield image and convert it to an atom
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    myDB.put(mmParser.getDatabaseAtom())
+    
+    # Should raise an error because the dataset is inserted twice.
+    myDB.put(mmParser.getDatabaseAtom())
 
 def test_HDF_Database_Build():
     """The database build is performed successfully.
