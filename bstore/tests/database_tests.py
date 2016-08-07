@@ -575,11 +575,18 @@ def test_HDF_Database_Put_WidefieldImage_TiffFile():
     inputFile = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') / Path(f)
     datasetType = 'widefieldImage'
+    
+    # Set the parser to read TiffTags
     mmParser = parsers.MMParser(readTiffTags = True)
     mmParser.parseFilename(inputFile, datasetType)
     
     # Put the widefield image into the database
     myDB.put(mmParser.getDatabaseAtom())
+    
+    # Check that the data was put correctly
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/image_data'
+    with h5py.File(myDB._dbName, mode = 'r') as dbFile:
+        ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():

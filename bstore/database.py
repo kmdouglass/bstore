@@ -13,6 +13,7 @@ import pprint
 import re
 import pandas as pd
 from dateutil.parser import parse
+from tifffile import TiffFile
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -22,6 +23,38 @@ def _checkType(typeString):
     if typeString not in typesOfAtoms:
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
                                                                    typeString))
+
+"""Decorators
+-------------------------------------------------------------------------------
+"""          
+def putWidefieldImageWithTiffTags(writeImageData):
+    """Decorator for writing widefield metadata in addition to image data.
+    
+    Parameters
+    ----------
+    writeImageData        : function       
+        Used to write image data into the database.
+        
+    Returns
+    -------
+    writeImageDataAndTags : function
+        Bound function for writing image data and Tiff tags.
+        
+    """
+    def writeImageDataAndTags(self, atom):
+        """Separates image data from Tiff tags and writes them separately.
+        
+        """
+        if isinstance(atom.data, TiffFile):
+            # Write the TiffFile metadata to the HDF file; otherwise do nothing
+            # Convert atom.data to a NumPy array
+            atom.data = atom.data.asarray()
+            
+            # TODO: Write metadata
+        
+        writeImageData(self, atom)
+        
+    return writeImageDataAndTags
 
 """Metaclasses
 -------------------------------------------------------------------------------
@@ -745,7 +778,8 @@ class HDFDatabase(Database):
                                         'these atomic IDs: ' + ids))
         finally:
             hdf.close()
-            
+    
+    @putWidefieldImageWithTiffTags        
     def _putWidefieldImage(self, atom):
         """Writes a widefield image into the database.
         
@@ -767,31 +801,6 @@ class HDFDatabase(Database):
                                data = atom.data)
         finally:
             hdf.close()
-    
-    @staticmethod            
-    def _putWidefieldImageWithTiffTags(writeImageData):
-        """Decorator for writing widefield metadata in addition to image data.
-        
-        Parameters
-        ----------
-        writeImageData        : function       
-            Used to write image data into the database.
-            
-        Returns
-        -------
-        writeImageDataAndTags : function
-            Bound function for writing image data and Tiff tags.
-            
-        """
-        def writeImageDataAndTags(self, tif):
-            """Separates image data from Tiff tags and writes them separately.
-            
-            """
-            writeImageData(self, tif.asarray)
-            
-            # TODO: code to write tags goes here
-            
-        return writeImageDataAndTags
             
     def query(self, datasetType = 'locResults'):
         """Returns a set of database atoms inside this database.
