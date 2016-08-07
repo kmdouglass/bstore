@@ -53,7 +53,6 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
     1. https://pypi.python.org/pypi/tifffile
        
     """
-    # TODO: Write unit tests for writing metadata (after line 611 in test file)
     def writeImageDataAndTags(self, atom):
         """Separates image data from Tiff tags and writes them separately.
         
@@ -73,6 +72,7 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             # Start by writing just the OME-XML
             with h5py.File(self._dbName, mode = 'a') as hdf:
                 dt      = h5py.special_dtype(vlen=str)
+                
                 # Note: omexml data is a byte string; the text is UTF-8 encoded
                 # See http://docs.h5py.org/en/latest/strings.html for more info
                 if 'image_description' in tags:
@@ -670,7 +670,7 @@ class HDFDatabase(Database):
         return returnDS
             
     def _getLocMetadata(self, hdfKey):
-        """Returns the primary dataset ID's used by bstore.
+        """Returns the metadata associated with a localization dataset.
         
         Parameters
         ----------
@@ -683,9 +683,8 @@ class HDFDatabase(Database):
             Metadata as key value pairs. All values are strings compatible
             with Python's JSON's dump.
         """
-        try:
+        with h5py.File(self._dbName, mode = 'r') as hdf:
             # Open the HDF file and get the dataset's attributes
-            hdf      = h5py.File(self._dbName, mode = 'r')
             attrKeys = hdf[hdfKey].attrs.keys()
             attrID   = config.__HDF_Metadata_Prefix__
             md = {}            
@@ -699,20 +698,13 @@ class HDFDatabase(Database):
                     # Filter out attributes irrelevant to the database.
                     # Also remove the database's attribute flag.
                     if currAttr[:len(attrID)] == attrID:
-                        print(currAttr)
-                        sys.stdout.flush()
                         md[currAttr[len(attrID):]] = \
                                         json.loads(hdf[hdfKey].attrs[currAttr])
                 except IOError:
                     # Ignore attirbutes that are empty.
                     # See above comment.
                     pass
-                        
-            # TODO: Check that SMLM Metadata matches key.
-                        
-        finally:
-            hdf.close()
-            
+                
         return md
         
     def _getWidefieldImage(self, hdfKey):
@@ -760,38 +752,13 @@ class HDFDatabase(Database):
                 hdf.close()
                 
             # Write the attributes to the dataset;
-            # h5py can't convert None values natively
-            # Reopening the file just to write attributes is awkward;
-            # Can attributes be written through the HDFStore interface?
-            try:
-                atomPrefix = self.atomPrefix
-                hdf        = h5py.File(self._dbName, mode = 'a')
-                
-                hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
-                hdf[key].attrs[atomPrefix + 'channelID']   = \
-                    'None' if atom.channelID is None else atom.channelID
-                hdf[key].attrs[atomPrefix + 'dateID']      = \
-                    'None' if atom.dateID is None else atom.dateID
-                hdf[key].attrs[atomPrefix + 'posID']       = \
-                    'None' if atom.posID is None else atom.posID
-                hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
-                hdf[key].attrs[atomPrefix + 'sliceID']     = \
-                    'None' if atom.sliceID is None else atom.sliceID
-                hdf[key].attrs[atomPrefix + 'datasetType'] = atom.datasetType
-                
-                # Current version of this software
-                hdf[key].attrs[atomPrefix +'Version'] = \
-                                                   config.__bstore_Version__
-            except:
-                print("Unexpected error in put():", sys.exc_info()[0])
-            finally:
-                hdf.close()
+            self._writeDatasetIDs(atom)
+
         elif atom.datasetType == 'locMetadata':
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
-            # TODO: widefield images should also have SMLM ID's attached
-            # to their parent groups (not datasets)
             self._putWidefieldImage(atom)
+            self._writeDatasetIDs(atom)
     
     def _putLocMetadata(self, atom):
         """Writes localization metadata into the database.
@@ -921,6 +888,33 @@ class HDFDatabase(Database):
             return df
         else:
             return None
+    
+    def _writeDatasetIDs(self, atom):
+        """Writes B-Store dataset IDs as attributes of the dataset.
+        
+        Parameters
+        ----------
+        atom : Dataset
+        
+        """
+        key        = self._genKey(atom)
+        atomPrefix = self.atomPrefix
+        with  h5py.File(self._dbName, mode = 'a') as hdf:
+            hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
+            hdf[key].attrs[atomPrefix + 'channelID']   = \
+                'None' if atom.channelID is None else atom.channelID
+            hdf[key].attrs[atomPrefix + 'dateID']      = \
+                'None' if atom.dateID is None else atom.dateID
+            hdf[key].attrs[atomPrefix + 'posID']       = \
+                'None' if atom.posID is None else atom.posID
+            hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
+            hdf[key].attrs[atomPrefix + 'sliceID']     = \
+                'None' if atom.sliceID is None else atom.sliceID
+            hdf[key].attrs[atomPrefix + 'datasetType'] = atom.datasetType
+            
+            # Current version of this software
+            hdf[key].attrs[atomPrefix +'Version'] = \
+                                               config.__bstore_Version__
             
 """Exceptions
 -------------------------------------------------------------------------------

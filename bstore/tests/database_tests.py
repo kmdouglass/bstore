@@ -606,9 +606,61 @@ def test_HDF_Database_Put_WidefieldImage_TiffFile():
     myDB.put(mmParser.getDatabaseAtom())
     
     # Check that the data was put correctly
-    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/image_data'
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0'
     with h5py.File(myDB._dbName, mode = 'r') as dbFile:
-        ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
+        ok_(saveKey + '/image_data' in dbFile,
+            'Error: Could not find widefield image key.')
+            
+        # Check that metadata was correctly inserted
+        ok_(saveKey + '/OME-XML' in dbFile,
+            'Error: Could not find OME-XML metadata.')
+        ok_(saveKey + '/MM_Metadata' in dbFile,
+            'Error: Could not find Micro-Manager metadata.')
+        ok_(saveKey + '/MM_Summary_Metadata' in dbFile,
+            'Error: Could not find Micro-Manager summary metadata.')
+            
+def test_HDF_Database_WidefieldImage_DatasetID_Attributes():
+    """Dataset IDs are written as attributes of the widefieldImage dataset.
+    
+    """
+    # Remake the database
+    dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB     = database.HDFDatabase(dbName)    
+    
+    # Load the widefield image and convert it to an atom
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    
+    # Set the parser to read TiffTags
+    mmParser = parsers.MMParser(readTiffTags = True)
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Put the widefield image into the database
+    myDB.put(mmParser.getDatabaseAtom())
+    
+    # Check that the dataset IDs were put correctly
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0'
+    with h5py.File(myDB._dbName, mode = 'r') as dbFile:
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_prefix'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_acqID'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_datasetType'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_channelID'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_dateID'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_posID'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_sliceID'))
+        ok_(dbFile[saveKey].attrs.__contains__('SMLM_Version'))
+        
+        assert_equal(dbFile[saveKey].attrs['SMLM_prefix'], 'Cos7')
+        assert_equal(dbFile[saveKey].attrs['SMLM_acqID'], 1)
+        assert_equal(dbFile[saveKey].attrs['SMLM_datasetType'],'widefieldImage')
+        assert_equal(dbFile[saveKey].attrs['SMLM_channelID'], 'A647')
+        assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
+        assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
+        assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():

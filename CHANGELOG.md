@@ -3,8 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- OME-XML and Micro-Manager metadata is now recorded in the same HDF
+- OME-XML and Micro-Manager metadata are now recorded in the same HDF
   group as the image data for widefieldImage dataset types.
+- B-Store dataset IDs are now saved as attributes of the
+  widefieldImage groups in the HDF file.
 
 ### Changed
 - Reformatted docstrings to better match the
