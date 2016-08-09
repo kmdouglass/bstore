@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
   inside HDF files. Previously, it was saved as `widefield_` plus the
   channelID, which made little sense, especially if the channelID was
   not specified.
+- Database queries now work by reading B-Store HDF attributes instead
+  of HDF5 group/dataset names.
 
 ### Fixed
 - Database.query() no longer returns widefieldImage datasets twice.

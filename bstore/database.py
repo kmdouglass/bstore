@@ -501,6 +501,9 @@ class HDFDatabase(Database):
     def _genAtomicID(self, key):
         """Generates an atomic ID from a HDF key. The inverse of _genKey.
         
+        Note that the data property is set to 'None.' Only the IDs are
+        retrieved.
+        
         Parameters
         ----------
         key : str
@@ -768,7 +771,8 @@ class HDFDatabase(Database):
         atom   : DatabaseAtom
             
         """
-        mdFlag = config.__HDF_Metadata_Prefix__
+        attrFlag = config.__HDF_AtomID_Prefix__
+        mdFlag   = config.__HDF_Metadata_Prefix__
         
         assert atom.datasetType == 'locMetadata', \
             'Error: atom\'s datasetType is not \'locMetadata\''
@@ -782,6 +786,12 @@ class HDFDatabase(Database):
                 attrKey = '{0:s}{1:s}'.format(mdFlag, currKey)
                 attrVal = json.dumps(atom.data[currKey])
                 hdf[dataset].attrs[attrKey] = attrVal
+                
+            # Used for identification during database queries
+            attrKey = ('{0:s}{1:s}datasetType').format(mdFlag, attrFlag)
+            attrVal = json.dumps('locMetadata')
+            hdf[dataset].attrs[attrKey] = attrVal
+            
         except KeyError:
             # Raised when the hdf5 key does not exist in the database.
             ids = json.dumps(atom.getInfoDict())
@@ -828,10 +838,10 @@ class HDFDatabase(Database):
             All of the atomic ids matching the datasetType
         
         """
-        _checkType(datasetType)
-        assert 'Metadata' not in datasetType, \
-            'Error: Queries cannot be made on metadata.'        
+        _checkType(datasetType)       
         searchString = datasetType
+        ap           = config.__HDF_AtomID_Prefix__
+        mp           = config.__HDF_Metadata_Prefix__
         
         # Open the hdf file
         with h5py.File(self._dbName, 'r') as f:
@@ -843,12 +853,18 @@ class HDFDatabase(Database):
             def find_locs(name):
                 """Finds localization files matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
-                if ('SMLM_datasetType' in f[name].attrs) \
-                       and (f[name].attrs['SMLM_datasetType'] == searchString):
-                    resultGroups.append(name)
+                if (ap + 'datasetType' in f[name].attrs) \
+                       and (f[name].attrs[ap + 'datasetType'] == searchString):
+                               resultGroups.append(name)
+                               
+                # locMetadata is not explicitly saved as a dataset,
+                # so handle this case here
+                if (searchString == 'locMetadata') \
+                    and (ap + 'datasetType' in f[name].attrs) \
+                    and (f[name].attrs[ap + 'datasetType'] == 'locResults') \
+                    and (mp + ap + 'datasetType') in f[name].attrs:
+                        resultGroups.append(name)
                 
-                if 'SMLM_datasetType' in f[name].attrs:
-                    print(f[name].attrs['SMLM_datasetType'])
             f.visit(find_locs)
         
         # Read attributes of each key in resultGroups for SMLM_*
@@ -857,6 +873,17 @@ class HDFDatabase(Database):
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
         atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
+        
+        # Convert datasetType for locMetadata special case
+        if searchString == 'locMetadata':
+            for (index, atom) in enumerate(atomicIDs):
+                # Can't set atom attributes directly, so make new ones
+                ids = atom.getInfoDict()
+                ids['datasetType'] = 'locMetadata'
+                atomicIDs[index] = Dataset(ids['prefix'], ids['acqID'],
+                                           'locMetadata', None,
+                                           ids['channelID'], ids['dateID'],
+                                           ids['posID'], ids['sliceID'])
         
         return atomicIDs
         

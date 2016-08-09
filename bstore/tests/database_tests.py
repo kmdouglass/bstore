@@ -20,6 +20,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
+import sys
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -508,6 +509,9 @@ def test_HDF_Database_Get_LocMetadata():
                                                                  "XY": [0, 0]},
                                          "GridColumnIndex": 0})
     
+    # Check the metadata ID tag
+    assert_equal(md.data['SMLM_datasetType'], 'locMetadata')
+    
 @raises(database.LocResultsDoNotExist)
 def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     """locMetadata atom cannot be put if localization data doesn't exist.
@@ -813,20 +817,22 @@ def test_HDF_Database_Query_LocResults():
     dbName = testDataRoot / Path('test_experiment/test_experiment_db.h5')
     myDB   = database.HDFDatabase(dbName)
     
-    locResults = myDB.query(datasetType = 'locResults')
-    assert_equal(locResults[0].prefix, 'HeLaL_Control')
-    assert_equal(locResults[0].acqID,                1)
-    assert_equal(locResults[0].channelID,       'A647')
-    assert_equal(locResults[0].dateID,            None)
-    assert_equal(locResults[0].posID,             (0,))
-    assert_equal(locResults[0].sliceID,           None)
+    locResults = myDB.query(datasetType =   'locResults')
+    assert_equal(locResults[0].prefix,   'HeLaL_Control')
+    assert_equal(locResults[0].acqID,                  1)
+    assert_equal(locResults[0].datasetType, 'locResults')
+    assert_equal(locResults[0].channelID,         'A647')
+    assert_equal(locResults[0].dateID,              None)
+    assert_equal(locResults[0].posID,               (0,))
+    assert_equal(locResults[0].sliceID,             None)
     
-    assert_equal(locResults[1].prefix, 'HeLaS_Control')
-    assert_equal(locResults[1].acqID,                2)
-    assert_equal(locResults[1].channelID,       'A647')
-    assert_equal(locResults[1].dateID,            None)
-    assert_equal(locResults[1].posID,             (0,))
-    assert_equal(locResults[1].sliceID,           None)
+    assert_equal(locResults[1].prefix,   'HeLaS_Control')
+    assert_equal(locResults[1].acqID,                  2)
+    assert_equal(locResults[1].datasetType, 'locResults')
+    assert_equal(locResults[1].channelID,         'A647')
+    assert_equal(locResults[1].dateID,              None)
+    assert_equal(locResults[1].posID,               (0,))
+    assert_equal(locResults[1].sliceID,             None)
     
 def test_HDF_Database_Query_WidefieldImage():
     """query() finds the correct widefieldImage datasets in a HDF file.
@@ -836,16 +842,44 @@ def test_HDF_Database_Query_WidefieldImage():
     myDB   = database.HDFDatabase(dbName)
     
     widefieldImage = myDB.query(datasetType = 'widefieldImage')
-    assert_equal(widefieldImage[0].prefix, 'HeLaL_Control')
-    assert_equal(widefieldImage[0].acqID,                1)
-    assert_equal(widefieldImage[0].channelID,       'A647')
-    assert_equal(widefieldImage[0].dateID,            None)
-    assert_equal(widefieldImage[0].posID,             (0,))
-    assert_equal(widefieldImage[0].sliceID,           None)
+    assert_equal(widefieldImage[0].prefix,       'HeLaL_Control')
+    assert_equal(widefieldImage[0].acqID,                      1)
+    assert_equal(widefieldImage[0].datasetType, 'widefieldImage')
+    assert_equal(widefieldImage[0].channelID,             'A647')
+    assert_equal(widefieldImage[0].dateID,                  None)
+    assert_equal(widefieldImage[0].posID,                   (0,))
+    assert_equal(widefieldImage[0].sliceID,                 None)
     
-    assert_equal(widefieldImage[1].prefix, 'HeLaS_Control')
-    assert_equal(widefieldImage[1].acqID,                2)
-    assert_equal(widefieldImage[1].channelID,       'A647')
-    assert_equal(widefieldImage[1].dateID,            None)
-    assert_equal(widefieldImage[1].posID,             (0,))
-    assert_equal(widefieldImage[1].sliceID,           None)
+    assert_equal(widefieldImage[1].prefix,       'HeLaS_Control')
+    assert_equal(widefieldImage[1].acqID,                      2)
+    assert_equal(widefieldImage[1].datasetType, 'widefieldImage')
+    assert_equal(widefieldImage[1].channelID,             'A647')
+    assert_equal(widefieldImage[1].dateID,                  None)
+    assert_equal(widefieldImage[1].posID,                   (0,))
+    assert_equal(widefieldImage[1].sliceID,                 None)
+    
+def test_HDF_Database_Query_LocMetadata():
+    """query() finds the correct locMetadata in a HDF file.
+    
+    """
+    dbName = testDataRoot / Path('test_experiment/test_experiment_db.h5')
+    myDB   = database.HDFDatabase(dbName)
+    
+    locMetadata = myDB.query(datasetType = 'locMetadata')
+    assert_equal(len(locMetadata), 2)
+    assert_equal(locMetadata[0].prefix,    'HeLaL_Control')
+    assert_equal(locMetadata[0].acqID,                   1)
+    assert_equal(locMetadata[0].datasetType, 'locMetadata')
+    assert_equal(locMetadata[0].channelID,          'A647')
+    assert_equal(locMetadata[0].dateID,               None)
+    assert_equal(locMetadata[0].posID,                (0,))
+    assert_equal(locMetadata[0].sliceID,              None)
+    
+    assert_equal(len(locMetadata), 2)
+    assert_equal(locMetadata[1].prefix,    'HeLaS_Control')
+    assert_equal(locMetadata[1].acqID,                   2)
+    assert_equal(locMetadata[1].datasetType, 'locMetadata')
+    assert_equal(locMetadata[1].channelID,          'A647')
+    assert_equal(locMetadata[1].dateID,               None)
+    assert_equal(locMetadata[1].posID,                (0,))
+    assert_equal(locMetadata[1].sliceID,              None)
