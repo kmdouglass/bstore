@@ -842,10 +842,13 @@ class HDFDatabase(Database):
             resultGroups = []
             def find_locs(name):
                 """Finds localization files matching the name pattern."""
-                # Only look in the last element of the dataset address;
-                # This avoids double counting datasets in subgroups.
-                if (searchString in name.split('/')[-1]):
+                # Finds only datasets with the SMLM_datasetType attribute.
+                if ('SMLM_datasetType' in f[name].attrs) \
+                       and (f[name].attrs['SMLM_datasetType'] == searchString):
                     resultGroups.append(name)
+                
+                if 'SMLM_datasetType' in f[name].attrs:
+                    print(f[name].attrs['SMLM_datasetType'])
             f.visit(find_locs)
         
         # Read attributes of each key in resultGroups for SMLM_*
