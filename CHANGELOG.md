@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
   channelID, which made little sense, especially if the channelID was
   not specified.
 - Database queries now work by reading B-Store HDF attributes instead
-  of HDF5 group/dataset names.
+  of HDF5 group/dataset names. They now work for locMetadata as well.
 
 ### Fixed
 - Database.query() no longer returns widefieldImage datasets twice.
