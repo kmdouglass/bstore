@@ -61,3 +61,9 @@ __Types_Of_Atoms__ = (
                       'locMetadata',
                       'widefieldImage'
                      )
+
+"""__MM_PixelSize__ : str
+    Name of the field in the Micro-Manager metadata containing the pixel size.
+
+"""                     
+__MM_PixelSize__ = 'PixelSize_um'

@@ -675,7 +675,7 @@ def test_HDF_Database_Put_WidefieldImage_PixelSize():
     if dbName.exists():
         remove(str(dbName))
     myDB     = database.HDFDatabase(dbName,
-                                    widefieldPixelSize = (0.108, 0.108))    
+                                    widefieldPixelSize = (0.130, 0.130))    
     
     # Load the widefield image and convert it to an atom
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
@@ -696,8 +696,8 @@ def test_HDF_Database_Put_WidefieldImage_PixelSize():
         voxelSize = hdf[saveKey].attrs['element_size_um']
         
     assert_equal(voxelSize[0], 1)
-    assert_equal(voxelSize[1], 0.108)
-    assert_equal(voxelSize[2], 0.108)
+    assert_equal(voxelSize[1], 0.130)
+    assert_equal(voxelSize[2], 0.130)
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():
@@ -808,6 +808,39 @@ def test_HDF_Database_Build():
     
     # Remove test database file
     remove(str(dbName))
+    
+def test_HDF_Database_Build_With_MM_PixelSize():
+    """The database build is performed with pixel sizes from Micro-Manager.
+    
+    """
+    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB = database.HDFDatabase(dbName)
+    myParser = parsers.MMParser(readTiffTags = True)    
+    
+    # Directory to traverse for acquisition files
+    searchDirectory = testDataRoot / Path('test_experiment')
+    
+    # Build database
+    myDB.build(myParser, searchDirectory, dryRun = False)
+    
+    # Test for existence of the data
+    with h5py.File(str(dbName), mode = 'r') as hdf:
+        key1 = ('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0/'
+                'image_data')
+        ok_('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0' in hdf)
+        ok_('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0' in hdf)
+        ok_('element_size_um' in hdf[key1].attrs)
+        
+        key2 = ('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0/'
+                'image_data')
+        ok_('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0' in hdf)
+        ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
+        ok_('element_size_um' in hdf[key2].attrs)
+    
+    # Remove test database file
+    #remove(str(dbName))
     
 def test_HDF_Database_GenAtomicID():
     """The database can generate the proper atomic IDs from input keys.

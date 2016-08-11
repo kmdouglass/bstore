@@ -63,6 +63,8 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             TiffFile, the image metadata will be saved as well.
         
         """
+        MM_PixelSize = config.__MM_PixelSize__
+        
         if isinstance(atom.data, TiffFile):
             # Write the TiffFile metadata to the HDF file; otherwise do nothing
             # First, get the Tiff tags; pages[0] assumes there is only one
@@ -90,10 +92,18 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
                 
                 # Micro-Manager summary metadata in JSON string
                 if atom.data.is_micromanager:
-                    keyName = self._genKey(atom) + '/MM_Summary_Metadata'
-                    mmsmd   = json.dumps(atom.data.micromanager_metadata)
+                    keyName  = self._genKey(atom) + '/MM_Summary_Metadata'
+                    metaDict = atom.data.micromanager_metadata
+                    mmsmd    = json.dumps(metaDict)
                 
                     hdf.create_dataset(keyName, (1,), dtype = dt, data = mmsmd)
+                    
+                    # Write the element_size_um tag if its present in the
+                    # Micro-Manager metadata (this has priority over OME-XML)
+                    if MM_PixelSize in metaDict['summary'] \
+                                           and self.widefieldPixelSize is None:
+                        pxSize = metaDict['summary'][MM_PixelSize]
+                        self.widefieldPixelSize = (pxSize, pxSize)
             
             # Convert atom.data to a NumPy array before writing image data
             atom.data = atom.data.asarray()
