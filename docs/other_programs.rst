@@ -1,8 +1,8 @@
 .. -*- mode: rst -*-
    
-*****************
-B-Store Databases
-*****************
+*********************************
+Using B-Store with Other Software
+*********************************
 
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
@@ -21,9 +21,6 @@ B-Store Databases
 	      
 .. contents:: Table of Contents
 
-Using B-Store with Other Software
-=================================
-
 B-Store databases use the `HDF`_ file format for data storage. This
 means that any software package that can read from HDF files can also
 read B-Store databases.
@@ -31,7 +28,7 @@ read B-Store databases.
 .. _HDF: https://www.hdfgroup.org/
 
 ImageJ and Fiji
----------------
+===============
 
 Widefield images found inside a B-Store database may be opened in
 ImageJ and Fiji using the `HDF5 Plugin for ImageJ and Fiji`_. When
