@@ -840,7 +840,7 @@ def test_HDF_Database_Build_With_MM_PixelSize():
         ok_('element_size_um' in hdf[key2].attrs)
     
     # Remove test database file
-    #remove(str(dbName))
+    remove(str(dbName))
     
 def test_HDF_Database_GenAtomicID():
     """The database can generate the proper atomic IDs from input keys.
