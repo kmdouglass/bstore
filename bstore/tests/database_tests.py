@@ -883,3 +883,16 @@ def test_HDF_Database_Query_LocMetadata():
     assert_equal(locMetadata[1].dateID,               None)
     assert_equal(locMetadata[1].posID,                (0,))
     assert_equal(locMetadata[1].sliceID,              None)
+    
+def test_HDF_Database_widefieldPixelSize():
+    """Database object contains the correct pixel size attribute.
+    
+    """
+    dbName = 'myDB.h5'
+    myDatabase = database.HDFDatabase(dbName)
+    
+    assert_equal(myDatabase.widefieldPixelSize, None)
+    
+    myDatabase = database.HDFDatabase(dbName,
+                                      widefieldPixelSize = (0.108, 0.108))
+    assert_equal(myDatabase.widefieldPixelSize, (0.108, 0.108))

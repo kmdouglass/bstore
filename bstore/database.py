@@ -372,7 +372,41 @@ class Dataset(DatabaseAtom):
 class HDFDatabase(Database):
     """A HDFDatabase structure for managing SMLM data.
     
+    Parameters
+    ----------
+    dbName : str or Path
+        The name of the database file.
+    widefieldPixelSize   : 2-tuple of float or None
+        The x- and y-size of a widefield pixel in microns. This
+        informationis used to write attributes to the widefield image for
+        opening with other software libraries, such as the HDF5 Plugin for
+        ImageJ and FIJI.
+    
+    Attributes
+    ----------
+    widefieldPixelSize   : 2-tuple of float or None
+        The x- and y-size of a widefield pixel in microns. This
+        informationis used to write attributes to the widefield image for
+        opening with other software libraries.
+    
+    Notes
+    -----
+    The only HDF attribute currently written directly to the image data is::
+    
+    element_size_um
+    
+    which is required for opening images directly from the HDF file by the
+    HDF5 Plugin for ImageJ and FIJI[1]_.
+    
+    References
+    ----------
+    .. [1] http://lmb.informatik.uni-freiburg.de/resources/opensource/imagej_plugins/hdf5.html
+        
     """
+    def __init__(self, dbName, *args, widefieldPixelSize = None, **kwargs):
+        self.widefieldPixelSize = widefieldPixelSize
+        super(HDFDatabase, self).__init__(dbName)
+    
     @property
     def atomPrefix(self):
         return config.__HDF_AtomID_Prefix__

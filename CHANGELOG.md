@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
   group as the image data for widefieldImage dataset types.
 - B-Store dataset IDs are now saved as attributes of the
   widefieldImage groups in the HDF file.
+- HDFDatabase now accepts a `widefieldPixelSize` parameter that writes
+  pixel size attributes allowing widefield images to be opened in
+  other software environments.
 
 ### Changed
 - Reformatted docstrings to better match the
