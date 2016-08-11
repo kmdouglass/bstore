@@ -868,7 +868,10 @@ class HDFDatabase(Database):
                                
             if self.widefieldPixelSize is not None:
                 # Write element_size_um attribute for HDF5 Plugin for ImageJ
-                elementSize = (1, *self.widefieldPixelSize)
+                # Note that this takes pixel sizes in the format zyx
+                elementSize = (1,
+                               self.widefieldPixelSize[1],
+                               self.widefieldPixelSize[0])
                 hdf[dataset].attrs['element_size_um'] = elementSize
                 
         finally:
