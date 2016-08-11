@@ -855,6 +855,12 @@ class HDFDatabase(Database):
             hdf.create_dataset(dataset,
                                atom.data.shape,
                                data = atom.data)
+                               
+            if self.widefieldPixelSize is not None:
+                # Write element_size_um attribute for HDF5 Plugin for ImageJ
+                elementSize = (1, *self.widefieldPixelSize)
+                hdf[dataset].attrs['element_size_um'] = elementSize
+                
         finally:
             hdf.close()
             

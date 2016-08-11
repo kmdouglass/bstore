@@ -665,6 +665,39 @@ def test_HDF_Database_WidefieldImage_DatasetID_Attributes():
         assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
         assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
         assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
+        
+def test_HDF_Database_Put_WidefieldImage_PixelSize():
+    """Widefield image data has the correct pixel size attributes.
+    
+    """
+    # Remake the database
+    dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB     = database.HDFDatabase(dbName,
+                                    widefieldPixelSize = (0.108, 0.108))    
+    
+    # Load the widefield image and convert it to an atom
+    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    inputFile = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') / Path(f)
+    datasetType = 'widefieldImage'
+    
+    # Set the parser to read TiffTags
+    mmParser = parsers.MMParser(readTiffTags = True)
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Put the widefield image into the database
+    myDB.put(mmParser.getDatabaseAtom())
+    
+    # Ensure the attribute has been correctly written to the dataset
+    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/image_data'
+    with h5py.File(str(dbName), 'r') as hdf:
+        voxelSize = hdf[saveKey].attrs['element_size_um']
+        
+    assert_equal(voxelSize[0], 1)
+    assert_equal(voxelSize[1], 0.108)
+    assert_equal(voxelSize[2], 0.108)
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():
@@ -884,7 +917,7 @@ def test_HDF_Database_Query_LocMetadata():
     assert_equal(locMetadata[1].posID,                (0,))
     assert_equal(locMetadata[1].sliceID,              None)
     
-def test_HDF_Database_widefieldPixelSize():
+def test_HDF_Database_WidefieldPixelSize():
     """Database object contains the correct pixel size attribute.
     
     """
