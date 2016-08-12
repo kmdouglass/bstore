@@ -103,7 +103,7 @@ class AlignToWidefield:
         centerLoc = np.unravel_index(np.argmax(crossCorr), crossCorr.shape)
 
         # Find the center of the widefield image
-        imgCorr = fftconvolve(zoom(np.transpose(wfImage)[::-1, ::-1], 
+        imgCorr = fftconvolve(zoom(np.transpose(wfImage), 
                                    upsampleFactor, order = 0),
                               zoom(np.transpose(wfImage)[::-1, ::-1], 
                                    upsampleFactor, order = 0),

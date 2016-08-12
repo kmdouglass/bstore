@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Database.query() no longer returns widefieldImage datasets twice.
+- Bug related to transposition of the widefield image used to find
+  the center location is fixed in AlignToWidefield multiprocessor.
 
 ## [v0.1.1]
 ### Added
