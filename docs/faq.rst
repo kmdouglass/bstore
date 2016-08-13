@@ -7,8 +7,8 @@ Frequently Asked Questions
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 2 $
-:date: 2016-07-25
+:revision: $Revision: 3 $
+:date: 2016-08-13
 
 :abstract:
 
@@ -38,11 +38,12 @@ roles:
 What problem does B-Store solve?
 --------------------------------
 
-High content SMLM experiments can produce hundreds or even thousands
-of files containing multiple types of data (images, raw localizations,
-acquisition information, etc.). B-Store automatically sorts and stores
-this information in a database for rapid retrieval and analysis,
-removing any need to manually maintain the data yourself.
+High-throughput SMLM experiments can produce hundreds or even
+thousands of files containing multiple types of data (images, raw
+localizations, acquisition information, etc.). B-Store automatically
+sorts and stores this information in a database for rapid retrieval
+and analysis, removing any need to manually maintain the data
+yourself.
 
 What are the design criteria for B-Store?
 -----------------------------------------
@@ -79,6 +80,37 @@ data organization and analysis. In particular, B-Store does not:
     + Control microscopy hardware.
     + Provide database-like storage for core facilities.
     + Generate any data or results for you. (Sorry.)
+
+Why don't you use OME tools?
+----------------------------
+
+The `Open Microscopy Environment`_ (OME) is a wonderful set of
+software tools for working with bio-image data. In fact, the OME
+inspired this project in that B-Store emulates `the OME model`_ for
+archiving data, metadata, and analyses together in one abstract unit
+to improve reproducibility and communication of scientific results in
+SMLM.
+
+In spite of this, we chose to develop tools independent of the OME for
+a few reasons. The OME was primarily designed for working with image
+data. SMLM data on the other hand is more heterogeneous than image
+data (localizations, drift correction, widefield images,
+etc.). Reworking parts of the OME to accomodate SMLM would therefore
+have been a significant undertaking on our part.
+
+In addition, the OME database tool, OMERO, requires time for set up
+and maintenance. Many small labs doing SMLM may not be willing to
+invest the resources required for this. In contrast, B-Store is
+intended to be lightweight and require as little time for use as
+possible.
+
+Some researchers in the SMLM community have expressed interest in
+extending the OME to SMLM, and we gladly welcome this effort. In the
+meanwhile, B-Store intends to satisfy the need for structured SMLM
+data.
+
+.. _Open Microscopy Environment: https://www.openmicroscopy.org/site
+.. _the OME model: https://www.openmicroscopy.org/site/support/ome-model/ome-xml/#migrating-or-sharing-data-with-ome-xml
 
 How do I use B-Store?
 =====================
@@ -336,6 +368,33 @@ insertion into and retrieval from the database.
 
 .. _PyTables: http://www.pytables.org/
 .. _ConvertHeader: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.processors.ConvertHeader
+
+Widefield images
+----------------
+
+Grayscale
++++++++++
+
+Widefield images are assumed to be grayscale. Unexpected behavior may
+result when attempting to place a color image into the database.
+
+OME-XML
++++++++
+
+When reading metadata to determine the ``element_size_um`` attribute
+of the HDF ``image_data``, the OME-XML metadata tags ``PhysicalSizeX``
+and ``PhysicalSizeY`` will only be used if the corresponding units are
+in microns. This means the ``PhysicalSizeXUnit`` and
+``PhysicalSizeYUnit`` must match the byte string ``\xc2\xb5m``, which
+is UTF-8 for the Greek letter "mu", followed by the roman letter "m".
+
+If Micro-Manager (MM) metadata with pixel size information is present,
+then the OME-XML data will be ignored in favor of the MM metadata.
+
+See the page on using B-Store in `other software packages`_ for more
+information.
+
+.. _other software packages: http://b-store.readthedocs.io/en/development/other_programs.html
 
 What is single molecule localization microscopy (SMLM)?
 =======================================================
