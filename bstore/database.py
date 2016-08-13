@@ -70,18 +70,45 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             # First, get the Tiff tags; pages[0] assumes there is only one
             # image in the Tiff file.
             tags = dict(atom.data.pages[0].tags.items())
-
-            # Start by writing just the OME-XML
+            
             with h5py.File(self._dbName, mode = 'a') as hdf:
                 dt      = h5py.special_dtype(vlen=str)
                 
+                # Start by writing just the OME-XML
                 # Note: omexml data is a byte string; the text is UTF-8 encoded
                 # See http://docs.h5py.org/en/latest/strings.html for more info
                 if 'image_description' in tags:
                     keyName = self._genKey(atom) + '/OME-XML'
                     omexml  = tags['image_description'].value
                 
-                    hdf.create_dataset(keyName, (1,), dtype = dt, data = omexml)
+                    hdf.create_dataset(keyName, (1,), dtype = dt, data=omexml)
+                    
+                    try:
+                        # Write the element_size_um tag if its present in the
+                        # OME-XML metadata.
+                        ome     = omexml.decode('utf-8', 'strict')
+                        stringX = re.search('PhysicalSizeX="(\d*\.?\d*)"',
+                                            ome).groups()[0]
+                        stringY = re.search('PhysicalSizeY="(\d*\.?\d*)"',
+                                            ome).groups()[0]
+                        pxSizeX = float(stringX)
+                        pxSizeY = float(stringY)
+                        
+                        # Ensure that the units is microns
+                        pxUnitsX = re.search('PhysicalSizeXUnit="(\D\D?)"',
+                                             ome).groups()[0].encode()
+                        pxUnitsY = re.search('PhysicalSizeYUnit="(\D\D?)"',
+                                             ome).groups()[0].encode()
+                        assert pxUnitsX == b'\xc2\xb5m', 'OME-XML units not um'
+                        assert pxUnitsY == b'\xc2\xb5m', 'OME-XML units not um'
+
+                        self.widefieldPixelSize = (pxSizeX, pxSizeY)
+                        
+                    except (AttributeError, AssertionError):
+                        # When no PhysicalSizeX,Y XML tags are found, or the
+                        # the units are not microns, move on to looking inside
+                        # the MM metadata.                       
+                        pass
                 
                 # Micro-Manager device states metadata is a JSON string
                 if 'micromanager_metadata' in tags:
@@ -99,7 +126,8 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
                     hdf.create_dataset(keyName, (1,), dtype = dt, data = mmsmd)
                     
                     # Write the element_size_um tag if its present in the
-                    # Micro-Manager metadata (this has priority over OME-XML)
+                    # Micro-Manager metadata (this has priority over OME-XML
+                    # due to its position here)
                     if MM_PixelSize in metaDict['summary'] \
                                            and self.widefieldPixelSize is None:
                         pxSize = metaDict['summary'][MM_PixelSize]
