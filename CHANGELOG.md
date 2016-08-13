@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - HDFDatabase now accepts a `widefieldPixelSize` parameter that writes
   pixel size attributes allowing widefield images to be opened in
   other software environments.
+- Added an example Jupyter notebook on using the cluster/widefield
+  overlays.
 
 ### Changed
 - Reformatted docstrings to better match the
