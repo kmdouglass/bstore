@@ -20,7 +20,6 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
-import sys
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 

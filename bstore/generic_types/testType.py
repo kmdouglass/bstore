@@ -3,6 +3,7 @@
 # See the LICENSE.txt file for more details.
 
 from bstore import database as db
+import h5py
 
 class testType(db.Dataset, db.GenericDatasetType):
     def __init__(self, prefix, acqID, datasetType, data,
@@ -16,10 +17,26 @@ class testType(db.Dataset, db.GenericDatasetType):
     
     @property
     def genericTypeName(self):
+        """This should be set to the same name as the class.
+        
+        """
         return 'testType'
     
     def get(self):
         pass
     
-    def put(self):
-        pass
+    def put(self, database, key):
+        """Puts the data into the database.
+        
+        Parameters
+        ----------
+        database : str
+            String containing the path to a B-Store HDF database.
+        key      : str
+            The HDF key pointing to the dataset locationin the HDF database.
+            
+        """
+        # Writes the data in the dataset to the HDF file.
+        with h5py.File(database, 'a') as hdf:
+            hdf.create_dataset(key, self.data.shape,
+                               dtype = 'i', data = self.data)

@@ -701,10 +701,13 @@ class HDFDatabase(Database):
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
         
         # locMetadata should be appended to a dataset starting with locResults
-        if atom.datasetType != 'locMetadata':        
+        # generic datasetTypes should be named after their genericTypeName
+        if atom.datasetType != 'locMetadata' and atom.datasetType != 'generic':        
             return acqKey + '/' + atom.datasetType + otherIDs
-        else:
+        elif atom.datasetType == 'locMetadata':
             return acqKey + '/locResults' + otherIDs
+        elif atom.datasetType == 'generic':
+            return acqKey + '/' + atom.genericTypeName + otherIDs
             
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -826,7 +829,7 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        atom   : DatabaseAtom
+        atom   : DatabaseAtom or Dataset
         
         """
         self._checkKeyExistence(atom)
@@ -850,6 +853,12 @@ class HDFDatabase(Database):
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
             self._putWidefieldImage(atom)
+            self._writeDatasetIDs(atom)
+        elif atom.datasetType == 'generic':
+            assert atom.genericTypeName in config.__Registered_Generics__, \
+                   'Type {0} is unregistered.'.format(atom.genericTypeName)
+            
+            atom.put(self._dbName, key)
             self._writeDatasetIDs(atom)
     
     def _putLocMetadata(self, atom):
@@ -1042,6 +1051,11 @@ class HDFDatabase(Database):
             # Current version of this software
             hdf[key].attrs[atomPrefix +'Version'] = \
                                                config.__bstore_Version__
+                                               
+            # Write the generic type name if this is a generic type
+            if atom.datasetType == 'generic':
+                hdf[key].attrs[atomPrefix + 'genericTypeName'] = \
+                                                           atom.genericTypeName
             
 """Exceptions
 -------------------------------------------------------------------------------
