@@ -842,6 +842,34 @@ def test_HDF_Database_Build_With_MM_PixelSize():
     # Remove test database file
     remove(str(dbName))
     
+def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
+    """element_size_um is correct when only OME-XML metadata is present."
+    
+    """
+    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB = database.HDFDatabase(dbName)
+    myParser = parsers.MMParser(readTiffTags = True)    
+    
+    # Directory to traverse for acquisition files
+    searchDirectory = testDataRoot / Path('database_test_files/OME-TIFF_No_MM_Metadata')
+    
+    # Build database
+    myDB.build(myParser, searchDirectory, dryRun = False)
+    
+    # Test for existence of the data
+    with h5py.File(str(dbName), mode = 'r') as hdf:
+        key1 = ('Cos7/Cos7_2/widefieldImage_A647_Pos0/image_data')
+        ok_('Cos7/Cos7_2/widefieldImage_A647_Pos0' in hdf)
+        ok_('element_size_um' in hdf[key1].attrs)
+        assert_equal(hdf[key1].attrs['element_size_um'][0], 1)
+        assert_equal(hdf[key1].attrs['element_size_um'][1], 0.1)
+        assert_equal(hdf[key1].attrs['element_size_um'][2], 0.1)
+    
+    # Remove test database file
+    remove(str(dbName))
+    
 def test_HDF_Database_GenAtomicID():
     """The database can generate the proper atomic IDs from input keys.
     
