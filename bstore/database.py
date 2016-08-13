@@ -308,6 +308,22 @@ class DatabaseAtom(metaclass = ABCMeta):
                  'datasetType' : self._datasetType,
                  'dateID'      : self._dateID}
         return dsIDs
+        
+class GenericDatasetType(metaclass = ABCMeta):
+    """Metaclass for a generic datasetType. Use this to add new datasetTypes.
+    
+    """
+    @abstractproperty
+    def genericTypeName():
+        pass
+    
+    @abstractmethod
+    def get():
+        pass
+    
+    @abstractmethod
+    def put():
+        pass
 
 """Concrete classes
 -------------------------------------------------------------------------------
@@ -486,6 +502,7 @@ class HDFDatabase(Database):
                                                             locMetadataString))
         FilesGen['widefieldImage'] = searchDirectory.glob('**/*{:s}'.format(
                                                          widefieldImageString))
+        FilesGen['generic']        = []
                                                          
         # Build the dictionary of files with keys describing
         # their dataset type
