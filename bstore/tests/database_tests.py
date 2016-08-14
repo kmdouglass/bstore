@@ -20,6 +20,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
 import h5py
+import bstore.generic_types.testType
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -929,3 +930,37 @@ def test_HDF_Database_WidefieldPixelSize():
     myDatabase = database.HDFDatabase(dbName,
                                       widefieldPixelSize = (0.108, 0.108))
     assert_equal(myDatabase.widefieldPixelSize, (0.108, 0.108))
+    
+def test_HDF_Database_Generic_GenAtomicID():
+    """Generate atomic ID works for generic datasets.
+    
+    """
+    hdfKey = 'prefix/prefix_1/testType_A647_Pos0'
+    
+    myDB= database.HDFDatabase('test')
+    myDS = myDB._genAtomicID(hdfKey)
+    
+    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    assert_equal(myDS.prefix,            'prefix')
+    assert_equal(myDS.acqID,                    1)
+    assert_equal(myDS.datasetType,      'generic')
+    assert_equal(myDS.channelID,           'A647')
+    assert_equal(myDS.dateID,                None)
+    assert_equal(myDS.posID,                 (0,))
+    assert_equal(myDS.sliceID,               None)
+    assert_equal(myDS.genericTypeName, 'testType')
+    
+    # Does it work a second time?
+    hdfKey = 'prefix2/prefix2_2/testType_A750_Pos0'
+    
+    myDS = myDB._genAtomicID(hdfKey)
+    
+    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    assert_equal(myDS.prefix,           'prefix2')
+    assert_equal(myDS.acqID,                    2)
+    assert_equal(myDS.datasetType,      'generic')
+    assert_equal(myDS.channelID,           'A750')
+    assert_equal(myDS.dateID,                None)
+    assert_equal(myDS.posID,                 (0,))
+    assert_equal(myDS.sliceID,               None)
+    assert_equal(myDS.genericTypeName, 'testType')

@@ -14,10 +14,7 @@ import re
 import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
-
-# Import the registered generic types
-#for genericType in config.__Registered_Generics__:
-
+import importlib
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -643,6 +640,12 @@ class HDFDatabase(Database):
         
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
+        
+        # Change datasetType to 'generic' for creation of a generic type later
+        if datasetType in config.__Registered_Generics__:
+            genericTypeName = datasetType
+            datasetType     = 'generic'
+        
         data        = None
         
         channelID = [channel
@@ -673,11 +676,19 @@ class HDFDatabase(Database):
             index = re.findall(r'\d+', sliceRaw.group(0))
             sliceID = int(index[0])
         
-        returnDS = Dataset(prefix, acqID, datasetType, data,
-                           channelID = channelID,
-                           dateID    = dateID,
-                           posID     = posID,
-                           sliceID   = sliceID)
+        # Build the return dataset
+        if datasetType == 'generic':
+            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(genericTypeName))
+            genericType = getattr(mod, genericTypeName)
+            
+            # Sets the return dataset to the genericType
+            returnDS = genericType(prefix, acqID, datasetType, data,
+                                   channelID = channelID, dateID = dateID,
+                                   posID = posID, sliceID = sliceID)
+        else:
+            returnDS = Dataset(prefix, acqID, datasetType, data,
+                               channelID = channelID, dateID = dateID,
+                               posID = posID,sliceID = sliceID)
         return returnDS
 
     def _genKey(self, atom):
