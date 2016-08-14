@@ -307,6 +307,10 @@ class DatabaseAtom(metaclass = ABCMeta):
                  'sliceID'     : self._sliceID,
                  'datasetType' : self._datasetType,
                  'dateID'      : self._dateID}
+                 
+        if self._datasetType == 'generic':
+            dsIDs['genericTypeName'] = self.genericTypeName
+            
         return dsIDs
         
 class GenericDatasetType(metaclass = ABCMeta):
@@ -762,6 +766,8 @@ class HDFDatabase(Database):
             hdfKey = hdfKey + '/image_data'
             returnDS.data = self._getWidefieldImage(hdfKey)
             # TODO: Read metadata entries back into a TiffFile object
+        if datasetType == 'generic':
+            pass
             
         return returnDS
             

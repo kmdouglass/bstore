@@ -6,6 +6,9 @@ from bstore import database as db
 import h5py
 
 class testType(db.Dataset, db.GenericDatasetType):
+    """A class for testing B-Store generic datasetTypes.
+    
+    """
     def __init__(self, prefix, acqID, datasetType, data,
                  channelID = None, dateID = None,
                  posID = None, sliceID = None):
@@ -22,7 +25,17 @@ class testType(db.Dataset, db.GenericDatasetType):
         """
         return 'testType'
     
-    def get(self):
+    def get(self, database, key):
+        """Returns a testType dataset from the database.
+        
+        Parameters
+        ----------
+        database : str
+            String containing the path to a B-Store HDF database.
+        key      : str
+            The HDF key pointing to the dataset locationin the HDF database.
+        
+        """
         pass
     
     def put(self, database, key):

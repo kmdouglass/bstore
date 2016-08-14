@@ -40,7 +40,7 @@ def test_testType_Put_Data():
     """testType can put its own data and datasetIDs.
     
     """
-     # Make up some dataset IDs and a dataset
+    # Make up some dataset IDs and a dataset
     prefix      = 'test_prefix'
     acqID       = 1
     datasetType = 'generic'
@@ -58,5 +58,45 @@ def test_testType_Put_Data():
         assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
         assert_equal(hdf[key].attrs['SMLM_genericTypeName'], 'testType')
 
+    # Remove the test database
+    remove(str(pathToDB / Path('test_db.h5')))
+    
+def test_testType_DatasetIDs():
+    """testType can return the correct dataset IDs.
+    
+    """
+    # Make up some dataset IDs and a dataset
+    prefix      = 'test_prefix'
+    acqID       = 1
+    datasetType = 'generic'
+    data        = array([42])
+    ds = testType(prefix, acqID, datasetType, data)
+    
+    ids = ds.getInfoDict()
+    assert_equal(ids['prefix'],       'test_prefix')
+    assert_equal(ids['acqID'],                    1)
+    assert_equal(ids['datasetType'],      'generic')
+    assert_equal(ids['channelID'],             None)
+    assert_equal(ids['dateID'],                None)
+    assert_equal(ids['posID'],                 None)
+    assert_equal(ids['sliceID'],               None)
+    assert_equal(ids['genericTypeName'], 'testType')
+    
+def test_testType_Get_Data():
+    """testType can get its own data and datasetIDs.
+    
+    """
+    # Make up some dataset IDs and a dataset
+    prefix      = 'test_prefix'
+    acqID       = 1
+    datasetType = 'generic'
+    data        = array([42])
+    ds = testType(prefix, acqID, datasetType, data)
+    
+    pathToDB = testDataRoot# / Path('generic_types/testType')
+    
+    myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+    myDB.put(ds)
+    
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
