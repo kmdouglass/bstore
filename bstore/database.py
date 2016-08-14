@@ -503,7 +503,8 @@ class HDFDatabase(Database):
             A sorted DataFrame for investigating what files were actually
             added to the database.
             
-        """       
+        """ 
+        # TODO: Update this to work with generics
         # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
         FilesGen = {}
@@ -538,9 +539,14 @@ class HDFDatabase(Database):
                 print("Unexpected error in build() while building locResults:",
                       sys.exc_info()[0])
                 print(err)
+        del(files['locResults'])
+        
+        # Place generic types into the database
+        #for dataset in files['generic']:
+        #    for genType in dataset.keys():
+        #        pass
         
         # Place all other data into the database
-        del(files['locResults'])
         for currType in files.keys(): 
             
             for currFile in files[currType]:
@@ -958,7 +964,6 @@ class HDFDatabase(Database):
             All of the atomic ids matching the datasetType
         
         """
-        # TODO: Update this to work with generics
         _checkType(datasetType)       
         searchString = datasetType
         ap           = config.__HDF_AtomID_Prefix__
