@@ -19,6 +19,7 @@ from bstore                        import config
 from bstore                        import database as db
 from pathlib                       import Path
 from os                            import remove
+from os.path                       import exists
 from numpy                         import array
 import h5py
 
@@ -47,7 +48,10 @@ def test_testType_Put_Data():
     data        = array([42])
     ds = testType(prefix, acqID, datasetType, data)
     
-    pathToDB = testDataRoot# / Path('generic_types/testType')
+    pathToDB = testDataRoot
+    # Remove database if it exists
+    if exists(str(pathToDB / Path('test_db.h5'))):
+        remove(str(pathToDB / Path('test_db.h5')))
     
     myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
     myDB.put(ds)
@@ -95,8 +99,25 @@ def test_testType_Get_Data():
     
     pathToDB = testDataRoot# / Path('generic_types/testType')
     
+    # Remove database if it exists
+    if exists(str(pathToDB / Path('test_db.h5'))):
+        remove(str(pathToDB / Path('test_db.h5')))
+    
     myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
     myDB.put(ds)
+    
+    # Create a new dataset containing only IDs to test getting of the data
+    myNewDS = myDB.get(testType(prefix, acqID, datasetType, None))
+    ids     = myNewDS.getInfoDict()
+    assert_equal(ids['prefix'],       'test_prefix')
+    assert_equal(ids['acqID'],                    1)
+    assert_equal(ids['datasetType'],      'generic')
+    assert_equal(ids['channelID'],             None)
+    assert_equal(ids['dateID'],                None)
+    assert_equal(ids['posID'],                 None)
+    assert_equal(ids['sliceID'],               None)
+    assert_equal(ids['genericTypeName'], 'testType')   
+    assert_equal(myNewDS.data, 42)
     
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))

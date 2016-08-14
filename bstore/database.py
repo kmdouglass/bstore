@@ -14,6 +14,11 @@ import re
 import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
+import importlib
+
+# Import the registered generic types
+#for genericType in config.__Registered_Generics__:
+
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -615,6 +620,7 @@ class HDFDatabase(Database):
             just the ID information.
             
         """
+        # TODO: Modify this to work with generic types
         # Parse key for atomic IDs
         splitStr    = key.split(sep = '/')
         prefix      = splitStr[0]
@@ -724,43 +730,41 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        dsID       : Dataset
+        dsID     : Dataset
             A Dataset with a possibly empty 'data' field that may be used to
             identify the dataset.
             
         Returns
         -------
-        returnDS : Dataset
+        dsID : Dataset
+            The same Dataset but with a filled/modified data field.
         
         """
+        ids = dsID.getInfoDict()             
+        datasetType = ids['datasetType']
         
-        prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
-                                                                 dsID.getInfo()
+        if 'genericTypeName' in ids:
+            assert ids['genericTypeName'] in config.__Registered_Generics__
             
-        # Use returnDS to get the key pointing to the dataset
-        returnDS = Dataset(prefix, acqID, datasetType, None,
-                           channelID = channelID, dateID = dateID,
-                           posID = posID, sliceID = sliceID)
-        hdfKey   = self._genKey(returnDS)
+        hdfKey   = self._genKey(dsID)
 
         # Ensure that the key exists        
         try:
-            self._checkKeyExistence(returnDS)
+            self._checkKeyExistence(dsID)
         except HDF5KeyExists:
             pass
         
         if datasetType == 'locResults':
-            returnDS.data = read_hdf(self._dbName, key = hdfKey)
+            dsID.data = read_hdf(self._dbName, key = hdfKey)
         if datasetType == 'locMetadata':
-            returnDS.data = self._getLocMetadata(hdfKey)
+            dsID.data = self._getLocMetadata(hdfKey)
         if datasetType == 'widefieldImage':
             hdfKey = hdfKey + '/image_data'
-            returnDS.data = self._getWidefieldImage(hdfKey)
-            # TODO: Read metadata entries back into a TiffFile object
+            dsID.data = self._getWidefieldImage(hdfKey)
         if datasetType == 'generic':
-            pass
+            dsID.data = dsID.get(self._dbName, hdfKey)
             
-        return returnDS
+        return dsID
             
     def _getLocMetadata(self, hdfKey):
         """Returns the metadata associated with a localization dataset.

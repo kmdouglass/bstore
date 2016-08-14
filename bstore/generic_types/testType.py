@@ -2,10 +2,11 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-from bstore import database as db
+from bstore.database import Dataset, GenericDatasetType
 import h5py
+from numpy import array
 
-class testType(db.Dataset, db.GenericDatasetType):
+class testType(Dataset, GenericDatasetType):
     """A class for testing B-Store generic datasetTypes.
     
     """
@@ -35,8 +36,15 @@ class testType(db.Dataset, db.GenericDatasetType):
         key      : str
             The HDF key pointing to the dataset locationin the HDF database.
         
+        Returns
+        -------
+        data : NumPy array
+            The data retrieved from the HDF file.
         """
-        pass
+        with h5py.File(database, 'r') as hdf:
+            data = array(hdf.get(key))
+            
+        return data
     
     def put(self, database, key):
         """Puts the data into the database.
