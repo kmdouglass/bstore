@@ -2,11 +2,13 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-from bstore.database import Dataset, GenericDatasetType
+# Be sure not to use the from ... import syntex to avoid cyclical imports!
+import bstore.database
 import h5py
 from numpy import array
 
-class testType(Dataset, GenericDatasetType):
+class testType(bstore.database.Dataset,
+               bstore.database.GenericDatasetType):
     """A class for testing B-Store generic datasetTypes.
     
     """

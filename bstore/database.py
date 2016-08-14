@@ -14,7 +14,6 @@ import re
 import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
-import importlib
 
 # Import the registered generic types
 #for genericType in config.__Registered_Generics__:
@@ -946,6 +945,7 @@ class HDFDatabase(Database):
             All of the atomic ids matching the datasetType
         
         """
+        # TODO: Update this to work with generics
         _checkType(datasetType)       
         searchString = datasetType
         ap           = config.__HDF_AtomID_Prefix__
