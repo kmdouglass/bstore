@@ -19,8 +19,10 @@ from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
+from os.path      import exists
 import h5py
 import bstore.generic_types.testType
+from numpy        import array
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -917,6 +919,56 @@ def test_HDF_Database_Query_LocMetadata():
     assert_equal(locMetadata[1].dateID,               None)
     assert_equal(locMetadata[1].posID,                (0,))
     assert_equal(locMetadata[1].sliceID,              None)
+    
+def test_HDF_Database_Query_Generic_Types():
+    """HDFDatabase can query generic types.
+    
+    """
+    # Make up some dataset IDs and a dataset
+    ds  = bstore.generic_types.testType.testType('test_prefix', 1,
+                                                 'generic', array(42))
+    ds2 = bstore.generic_types.testType.testType('test_prefixx', 2,
+                                                'generic', array(43))
+                                                
+    # Extra dataset to try to confuse the query
+    ds3 = database.Dataset('cell_image', 3,
+                           'widefieldImage', array([[1,2],[3,4]]))
+    
+    pathToDB = testDataRoot
+    
+    # Remove database if it exists
+    if exists(str(pathToDB / Path('test_db.h5'))):
+        remove(str(pathToDB / Path('test_db.h5')))
+    
+    myDB = database.HDFDatabase(pathToDB / Path('test_db.h5'))
+    myDB.put(ds)
+    myDB.put(ds2)
+    myDB.put(ds3)
+    
+    # Create a new dataset containing only IDs to test getting of the data
+    gen = myDB.query(datasetType = 'generic', genericTypeName = 'testType')
+    
+    assert_equal(len(gen), 2)
+    assert_equal(gen[0].prefix,       'test_prefix')
+    assert_equal(gen[0].acqID,                    1)
+    assert_equal(gen[0].datasetType,      'generic')
+    assert_equal(gen[0].channelID,             None)
+    assert_equal(gen[0].dateID,                None)
+    assert_equal(gen[0].posID,                 None)
+    assert_equal(gen[0].sliceID,               None)
+    assert_equal(gen[0].genericTypeName, 'testType')
+    
+    assert_equal(gen[1].prefix,      'test_prefixx')
+    assert_equal(gen[1].acqID,                    2)
+    assert_equal(gen[1].datasetType,      'generic')
+    assert_equal(gen[1].channelID,             None)
+    assert_equal(gen[1].dateID,                None)
+    assert_equal(gen[1].posID,                 None)
+    assert_equal(gen[1].sliceID,               None)
+    assert_equal(gen[1].genericTypeName, 'testType')    
+    
+    # Remove the test database
+    remove(str(pathToDB / Path('test_db.h5')))
     
 def test_HDF_Database_WidefieldPixelSize():
     """Database object contains the correct pixel size attribute.

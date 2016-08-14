@@ -616,7 +616,6 @@ class HDFDatabase(Database):
             just the ID information.
             
         """
-        # TODO: Modify this to work with generic types
         # Parse key for atomic IDs
         splitStr    = key.split(sep = '/')
         prefix      = splitStr[0]
@@ -942,13 +941,16 @@ class HDFDatabase(Database):
         finally:
             hdf.close()
             
-    def query(self, datasetType = 'locResults'):
+    def query(self, datasetType = 'locResults', genericTypeName = None):
         """Returns a set of database atoms inside this database.
 
         Parameters
         ----------
-        datasetType : str
+        datasetType     : str
             The type of data to search for.
+        genericTypeName : str
+            The generic dataset type to search for. This only matters when
+            datasetType is 'generic'.
         
         Returns
         -------
@@ -973,11 +975,22 @@ class HDFDatabase(Database):
                 """Finds localization files matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
                 if (ap + 'datasetType' in f[name].attrs) \
-                       and (f[name].attrs[ap + 'datasetType'] == searchString):
-                               resultGroups.append(name)
+                    and (f[name].attrs[ap + 'datasetType'] == searchString) \
+                    and searchString != 'generic':
+                        resultGroups.append(name)
+                               
+                # If 'generic' is the datasetType, check that the specific
+                # genericTypeName matches
+                if (searchString == 'generic') \
+                    and (ap + 'genericTypeName' in f[name].attrs) \
+                    and (f[name].attrs[ap + 'genericTypeName'] \
+                         == genericTypeName):
+                        resultGroups.append(name)
                                
                 # locMetadata is not explicitly saved as a dataset,
-                # so handle this case here
+                # so handle this case here. locMetadata has its own special
+                # attribute that identifies itself, seen as
+                # mp + ap + 'datasetType' below
                 if (searchString == 'locMetadata') \
                     and (ap + 'datasetType' in f[name].attrs) \
                     and (f[name].attrs[ap + 'datasetType'] == 'locResults') \
