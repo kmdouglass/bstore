@@ -279,17 +279,23 @@ class DatabaseAtom(metaclass = ABCMeta):
         
         Returns
         -------
-        prefix      : str
-        acqID       : int
-        datasetType : str
-        data        : mixed
-        channelID   : str
-        dateID      : str
-        posID       : int, or (int, int)
+        prefix          : str
+        acqID           : int
+        datasetType     : str
+        data            : mixed
+        channelID       : str
+        dateID          : str
+        posID           : int, or (int, int)
+        genericTypeName : string (optional)
         
         """
-        return self._prefix, self._acqID, self._datasetType, \
-               self._channelID, self._dateID, self._posID, self._sliceID
+        if self._datasetType == 'generic':
+            return self._prefix, self._acqID, self._datasetType, \
+                   self._channelID, self._dateID, self._posID, self._sliceID, \
+                   self.genericTypeName
+        else:
+            return self._prefix, self._acqID, self._datasetType, \
+                   self._channelID, self._dateID, self._posID, self._sliceID
                
     def getInfoDict(self):
         """Returns the dataset information (without the data) as a dict.
@@ -718,32 +724,17 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        dsID       : dict or DatabaseAtom
-            Either key-value pairs uniquely identifying the dataset in
-            the database or a DatabaseAtom with a possibly empty 'data'
-            field that may be used to identify the dataset.
+        dsID       : Dataset
+            A Dataset with a possibly empty 'data' field that may be used to
+            identify the dataset.
             
         Returns
         -------
         returnDS : Dataset
         
         """
-        if not isinstance(dsID, DatabaseAtom):
-            try:
-                acqID       = dsID['acqID']
-                channelID   = dsID['channelID']
-                dateID      = dsID['dateID']
-                posID       = dsID['posID']
-                prefix      = dsID['prefix']
-                sliceID     = dsID['sliceID']
-                datasetType = dsID['datasetType']
-            except KeyError as e:
-                print(('There is an error with the dict supplied to get(). '
-                       'The following keys may be incorrect:'))
-                print(e.args)
-                raise
-        else:
-            prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
+        
+        prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
                                                                  dsID.getInfo()
             
         # Use returnDS to get the key pointing to the dataset

@@ -389,50 +389,6 @@ def test_HDFDatabase_GetWithDate():
     ok_((data['x'] == retrievedDataset.data['x']).all())
     ok_((data['y'] == retrievedDataset.data['y']).all())
     
-def test_HDFDatabase_Get_Dict():
-    """HDFDatabase.get() works when a dict is supplied.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'dateID'      : '2016-05-05',
-                'posID'       : (1,2),
-                'prefix'      : 'Cos7',
-                'sliceID'     : None,
-                'datasetType' : 'locResults'
-                }
-    
-    # Get the data from the database and compare it to the input data
-    retrievedDataset = myDB.get(myDSID)
-    ok_((data['x'] == retrievedDataset.data['x']).all())
-    ok_((data['y'] == retrievedDataset.data['y']).all())
-
-@raises(KeyError)    
-def test_HDFDatabase_Get_Dict_KeyError():
-    """HDFDatabase.get() detects when KeyError raised.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'posID'       : (0,),
-                'prefix'      : 'Cos7',
-                #'sliceID'     : None,
-                'datasetType' : 'locResults'
-                }
-    
-    # Should raise a key error because sliceID is not defined in myDSID
-    retrievedDataset = myDB.get(myDSID)
-    
 def test_HDFDatabase_Put_LocMetadata():
     """HDFDatabase correctly places metadata into the database.
     
@@ -477,18 +433,10 @@ def test_HDF_Database_Get_LocMetadata():
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 2,
-                'channelID'   : 'A750',
-                'dateID'      : None,
-                'posID'       : (0,),
-                'prefix'      : 'HeLa_Control',
-                'sliceID'     : None,
-                'datasetType' : 'locMetadata'
-                }
-    
-    md = myDB.get(myDSID)
+    # Create a dataset of IDs for retrieving the data     
+    myDS = database.Dataset('HeLa_Control', 2, 'locMetadata', None,
+                            channelID = 'A750', posID = (0,))
+    md = myDB.get(myDS)
     
     # Check that the basic ID information is correct.
     assert_equal(md.acqID,                   2)
@@ -571,18 +519,10 @@ def test_HDF_Database_Get_WidefieldImage():
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'dateID'      : None,
-                'posID'       : (0,),
-                'prefix'      : 'Cos7',
-                'sliceID'     : None,
-                'datasetType' : 'widefieldImage'
-                }
-    
-    img = myDB.get(myDSID)
+    # Create a dataset of IDs for retrieving the data     
+    myDSID = database.Dataset('Cos7', 1, 'widefieldImage', None,
+                              channelID = 'A647', posID = (0,))
+    img    = myDB.get(myDSID)
     assert_equal(img.data.shape, (512, 512))
         
 def test_HDF_Database_Put_WidefieldImage_TiffFile():
