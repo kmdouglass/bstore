@@ -526,6 +526,10 @@ class HDFDatabase(Database):
         files = {}                                                 
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
+            
+        # Add generic files to the dict
+        files['generic'] = self._buildGenericFileList(searchDirectory,
+                                                      genericStrings)
         
         # Keep a running record of what datasets were parsed
         datasets = []        
@@ -546,9 +550,21 @@ class HDFDatabase(Database):
                 print(err)
         del(files['locResults'])
         
-        # Place all other data into the database
+        # Next put the generic data
+        for genericType in files['generic'].keys():
+            for currFile in files['generic'][genericType]:
+                try:
+                    # TODO: Add this functionality
+                    pass
+                except Exception as err:
+                    print(("Unexpected error in build() while "
+                           "building generics:"),
+                    sys.exc_info()[0])
+                    print(err)
+        del(files['generic'])
+        
+        # Finally put all other data into the database
         for currType in files.keys(): 
-            
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(currFile, datasetType = currType)
@@ -590,20 +606,29 @@ class HDFDatabase(Database):
             
         Returns
         -------
-        TODO
+        files : dict of list of str
+            Dictionary whose keys are the generic type names and whose values
+            are lists of strings containing the path to files that satisfy the
+            globbed search.
         
         """
         # TODO: Handle case when genericStrings is empty
         FilesGen = {}
+        files    = {}
         for genericName, fileID in genericStrings.items():
-            FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
+            # Do not process any generic type unless its currently registered
+            # with B-Store
+            if genericName not in config.__Registered_Generics__:
+                continue
+            else:
+                FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
                                                                        fileID))
         # Build the dictionary of files with keys describing
         # their generic dataset type                                                               
-        files = {}
         for genericName in FilesGen.keys():
             files[genericName] = sorted(FilesGen[genericName])
-        
+            
+        return files
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
