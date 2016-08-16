@@ -413,6 +413,60 @@ def test_MMParser_TiffFile():
     ok_(isinstance(ds.data, TiffFile))
     assert_equal(ds.data.asarray().shape, (512, 512))
     
+def test_MMParser_ConvertsSpacesToUnderscores():
+    """The MMParser will convert spaces in the prefix to underscores.
+    
+    """
+    acqID       =            1
+    channelID   =       'A647'
+    dateID      =        None,
+    posID       =         (0,) 
+    prefix      = 'my dataset' # Note the space in the name!
+    sliceID     =         None
+    datasetType = 'locResults'    
+    
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        posID = posID, sliceID = sliceID)
+    assert_equal(parser.acqID,                  1)
+    assert_equal(parser.channelID,         'A647')
+    assert_equal(parser.posID,               (0,))
+    assert_equal(parser.prefix,      'my_dataset') # Note the underscore
+    assert_equal(parser.sliceID,             None)
+    assert_equal(parser.datasetType, 'locResults')
+    
+@raises(parsers.GenericTypeError)    
+def test_MMParser_Bad_Generic():
+    """MMParser recognizes when a bad generic type is passed.
+    
+    """
+    inputFile = Path('Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
+    
+    parser = parsers.MMParser()
+    parser.parseFilename(inputFile,
+                         datasetType ='generic',
+                         genericTypeName = 'bogusType')
+                        
+def test_MMParser_Generic_GetDatabaseAtom():
+    """MMParser returns a generic database atom.
+    
+    """
+    inputFile = Path('Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
+    
+    parser = parsers.MMParser()
+    parser.parseFilename(inputFile,
+                         datasetType ='generic',
+                         genericTypeName = 'testType')
+    dba = parser.getDatabaseAtom()
+    assert_equal(dba.prefix, 'Cos7_Microtubules')
+    assert_equal(dba.acqID,                    3)
+    assert_equal(dba.datasetType,      'generic')
+    assert_equal(dba.channelID,           'A750')
+    assert_equal(dba.posID,                 (0,))
+    assert_equal(dba.dateID,                None)
+    assert_equal(dba.sliceID,               None)
+    assert_equal(dba.genericTypeName, 'testType')
+    
 def test_FormatMap():
     """FormatMap provides a basic two-way hash table.
     
@@ -452,47 +506,6 @@ def test_FormatMap_Dict_Constructor():
     
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
-    
-def test_MMParser_ConvertsSpacesToUnderscores():
-    """The MMParser will convert spaces in the prefix to underscores.
-    
-    """
-    acqID       =            1
-    channelID   =       'A647'
-    dateID      =        None,
-    posID       =         (0,) 
-    prefix      = 'my dataset' # Note the space in the name!
-    sliceID     =         None
-    datasetType = 'locResults'    
-    
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        posID = posID, sliceID = sliceID)
-    assert_equal(parser.acqID,                  1)
-    assert_equal(parser.channelID,         'A647')
-    assert_equal(parser.posID,               (0,))
-    assert_equal(parser.prefix,      'my_dataset') # Note the underscore
-    assert_equal(parser.sliceID,             None)
-    assert_equal(parser.datasetType, 'locResults')
-    
-@raises(parsers.GenericTypeError)    
-def test_MMParser_Bad_Generic():
-    """MMParser recognizes when a bad generic type is passed.
-    
-    """
-    acqID           =           3
-    channelID       =      'A750'
-    dateID          =        None
-    posID           =       (0,1)
-    prefix          =      'HeLa'
-    sliceID         =        None
-    datasetType     =   'generic'
-    genericTypeName = 'bogusType'
-    
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        genericTypeName = genericTypeName,
-                        posID = posID, sliceID = sliceID)
     
 def test_SimpleParser_ParseFilename_LocResults():
     """SimpleParser correctly converts files to Datasets/DatabaseAtoms.

@@ -12,6 +12,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from matplotlib.pyplot import imread
 from os.path import splitext
 from tifffile import TiffFile
+import importlib
 import sys
 
 """Metaclasses
@@ -306,10 +307,23 @@ class MMParser(Parser):
                                              'been initialized.'))
         
         ids = self.getBasicInfo()
-        dba = database.Dataset(ids['prefix'], ids['acqID'], ids['datasetType'],
-                               self.data, channelID = ids['channelID'],
-                               dateID = ids['dateID'], posID = ids['posID'], 
-                               sliceID   = ids['sliceID'])
+        if ids['datasetType'] != 'generic':
+            dba = database.Dataset(ids['prefix'], ids['acqID'],
+                                   ids['datasetType'], self.data,
+                                   channelID = ids['channelID'],
+                                   dateID = ids['dateID'],
+                                   posID = ids['posID'], 
+                                   sliceID = ids['sliceID'])
+        elif ids['datasetType'] == 'generic':
+            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
+                                                       ids['genericTypeName']))
+            genericType = getattr(mod, ids['genericTypeName'])
+            
+            dba = genericType(ids['prefix'], ids['acqID'], ids['datasetType'],
+                              self.data, channelID = ids['channelID'],
+                              dateID = ids['dateID'], posID = ids['posID'], 
+                              sliceID = ids['sliceID'])
+            
         return dba
         
     def _getDataDefault(self):
@@ -360,7 +374,8 @@ class MMParser(Parser):
                 img = imread(str(self._fullPath))
                 return img
     
-    def parseFilename(self, filename, datasetType = 'locResults'):
+    def parseFilename(self, filename, datasetType = 'locResults',
+                      genericTypeName = None):
         """Parse the filename to extract the acquisition information.
         
         Running this method will reset the parser to an uninitialized state
@@ -368,17 +383,22 @@ class MMParser(Parser):
         
         Parameters
         ----------
-        filename    : str or Path
+        filename        : str or Path
             A string or pathlib Path object containing the dataset's filename.
-        datasetType : str
+        datasetType     : str
             One of the allowable datasetTypes.
+        genericTypeName : str or None
+            The generic dataset type to parse.
             
         """
         # Reset the parser
         self.uninitialized = True   
         
-        if datasetType not in database.typesOfAtoms:
-            raise DatasetError(datasetType)           
+        if datasetType not in config.__Types_Of_Atoms__:
+            raise DatasetError(datasetType)   
+        if (genericTypeName is not None) \
+                   and (genericTypeName not in config.__Registered_Generics__):
+            raise GenericTypeError(genericTypeName)
         
         # Convert Path objects to strings
         if isinstance(filename, pathlib.PurePath):
@@ -427,12 +447,12 @@ class MMParser(Parser):
         elif datasetType == 'generic':
             parsedData = self._parseLocResults(filename)
             (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData
-
-            # Assign ID's to the class fields            
+          
             super(MMParser, self).__init__(prefix, acqID, datasetType,
                                            channelID = channelID,
                                            dateID = dateID, posID = posID,
-                                           sliceID = sliceID)            
+                                           sliceID = sliceID,
+                                           genericTypeName = genericTypeName)            
             
         # Parser is now set and initialized.
         self._uninitialized = False
@@ -558,8 +578,7 @@ class MMParser(Parser):
             # Next, extract the digits and convert them to a tuple
             indexes = re.findall(r'\d{1,}', positionRaw.group(0))
             posID   = tuple([int(index) for index in indexes])
-        
-        # TODO: Copy sliceID part from database._genAtomicID and write tests       
+             
         # These are not currently implemented by the MMParser
         sliceID = None
         dateID  = None

@@ -554,6 +554,8 @@ class HDFDatabase(Database):
         for genericType in files['generic'].keys():
             for currFile in files['generic'][genericType]:
                 try:
+                    parser.parseFilename(currFile, datasetType = 'generic',
+                                         genericTypeName = genericType)
                     if not dryRun:
                         self.put(parser.getDatabaseAtom())
                     
@@ -740,7 +742,8 @@ class HDFDatabase(Database):
         
         # Build the return dataset
         if datasetType == 'generic':
-            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(genericTypeName))
+            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
+                                                              genericTypeName))
             genericType = getattr(mod, genericTypeName)
             
             # Sets the return dataset to the genericType
