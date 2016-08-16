@@ -373,6 +373,9 @@ class MMParser(Parser):
                 # Read image data as a NumPy array
                 img = imread(str(self._fullPath))
                 return img
+        elif self.datasetType == 'generic':
+            # Don't return anything; generics know how to get their own data.
+            return None
     
     def parseFilename(self, filename, datasetType = 'locResults',
                       genericTypeName = None):
