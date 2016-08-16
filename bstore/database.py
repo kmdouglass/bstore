@@ -554,8 +554,11 @@ class HDFDatabase(Database):
         for genericType in files['generic'].keys():
             for currFile in files['generic'][genericType]:
                 try:
-                    # TODO: Add this functionality
-                    pass
+                    if not dryRun:
+                        self.put(parser.getDatabaseAtom())
+                    
+                    datasets.append(parser.getBasicInfo())
+                    
                 except Exception as err:
                     print(("Unexpected error in build() while "
                            "building generics:"),

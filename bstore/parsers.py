@@ -34,6 +34,8 @@ class Parser(metaclass = ABCMeta):
         The color channel associated with the dataset.
     dateID      : str
         The date of the acquistion in the format YYYY-mm-dd.
+    genericTypeName : str
+        The specfic type of generic dataset currently held by the parser.
     posID       : int, or (int, int)
         The position identifier. It is a single element tuple if positions
         were manually set; otherwise, it's a 2-tuple indicating the x and y
@@ -49,6 +51,8 @@ class Parser(metaclass = ABCMeta):
         The color channel associated with the dataset.
     dateID      : str
         The date of the acquistion in the format YYYY-mm-dd.
+    genericTypeName : str
+        The specfic type of generic dataset currently held by the parser.
     posID       : (int,) or (int, int)
         The position identifier. It is a single element tuple if positions were
         manually set; otherwise, it's a 2-tuple indicating the x and y
@@ -63,20 +67,26 @@ class Parser(metaclass = ABCMeta):
        
     """
     def __init__(self, prefix, acqID, datasetType,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
+                 channelID = None, dateID = None, genericTypeName = None,
+                 posID = None, sliceID = None,):
 
-        if datasetType not in database.typesOfAtoms:
+        if datasetType not in config.__Types_Of_Atoms__:
             raise DatasetError(datasetType)
+            
+        if (genericTypeName is not None) \
+            and (genericTypeName not in config.__Registered_Generics__):
+            raise GenericTypeError(genericTypeName)
+        
         
         # These are the essential pieces of information to identify a dataset.
-        self.acqID       =       acqID
-        self.channelID   =   channelID
-        self.dateID      =      dateID
-        self.posID       =       posID
-        self.prefix      =      prefix
-        self.sliceID     =     sliceID
-        self.datasetType = datasetType
+        self.acqID           =           acqID
+        self.channelID       =       channelID
+        self.dateID          =          dateID
+        self.genericTypeName = genericTypeName
+        self.posID           =           posID
+        self.prefix          =          prefix
+        self.sliceID         =         sliceID
+        self.datasetType     =     datasetType
     
     @abstractproperty
     def data(self):
@@ -101,13 +111,14 @@ class Parser(metaclass = ABCMeta):
         
         """
         basicInfo = {
-                     'acqID'         : self.acqID,
-                     'channelID'     : self.channelID,
-                     'dateID'        : self.dateID,
-                     'posID'         : self.posID,
-                     'prefix'        : self.prefix,
-                     'sliceID'       : self.sliceID,
-                     'datasetType'   : self.datasetType
+                     'acqID'           : self.acqID,
+                     'channelID'       : self.channelID,
+                     'dateID'          : self.dateID,
+                     'posID'           : self.posID,
+                     'prefix'          : self.prefix,
+                     'sliceID'         : self.sliceID,
+                     'datasetType'     : self.datasetType,
+                     'genericTypeName' : self.genericTypeName
                      }
                      
         return basicInfo
@@ -267,16 +278,17 @@ class MMParser(Parser):
             self._uninitialized = value
             
             if value:
-                self._fullPath      = None
-                self._filename      = None
-                self._metadata      = None
-                self.acqID          = None
-                self.channelID      = None
-                self.dateID         = None
-                self.posID          = None
-                self.prefix         = None
-                self.sliceID        = None
-                self.datasetType    = None
+                self._fullPath       = None
+                self._filename       = None
+                self._metadata       = None
+                self.acqID           = None
+                self.channelID       = None
+                self.dateID          = None
+                self.genericTypeName = None
+                self.posID           = None
+                self.prefix          = None
+                self.sliceID         = None
+                self.datasetType     = None
         else:
             raise ValueError('Error: _uninitialized must be a bool.')
             
@@ -411,6 +423,16 @@ class MMParser(Parser):
                                            channelID = channelID,
                                            dateID = dateID, posID = posID,
                                            sliceID = sliceID)
+                                           
+        elif datasetType == 'generic':
+            parsedData = self._parseLocResults(filename)
+            (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData
+
+            # Assign ID's to the class fields            
+            super(MMParser, self).__init__(prefix, acqID, datasetType,
+                                           channelID = channelID,
+                                           dateID = dateID, posID = posID,
+                                           sliceID = sliceID)            
             
         # Parser is now set and initialized.
         self._uninitialized = False
@@ -702,6 +724,15 @@ Exceptions
 """    
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed to Parser.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class GenericTypeError(Exception):
+    """Error raised when a bad genericTypeName is passed to Parser.
     
     """
     def __init__(self, value):

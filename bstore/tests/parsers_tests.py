@@ -475,6 +475,25 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     assert_equal(parser.sliceID,             None)
     assert_equal(parser.datasetType, 'locResults')
     
+@raises(parsers.GenericTypeError)    
+def test_MMParser_Bad_Generic():
+    """MMParser recognizes when a bad generic type is passed.
+    
+    """
+    acqID           =           3
+    channelID       =      'A750'
+    dateID          =        None
+    posID           =       (0,1)
+    prefix          =      'HeLa'
+    sliceID         =        None
+    datasetType     =   'generic'
+    genericTypeName = 'bogusType'
+    
+    parser = TestParser(prefix, acqID, datasetType,
+                        channelID = channelID, dateID = dateID,
+                        genericTypeName = genericTypeName,
+                        posID = posID, sliceID = sliceID)
+    
 def test_SimpleParser_ParseFilename_LocResults():
     """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
     
