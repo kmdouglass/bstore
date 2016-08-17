@@ -14,8 +14,12 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools                    import *
+
+# Register the test generic
+from bstore  import config
+config.__Registered_Generics__.append('testType')
+
 from bstore.generic_types.testType import testType
-from bstore                        import config
 from bstore                        import database as db
 from pathlib                       import Path
 from os                            import remove

@@ -14,10 +14,16 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com' 
 
 from nose.tools import *
-from bstore  import parsers, database
+
+# Register the test generic
 from bstore  import config
+config.__Registered_Generics__.append('testType')
+
+from bstore  import parsers, database
 from pathlib import Path
 from tifffile import TiffFile
+
+
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -665,7 +671,7 @@ def test_SimpleParser_GetDatabaseAtom_NotInitialized():
     
     """                             
     parser = parsers.SimpleParser()
-    ds = parser.getDatabaseAtom()
+    parser.getDatabaseAtom()
     
 @raises(Exception)
 def test_SimpleParser_BadParse():
@@ -676,3 +682,11 @@ def test_SimpleParser_BadParse():
                              
     parser = parsers.SimpleParser()
     parser.parseFilename(f, datasetType = 'widefieldImage')
+    
+@raises(ValueError)
+def test_Simple_Parser_No_Generics():
+    """Simple Parser will not parse generics.
+    
+    """
+    parser = parsers.SimpleParser()
+    parser.parseFilename('File', datasetType = 'generic')

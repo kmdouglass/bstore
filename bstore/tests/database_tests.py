@@ -14,7 +14,12 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools   import *
-from bstore       import database, parsers, config
+
+# Register the test generic
+from bstore  import config
+config.__Registered_Generics__.append('testType')
+
+from bstore       import database, parsers
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand

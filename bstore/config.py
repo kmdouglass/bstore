@@ -73,6 +73,4 @@ __MM_PixelSize__ = 'PixelSize_um'
     The list of generic datasetTypes currently recognized by B-Store.
 
 """
-__Registered_Generics__ = [
-                           'testType'
-                          ]
+__Registered_Generics__ = []

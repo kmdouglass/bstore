@@ -713,7 +713,11 @@ class SimpleParser(Parser):
         """
         # Check for a valid datasetType
         if datasetType not in database.typesOfAtoms:
-            raise DatasetError(datasetType)        
+            raise DatasetError(datasetType)    
+            
+        # Don't parse generics
+        if datasetType == 'generic':
+            raise ValueError('Error: Simple Parser cannot parse generics.')
         
         try:
             # Save the full path to the file for later.
