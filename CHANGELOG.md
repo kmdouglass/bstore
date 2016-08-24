@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
   other software environments.
 - Added an example Jupyter notebook on using the cluster/widefield
   overlays.
+- EstimatePhotons multiprocessor for estimating background-corrected
+  photon counts from fluorescent spots.
 
 ### Changed
 - Reformatted docstrings to better match the

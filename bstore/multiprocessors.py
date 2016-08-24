@@ -118,6 +118,115 @@ class AlignToWidefield:
         
         offsets = (dx, dy)
         return offsets
+        
+class EstimatePhotons:
+    """Estimate the number of photons coming from a region of an image.
+    
+    EstimatePhotons performs a (optionally) background-corrected estimate of
+    the number of photons collected from a region of an image. It is useful
+    for estimating photon counts from individual fluorescent spots with
+    approximately circular symmetry.
+    
+    Parameters
+    ----------
+    spotMaskRadius : int
+        The size of the circular mask in pixels.
+    bgMaskSize     : int
+        The length of a side of the square background mask in pixels.
+    aduOffset      : int
+        The camera-specific offset applied to each pixel. Units are ADU.
+    cameraGain     : float
+        The camera-specific gain. Units are ADU per photoelectron.
+        
+    Attributes
+    ----------
+    spotMaskRadius : int
+        The size of the circular mask in pixels.
+    bgMaskSize     : int
+        The length of a side of the square background mask in pixels.
+    aduOffset      : int
+        The camera-specific offset applied to each pixel. Units are ADU.
+    cameraGain     : float
+        The camera-specific gain. Units are ADU per photoelectron.
+    bgCorrect      : bool
+        Determines whether the background will be estimated and corrected for.
+    
+    """
+    def __init__(self, spotMaskRadius = 4, bgMaskSize = 11, aduOffset = 100, 
+                 cameraGain = 0.5, bgCorrect = True):
+        self.aduOffset      = aduOffset
+        self.bgMaskSize     = bgMaskSize
+        self.cameraGain     = cameraGain
+        self.spotMaskRadius = spotMaskRadius
+        
+    def __call__(self, img, coords):
+        """Estimate the photon counts from the regions defined in coords.
+        
+        Parameters
+        ----------
+        img : 2D array of int
+            The image.
+        coords : list of (int, int)
+            List of pixel coordinates in row, column order that define regions
+            around which the photon counts should be estimated.
+        
+        """
+        pass
+    
+    def _circMask(self, xc, yc, radius, imgShape):
+        """Creates a circular mask centered at pixels xc and yc.
+        
+        Parameters
+        ----------
+        xc, yc   : int, int
+            Pixel coordinates for the mask center. yc corresponds to the row,
+            xc to the column.
+        radius   : int
+            Radius of the circular mask in pixels.
+        imgShape : (int, int)
+            The shape of the input image.
+            
+        Returns
+        -------
+        mask     : 2D array of bool
+            The mask to apply to an image of shape imgShape.
+            
+        """
+        ny, nx = imgShape
+        y,x    = np.ogrid[-yc:ny - yc, -xc:nx - xc]
+        mask   = x * x + y * y <= radius * radius
+    
+        return mask
+    
+    def _squareMask(self, xc, yc, length, imgShape):
+        """Creates a square mask centered at pixels xc and yc.
+        
+        Parameters
+        ----------
+        xc, yc   : int, int
+            Pixel coordinates for the mask center. yc corresponds to the row,
+            xc to the column.
+        length   : int
+            Length of a side of the square mask in pixels.
+        imgShape : (int, int)
+            The shape of the input image.
+            
+        Returns
+        -------
+        mask     : 2D array of bool
+            The mask to apply to an image of shape imgShape.
+            
+        """
+        assert isinstance(length, int), 'Error: length must be of type int.'
+    
+        start = int(-np.ceil(length / 2) + 1)
+        stop  = int(np.floor(length / 2) + 1)
+    
+        ny, nx = imgShape
+        mask   = np.zeros((ny, nx), dtype = np.bool)
+        mask[(yc + start):(yc + stop), (xc + start):(xc + stop)] = True
+    
+        return mask
     
 class OverlayClusters:
     """Produces overlays of clustered localizations on widefield images.
