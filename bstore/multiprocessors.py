@@ -120,7 +120,7 @@ class AlignToWidefield:
         return offsets
         
 class EstimatePhotons:
-    """Estimate the number of photons coming from a region of an image.
+    """Estimate the number of photons coming from regions of an image.
     
     EstimatePhotons performs a (optionally) background-corrected estimate of
     the number of photons collected from a region of an image. It is useful
@@ -143,13 +143,24 @@ class EstimatePhotons:
     spotMaskRadius : int
         The size of the circular mask in pixels.
     bgMaskSize     : int
-        The length of a side of the square background mask in pixels.
+        The length of a side of the square background mask in pixels. This is
+        ignored if bgCorrect is False.
     aduOffset      : int
         The camera-specific offset applied to each pixel. Units are ADU.
     cameraGain     : float
         The camera-specific gain. Units are ADU per photoelectron.
     bgCorrect      : bool
         Determines whether the background will be estimated and corrected for.
+        
+    Notes
+    -----
+    Due to the nature of computing masks of discrete arrays, this class works
+    best when spotMaskRadius and bgMaskSize are even and odd, respectively.
+    
+    The background is estimated by computing the median photon count over all
+    the pixels in a square window centered on the input regions and excluding
+    pixels inside the spot mask. The background size, bgMaskSize, should
+    therefore be greater than twice the spotMaskRadius.
     
     """
     def __init__(self, spotMaskRadius = 4, bgMaskSize = 11, aduOffset = 100, 
@@ -158,6 +169,7 @@ class EstimatePhotons:
         self.bgMaskSize     = bgMaskSize
         self.cameraGain     = cameraGain
         self.spotMaskRadius = spotMaskRadius
+        self.bgCorrect      = bgCorrect
         
     def __call__(self, img, coords):
         """Estimate the photon counts from the regions defined in coords.
@@ -169,9 +181,52 @@ class EstimatePhotons:
         coords : list of (int, int)
             List of pixel coordinates in row, column order that define regions
             around which the photon counts should be estimated.
-        
+            
+        Returns
+        -------
+        photons   : array of float
+            The estimated number of photons coming from each spot specified in
+            coords.
+        background: array of float
+            The median number of photons per pixel in the immediate region
+            surrounding the spot.
+            
         """
-        pass
+        photons    = np.zeros(len(coords))
+        background = np.zeros(len(coords))
+        
+        # Compute the mask for each coordinate pair
+        for ctr, currCoords in enumerate(coords):
+            y, x = currCoords
+            
+            try:
+                spotMask = self._circMask(x, y, self.spotMaskRadius, img.shape)
+                # Compute a background estimate and correction if required
+                if self.bgCorrect:  
+                    assert self.bgMaskSize > 2 * self.spotMaskRadius, (''
+                        'Error: bgMaskSize is less than half spotMaskRadius')
+                    
+                    bgMask = np.logical_xor(spotMask,
+                                            self._squareMask(x, y,
+                                                             self.bgMaskSize,
+                                                             img.shape)
+                                            )
+                    background[ctr] = np.median(img[bgMask]) - self.aduOffset
+                else:
+                    background[ctr] = 0
+                    
+            except IndexError:
+                # An index error will be raised for regions that are
+                # too close to the image boundary. For these, don't compute
+                # any photon estimate.
+                photons[ctr]    = np.nan
+                background[ctr] = np.nan
+                continue
+                
+            photons[ctr] =np.sum(img[spotMask]-self.aduOffset-background[ctr])\
+                              / self.cameraGain
+                               
+        return photons, background
     
     def _circMask(self, xc, yc, radius, imgShape):
         """Creates a circular mask centered at pixels xc and yc.
@@ -193,6 +248,11 @@ class EstimatePhotons:
             
         """
         ny, nx = imgShape
+        
+        if (xc < radius) or (yc < radius) \
+            or (nx - xc <= radius) or (ny -yc <= radius):
+               raise IndexError('Error: mask overlaps image boundary.')        
+        
         y,x    = np.ogrid[-yc:ny - yc, -xc:nx - xc]
         mask   = x * x + y * y <= radius * radius
     
