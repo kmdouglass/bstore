@@ -374,7 +374,7 @@ class MMParser(Parser):
                 img = imread(str(self._fullPath))
                 return img
         elif self.datasetType == 'generic':
-            # Don't return anything; generics know how to get their own data.
+            # TODO: Implement a generic function for reading data from files.
             return None
     
     def parseFilename(self, filename, datasetType = 'locResults',
