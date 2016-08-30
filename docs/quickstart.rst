@@ -28,7 +28,7 @@ Installation is most easily performed using the Anaconda package
 manager::
 
   conda update conda
-  conda install -c kmdouglass -c soft-matter bstore
+  conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 
 Alternatively, the source code for B-Store may be cloned from
 https://github.com/kmdouglass/bstore/. A list of dependencies may be
