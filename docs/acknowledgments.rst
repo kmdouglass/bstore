@@ -7,8 +7,8 @@ Acknowledgments
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 0 $
-:date: 2016-07-10
+:revision: $Revision: 1 $
+:date: 2016-08-30
 
 :abstract:
 
@@ -54,6 +54,7 @@ Software
 + `matplotlib <http://matplotlib.org/>`_
 + `h5py <http://www.h5py.org/>`_
 + `scikit-learn <http://scikit-learn.org/stable/>`_
++ `tifffile <https://pypi.python.org/pypi/tifffile>`_
 
 
 

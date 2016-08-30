@@ -7,8 +7,8 @@ Quick Start
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: Revision: 0
-:date: 2016-07-23
+:revision: Revision: 1
+:date: 2016-08-30
 
 :abstract:
 
@@ -28,7 +28,7 @@ Installation is most easily performed using the Anaconda package
 manager::
 
   conda update conda
-  conda install -c kmdouglass -c soft-matter bstore
+  conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 
 Alternatively, the source code for B-Store may be cloned from
 https://github.com/kmdouglass/bstore/. A list of dependencies may be

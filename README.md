@@ -43,7 +43,7 @@ B-Store is most easily installed from the [Anaconda Cloud package repository](ht
 conda update conda
 conda create --name bstore jupyter
 source activate bstore
-conda install -c kmdouglass -c soft-matter bstore
+conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 ```
 
 ## Windows
@@ -51,7 +51,7 @@ conda install -c kmdouglass -c soft-matter bstore
 conda update conda
 conda create --name bstore jupyter
 activate bstore
-conda install -c kmdouglass -c soft-matter bstore
+conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 ```
 
 # What is B-Store?
