@@ -19,7 +19,6 @@ from nose.tools                    import *
 from bstore  import config
 config.__Registered_DatasetTypes__.append('Localizations')
 
-#from bstore.generic_types.averageFiducial import averageFiducial
 from bstore.datasetTypes.Localizations  import Localizations
 from bstore                        import database as db
 from bstore                        import parsers

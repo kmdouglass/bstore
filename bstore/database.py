@@ -562,22 +562,49 @@ class HDFDatabase(Database):
                 print(err)
         del(files['locResults'])
         
-        # Next put the generic data
+        # Next put the generic data; first put types that are not attributes
         for genericType in files['generic'].keys():
             for currFile in files['generic'][genericType]:
                 try:
                     parser.parseFilename(currFile, datasetType = 'generic',
                                          datasetTypeName = genericType)
-                    if not dryRun:
-                        self.put(parser.getDatabaseAtom())
+                                         
+                    dbAtom = parser.getDatabaseAtom()
+                    # Move to the next type if it's an attribute
+                    if dbAtom.attributeOf is not None:
+                        continue
+                    elif not dryRun:
+                        self.put(dbAtom)
                     
                     datasets.append(parser.getBasicInfo())
-                    
+                
                 except Exception as err:
                     print(("Unexpected error in build() while "
                            "building generics:"),
                     sys.exc_info()[0])
                     print(err)
+                
+        # Now place the attributes
+        for genericType in files['generic'].keys():
+            for currFile in files['generic'][genericType]:
+                try:
+                    parser.parseFilename(currFile, datasetType = 'generic',
+                                         datasetTypeName = genericType)
+                    
+                    dbAtom = parser.getDatabaseAtom()
+                    # Move to the next type if it's not an attribute
+                    if dbAtom.attributeOf is None:
+                        continue                         
+                    if not dryRun:
+                        self.put(dbAtom)
+                    
+                    datasets.append(parser.getBasicInfo())
+                
+                except Exception as err:
+                    print(("Unexpected error in build() while "
+                           "building generics:"),
+                    sys.exc_info()[0])
+                    print(err)            
         del(files['generic'])
         
         # Finally put all other data into the database
@@ -856,7 +883,19 @@ class HDFDatabase(Database):
         if datasetType == 'widefieldImage':
             hdfKey = hdfKey + '/image_data'
             dsID.data = self._getWidefieldImage(hdfKey)
-        if datasetType == 'generic':
+        if datasetType == 'generic' and dsID.attributeOf is None:
+            dsID.data = dsID.get(self._dbName, hdfKey)
+        if datasetType == 'generic' and dsID.attributeOf is not None:
+            # Recreate the hdf key to point towards the attributeOf dataset
+            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                             dsID.attributeOf))
+            dsType = getattr(mod, dsID.attributeOf)
+            tempID = dsType(ids['prefix'], ids['acqID'], 'generic', None,
+                                channelID = ids['channelID'],
+                                dateID = ids['dateID'], posID = ids['posID'],
+                                sliceID = ids['sliceID'])
+            
+            hdfKey    = self._genKey(tempID)
             dsID.data = dsID.get(self._dbName, hdfKey)
             
         return dsID
@@ -1067,6 +1106,15 @@ class HDFDatabase(Database):
         ap           = config.__HDF_AtomID_Prefix__
         mp           = config.__HDF_Metadata_Prefix__
         
+        # Determine whether the datasetTypeName is an attribute
+        assert datasetTypeName in config.__Registered_DatasetTypes__, ('Error: '
+            '{:s} not in __Registered_DatasetTypes__.'.format(datasetTypeName))
+        mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                              datasetTypeName))
+        inputType = getattr(mod, datasetTypeName)
+        
+        tempDS = inputType('temp', 1, 'generic', None)                
+        
         # Open the hdf file
         with h5py.File(self._dbName, 'r') as f:
             # Extract all localization datasets from the HDF5 file by matching
@@ -1088,6 +1136,15 @@ class HDFDatabase(Database):
                     and (ap + 'datasetTypeName' in f[name].attrs) \
                     and (f[name].attrs[ap + 'datasetTypeName'] \
                          == datasetTypeName):
+                        resultGroups.append(name)
+                        
+                # Read generics that are attributes here.
+                if (searchString == 'generic') \
+                    and (ap + 'datasetTypeName' in f[name].attrs) \
+                    and (tempDS.attributeOf is not None) \
+                    and (f[name].attrs[ap + 'datasetTypeName'] \
+                        == tempDS.attributeOf) \
+                    and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)
                                
                 # locMetadata is not explicitly saved as a dataset,
@@ -1119,6 +1176,18 @@ class HDFDatabase(Database):
                                            'locMetadata', None,
                                            ids['channelID'], ids['dateID'],
                                            ids['posID'], ids['sliceID'])
+                                           
+        # Convert datasetType for attributes special case
+        if searchString == 'generic' and tempDS.attributeOf is not None:
+            for (index, atom) in enumerate(atomicIDs):
+                # Can't set atom attributes directly, so make new ones
+                ids = atom.getInfoDict()
+                ids['datasetType']     = 'generic'
+                ids['datasetTypeName'] = tempDS.datasetTypeName
+                atomicIDs[index] = inputType(ids['prefix'], ids['acqID'],
+                                             'generic', None,
+                                             ids['channelID'], ids['dateID'],
+                                             ids['posID'], ids['sliceID'])
         
         return atomicIDs
         

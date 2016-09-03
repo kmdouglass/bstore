@@ -20,10 +20,10 @@ from bstore  import config
 config.__Registered_DatasetTypes__.append('Localizations')
 config.__Registered_DatasetTypes__.append('LocMetadata')
 
-#from bstore.generic_types.averageFiducial import averageFiducial
 from bstore.datasetTypes.Localizations import Localizations
 from bstore.datasetTypes.LocMetadata   import LocMetadata
 from bstore                        import database as db
+from bstore                        import parsers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
@@ -87,8 +87,7 @@ def test_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
- 
-'''       
+        
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
@@ -101,6 +100,10 @@ def test_Get_Data():
         data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         ds = Localizations(prefix, acqID, datasetType, data)
         
+        # Make up the attribute DatasetType
+        metadata = {'A' : 2, 'B' : 'hello'}
+        dsAttr   = LocMetadata(prefix, acqID, datasetType, metadata)
+        
         pathToDB = testDataRoot
         # Remove database if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
@@ -108,9 +111,10 @@ def test_Get_Data():
         
         myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
+        myDB.put(dsAttr)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(Localizations(prefix, acqID, datasetType, None))
+        myNewDS = myDB.get(LocMetadata(prefix, acqID, datasetType, None))
         ids     = myNewDS.getInfoDict()
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
@@ -119,15 +123,13 @@ def test_Get_Data():
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
         assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['datasetTypeName'],   'Localizations')   
-        assert_equal(myNewDS.data.loc[0, 'A'], 1)
-        assert_equal(myNewDS.data.loc[1, 'A'], 2)
-        assert_equal(myNewDS.data.loc[0, 'B'], 3)
-        assert_equal(myNewDS.data.loc[1, 'B'], 4)
+        assert_equal(ids['datasetTypeName'],     'LocMetadata')
+        assert_equal(myNewDS.data['A'],                      2)
+        assert_equal(myNewDS.data['B'],                'hello')
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-       
+             
 def test_HDF_Database_Build():
     """The database build is performed successfully.
     
@@ -135,7 +137,7 @@ def test_HDF_Database_Build():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatabase(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
@@ -144,33 +146,53 @@ def test_HDF_Database_Build():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               filenameStrings  = {'Localizations' : '_DC.dat'},
+               filenameStrings  = {'Localizations' : '_DC.dat',
+                                   'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        ok_(key1 + 'locResults_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
         ok_(key1 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
+        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                                 'SMLM_acqID'))
+        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__(
                                                        'SMLM_Metadata_Height'))
+        ok_(hdf[key1 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+                                                 'Metadata_SMLM_datasetType')))
+        
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
         ok_(key2 + 'Localizations_A647_Pos0' in hdf)
+        ok_(hdf[key2+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                                 'SMLM_acqID'))
+        ok_(hdf[key2+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                       'SMLM_Metadata_Height'))
+        ok_(hdf[key2 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+                                                 'Metadata_SMLM_datasetType')))
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
         ok_(key3 + 'Localizations_A647_Pos0' in hdf)
+        ok_(hdf[key3 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+                                                 'Metadata_SMLM_datasetType')))
+        ok_(hdf[key3+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                                 'SMLM_acqID'))
+        ok_(hdf[key3+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                       'SMLM_Metadata_Height'))
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
         ok_(key4 + 'Localizations_A647_Pos0' in hdf)
+        ok_(hdf[key4 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+                                                 'Metadata_SMLM_datasetType')))
+        ok_(hdf[key4+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                                 'SMLM_acqID'))
+        ok_(hdf[key4+'Localizations_A647_Pos0'].attrs.__contains__(
+                                                       'SMLM_Metadata_Height'))
     
     # Remove test database file
     remove(str(dbName))
- 
-def test_HDF_Database_Query_with_fiducialTracks():
+
+def test_HDF_Database_Query():
     """The database query is performed successfully with the datasetType.
     
     """
@@ -186,16 +208,17 @@ def test_HDF_Database_Query_with_fiducialTracks():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               filenameStrings  = {'Localizations'  : '_DC.dat'},
+               filenameStrings  = {'Localizations' : '_DC.dat',
+                                   'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)
     
     results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'Localizations')
+                         datasetTypeName = 'LocMetadata')
     
     ok_(len(results) != 0, 'Error: No dataset types found in DB.')
     for ds in results:
         assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'Localizations')
+        assert_equal(ds.datasetTypeName, 'LocMetadata')
     
     # Remove test database file
-    remove(str(dbName))'''
+    remove(str(dbName))
