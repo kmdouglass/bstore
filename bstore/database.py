@@ -14,6 +14,7 @@ import re
 import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
+import importlib
 
 pp = pprint.PrettyPrinter(indent=4)  
 
@@ -279,17 +280,23 @@ class DatabaseAtom(metaclass = ABCMeta):
         
         Returns
         -------
-        prefix      : str
-        acqID       : int
-        datasetType : str
-        data        : mixed
-        channelID   : str
-        dateID      : str
-        posID       : int, or (int, int)
+        prefix          : str
+        acqID           : int
+        datasetType     : str
+        data            : mixed
+        channelID       : str
+        dateID          : str
+        posID           : int, or (int, int)
+        genericTypeName : string (optional)
         
         """
-        return self._prefix, self._acqID, self._datasetType, \
-               self._channelID, self._dateID, self._posID, self._sliceID
+        if self._datasetType == 'generic':
+            return self._prefix, self._acqID, self._datasetType, \
+                   self._channelID, self._dateID, self._posID, self._sliceID, \
+                   self.genericTypeName
+        else:
+            return self._prefix, self._acqID, self._datasetType, \
+                   self._channelID, self._dateID, self._posID, self._sliceID
                
     def getInfoDict(self):
         """Returns the dataset information (without the data) as a dict.
@@ -307,7 +314,31 @@ class DatabaseAtom(metaclass = ABCMeta):
                  'sliceID'     : self._sliceID,
                  'datasetType' : self._datasetType,
                  'dateID'      : self._dateID}
+                 
+        if self._datasetType == 'generic':
+            dsIDs['genericTypeName'] = self.genericTypeName
+            
         return dsIDs
+        
+class GenericDatasetType(metaclass = ABCMeta):
+    """Metaclass for a generic datasetType. Use this to add new datasetTypes.
+    
+    """
+    @abstractproperty
+    def genericTypeName():
+        pass
+    
+    @abstractmethod
+    def get():
+        pass
+    
+    @abstractmethod
+    def put():
+        pass
+
+    @abstractmethod
+    def readFromFile():
+        pass
 
 """Concrete classes
 -------------------------------------------------------------------------------
@@ -450,8 +481,9 @@ class HDFDatabase(Database):
         return config.__HDF_AtomID_Prefix__
     
     def build(self, parser, searchDirectory, dryRun = False,
-              locResultsString     = 'locResults.dat',
+              genericStrings       = {},
               locMetadataString    = 'locMetadata.json',
+              locResultsString     = 'locResults.dat',
               widefieldImageString = 'WF*.ome.tif'):
         """Builds a database by traversing a directory for experimental files.
         
@@ -463,10 +495,14 @@ class HDFDatabase(Database):
             This directory and all subdirectories will be traversed.
         dryRun               : bool
             Test the database build without actually creating the database.
-        locResultsString     : str
-            String that identifies locResults files.
+        genericStrings       : dict
+            Dictionary of key-value pairs, where each key is the name of a
+            generic data type and each value is a string contained by the
+            end of the files corresponding to that data type.
         locMetadataString    : str
             String that identifies locMetadata files.
+        locResultsString     : str
+            String that identifies locResults files.
         widefieldImageString : str
             Glob string that identifies widefield images.
             
@@ -476,7 +512,8 @@ class HDFDatabase(Database):
             A sorted DataFrame for investigating what files were actually
             added to the database.
             
-        """       
+        """ 
+        # TODO: Update this to work with generics
         # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
         FilesGen = {}
@@ -485,13 +522,21 @@ class HDFDatabase(Database):
         FilesGen['locMetadata']    = searchDirectory.glob('**/*{:s}'.format(
                                                             locMetadataString))
         FilesGen['widefieldImage'] = searchDirectory.glob('**/*{:s}'.format(
-                                                         widefieldImageString))
+                                                         widefieldImageString))            
+        FilesGen['generic']        = []
                                                          
         # Build the dictionary of files with keys describing
         # their dataset type
         files = {}                                                 
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
+            
+        # Check that all generic types are registered
+        self._checkForRegisteredTypes(list(genericStrings.keys()))
+            
+        # Add generic files to the dict
+        files['generic'] = self._buildGenericFileList(searchDirectory,
+                                                      genericStrings)
         
         # Keep a running record of what datasets were parsed
         datasets = []        
@@ -510,11 +555,28 @@ class HDFDatabase(Database):
                 print("Unexpected error in build() while building locResults:",
                       sys.exc_info()[0])
                 print(err)
-        
-        # Place all other data into the database
         del(files['locResults'])
+        
+        # Next put the generic data
+        for genericType in files['generic'].keys():
+            for currFile in files['generic'][genericType]:
+                try:
+                    parser.parseFilename(currFile, datasetType = 'generic',
+                                         genericTypeName = genericType)
+                    if not dryRun:
+                        self.put(parser.getDatabaseAtom())
+                    
+                    datasets.append(parser.getBasicInfo())
+                    
+                except Exception as err:
+                    print(("Unexpected error in build() while "
+                           "building generics:"),
+                    sys.exc_info()[0])
+                    print(err)
+        del(files['generic'])
+        
+        # Finally put all other data into the database
         for currType in files.keys(): 
-            
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(currFile, datasetType = currType)
@@ -541,6 +603,52 @@ class HDFDatabase(Database):
             print('0 files were successfully parsed.')
                 
         return buildResults
+        
+    def _buildGenericFileList(self, searchDirectory, genericStrings):
+        """Builds a list of the generic files in a supplied folder for build().
+        
+        Parameters
+        ----------
+        searchDirectory : str or Path
+            This directory and all subdirectories will be traversed.
+        genericStrings  : dict
+            Dictionary of key-value pairs, where each key is the name of a
+            generic data type and each value is a string contained by the
+            end of the files corresponding to that data type.
+            
+        Returns
+        -------
+        files : dict of list of str
+            Dictionary whose keys are the generic type names and whose values
+            are lists of strings containing the path to files that satisfy the
+            globbed search.
+        
+        """
+        # TODO: Handle case when genericStrings is empty
+        FilesGen = {}
+        files    = {}
+        for genericName, fileID in genericStrings.items():
+            # Do not process any generic type unless its currently registered
+            # with B-Store
+            if genericName not in config.__Registered_Generics__:
+                continue
+            else:
+                FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
+                                                                       fileID))
+        # Build the dictionary of files with keys describing
+        # their generic dataset type                                                               
+        for genericName in FilesGen.keys():
+            files[genericName] = sorted(FilesGen[genericName])
+            
+        return files
+    
+    def _checkForRegisteredTypes(self, typeList):
+        """Verifies that each type in typeList is registered.
+        
+        """
+        for typeName in typeList:
+            if typeName not in config.__Registered_Generics__:
+                raise GenericTypeError(typeName)
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
@@ -611,6 +719,12 @@ class HDFDatabase(Database):
         
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
+        
+        # Change datasetType to 'generic' for creation of a generic type later
+        if datasetType in config.__Registered_Generics__:
+            genericTypeName = datasetType
+            datasetType     = 'generic'
+        
         data        = None
         
         channelID = [channel
@@ -641,11 +755,20 @@ class HDFDatabase(Database):
             index = re.findall(r'\d+', sliceRaw.group(0))
             sliceID = int(index[0])
         
-        returnDS = Dataset(prefix, acqID, datasetType, data,
-                           channelID = channelID,
-                           dateID    = dateID,
-                           posID     = posID,
-                           sliceID   = sliceID)
+        # Build the return dataset
+        if datasetType == 'generic':
+            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
+                                                              genericTypeName))
+            genericType = getattr(mod, genericTypeName)
+            
+            # Sets the return dataset to the genericType
+            returnDS = genericType(prefix, acqID, datasetType, data,
+                                   channelID = channelID, dateID = dateID,
+                                   posID = posID, sliceID = sliceID)
+        else:
+            returnDS = Dataset(prefix, acqID, datasetType, data,
+                               channelID = channelID, dateID = dateID,
+                               posID = posID,sliceID = sliceID)
         return returnDS
 
     def _genKey(self, atom):
@@ -684,66 +807,54 @@ class HDFDatabase(Database):
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
         
         # locMetadata should be appended to a dataset starting with locResults
-        if atom.datasetType != 'locMetadata':        
+        # generic datasetTypes should be named after their genericTypeName
+        if atom.datasetType != 'locMetadata' and atom.datasetType != 'generic':        
             return acqKey + '/' + atom.datasetType + otherIDs
-        else:
+        elif atom.datasetType == 'locMetadata':
             return acqKey + '/locResults' + otherIDs
+        elif atom.datasetType == 'generic':
+            return acqKey + '/' + atom.genericTypeName + otherIDs
             
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
         
         Parameters
         ----------
-        dsID       : dict or DatabaseAtom
-            Either key-value pairs uniquely identifying the dataset in
-            the database or a DatabaseAtom with a possibly empty 'data'
-            field that may be used to identify the dataset.
+        dsID     : Dataset
+            A Dataset with a possibly empty 'data' field that may be used to
+            identify the dataset.
             
         Returns
         -------
-        returnDS : Dataset
+        dsID : Dataset
+            The same Dataset but with a filled/modified data field.
         
         """
-        if not isinstance(dsID, DatabaseAtom):
-            try:
-                acqID       = dsID['acqID']
-                channelID   = dsID['channelID']
-                dateID      = dsID['dateID']
-                posID       = dsID['posID']
-                prefix      = dsID['prefix']
-                sliceID     = dsID['sliceID']
-                datasetType = dsID['datasetType']
-            except KeyError as e:
-                print(('There is an error with the dict supplied to get(). '
-                       'The following keys may be incorrect:'))
-                print(e.args)
-                raise
-        else:
-            prefix, acqID, datasetType, channelID, dateID, posID, sliceID = \
-                                                                 dsID.getInfo()
+        ids = dsID.getInfoDict()             
+        datasetType = ids['datasetType']
+        
+        if 'genericTypeName' in ids:
+            assert ids['genericTypeName'] in config.__Registered_Generics__
             
-        # Use returnDS to get the key pointing to the dataset
-        returnDS = Dataset(prefix, acqID, datasetType, None,
-                           channelID = channelID, dateID = dateID,
-                           posID = posID, sliceID = sliceID)
-        hdfKey   = self._genKey(returnDS)
+        hdfKey   = self._genKey(dsID)
 
         # Ensure that the key exists        
         try:
-            self._checkKeyExistence(returnDS)
+            self._checkKeyExistence(dsID)
         except HDF5KeyExists:
             pass
         
         if datasetType == 'locResults':
-            returnDS.data = read_hdf(self._dbName, key = hdfKey)
+            dsID.data = read_hdf(self._dbName, key = hdfKey)
         if datasetType == 'locMetadata':
-            returnDS.data = self._getLocMetadata(hdfKey)
+            dsID.data = self._getLocMetadata(hdfKey)
         if datasetType == 'widefieldImage':
             hdfKey = hdfKey + '/image_data'
-            returnDS.data = self._getWidefieldImage(hdfKey)
-            # TODO: Read metadata entries back into a TiffFile object
+            dsID.data = self._getWidefieldImage(hdfKey)
+        if datasetType == 'generic':
+            dsID.data = dsID.get(self._dbName, hdfKey)
             
-        return returnDS
+        return dsID
             
     def _getLocMetadata(self, hdfKey):
         """Returns the metadata associated with a localization dataset.
@@ -809,7 +920,7 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        atom   : DatabaseAtom
+        atom   : DatabaseAtom or Dataset
         
         """
         self._checkKeyExistence(atom)
@@ -833,6 +944,12 @@ class HDFDatabase(Database):
             self._putLocMetadata(atom)
         elif atom.datasetType == 'widefieldImage':
             self._putWidefieldImage(atom)
+            self._writeDatasetIDs(atom)
+        elif atom.datasetType == 'generic':
+            assert atom.genericTypeName in config.__Registered_Generics__, \
+                   'Type {0} is unregistered.'.format(atom.genericTypeName)
+            
+            atom.put(self._dbName, key)
             self._writeDatasetIDs(atom)
     
     def _putLocMetadata(self, atom):
@@ -905,13 +1022,16 @@ class HDFDatabase(Database):
         finally:
             hdf.close()
             
-    def query(self, datasetType = 'locResults'):
+    def query(self, datasetType = 'locResults', genericTypeName = None):
         """Returns a set of database atoms inside this database.
 
         Parameters
         ----------
-        datasetType : str
+        datasetType     : str
             The type of data to search for.
+        genericTypeName : str
+            The generic dataset type to search for. This only matters when
+            datasetType is 'generic'.
         
         Returns
         -------
@@ -931,22 +1051,33 @@ class HDFDatabase(Database):
             # ('table' not in name) excludes the subgroup inside every
             # processed_localization parent group.
             resultGroups = []
-            def find_locs(name):
-                """Finds localization files matching the name pattern."""
+            def find_datasets(name):
+                """Finds datasets matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
                 if (ap + 'datasetType' in f[name].attrs) \
-                       and (f[name].attrs[ap + 'datasetType'] == searchString):
-                               resultGroups.append(name)
+                    and (f[name].attrs[ap + 'datasetType'] == searchString) \
+                    and searchString != 'generic':
+                        resultGroups.append(name)
+                               
+                # If 'generic' is the datasetType, check that the specific
+                # genericTypeName matches
+                if (searchString == 'generic') \
+                    and (ap + 'genericTypeName' in f[name].attrs) \
+                    and (f[name].attrs[ap + 'genericTypeName'] \
+                         == genericTypeName):
+                        resultGroups.append(name)
                                
                 # locMetadata is not explicitly saved as a dataset,
-                # so handle this case here
+                # so handle this case here. locMetadata has its own special
+                # attribute that identifies itself, seen as
+                # mp + ap + 'datasetType' below
                 if (searchString == 'locMetadata') \
                     and (ap + 'datasetType' in f[name].attrs) \
                     and (f[name].attrs[ap + 'datasetType'] == 'locResults') \
                     and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)
                 
-            f.visit(find_locs)
+            f.visit(find_datasets)
         
         # Read attributes of each key in resultGroups for SMLM_*
         # and convert them to a dataset ID.
@@ -1025,12 +1156,26 @@ class HDFDatabase(Database):
             # Current version of this software
             hdf[key].attrs[atomPrefix +'Version'] = \
                                                config.__bstore_Version__
+                                               
+            # Write the generic type name if this is a generic type
+            if atom.datasetType == 'generic':
+                hdf[key].attrs[atomPrefix + 'genericTypeName'] = \
+                                                           atom.genericTypeName
             
 """Exceptions
 -------------------------------------------------------------------------------
 """
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class GenericTypeError(Exception):
+    """Error raised when a bad or unregistered genericTypeName is used.
     
     """
     def __init__(self, value):
