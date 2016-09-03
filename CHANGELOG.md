@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
   the put() and get() behaviors from the database so that each
   datasetType knows how to handle its own data.
 
+### Changed
+- The `particle` column is now saved when using the MergeFang stats
+  computer with the Merge processor and CSVBatchProcessor. Previously,
+  it was not being saved because the the stats computer was making it
+  an index of the output DataFrame; the CSVBatchProcessor does not
+  save DataFrame indexes.
+
 ## [v0.2.0]
 ### Added
 - OME-XML and Micro-Manager metadata are now recorded in the same HDF
