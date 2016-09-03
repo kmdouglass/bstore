@@ -2,7 +2,7 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-"""Unit tests for the testType generic dataset type.
+"""Unit tests for the FiducialTracks DatasetType.
 
 Notes
 -----
@@ -135,7 +135,7 @@ def test_HDF_Database_Build_with_fiducialTracks():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'FiducialTracks'  : '_Fids.dat',
+               filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                    'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
@@ -182,7 +182,7 @@ def test_HDF_Database_Query_with_fiducialTracks():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'FiducialTracks'  : '_Fids.dat',
+               filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                    'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     

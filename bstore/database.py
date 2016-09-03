@@ -483,7 +483,7 @@ class HDFDatabase(Database):
         return config.__HDF_AtomID_Prefix__
     
     def build(self, parser, searchDirectory, dryRun = False,
-              genericStrings       = {},
+              filenameStrings      = {},
               locMetadataString    = 'locMetadata.json',
               locResultsString     = 'locResults.dat',
               widefieldImageString = 'WF*.ome.tif'):
@@ -497,10 +497,10 @@ class HDFDatabase(Database):
             This directory and all subdirectories will be traversed.
         dryRun               : bool
             Test the database build without actually creating the database.
-        genericStrings       : dict
+        filenameStrings      : dict
             Dictionary of key-value pairs, where each key is the name of a
-            generic data type and each value is a string contained by the
-            end of the files corresponding to that data type.
+            DataType and each value is a string contained by the end of the
+            files corresponding to that DataType.
         locMetadataString    : str
             String that identifies locMetadata files.
         locResultsString     : str
@@ -533,11 +533,11 @@ class HDFDatabase(Database):
             files[datasetType] = sorted(FilesGen[datasetType])
             
         # Check that all generic types are registered
-        self._checkForRegisteredTypes(list(genericStrings.keys()))
+        self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
         # Add generic files to the dict
         files['generic'] = self._buildGenericFileList(searchDirectory,
-                                                      genericStrings)
+                                                      filenameStrings)
         
         # Keep a running record of what datasets were parsed
         datasets = []        
@@ -605,14 +605,14 @@ class HDFDatabase(Database):
                 
         return buildResults
         
-    def _buildGenericFileList(self, searchDirectory, genericStrings):
+    def _buildGenericFileList(self, searchDirectory, filenameStrings):
         """Builds a list of the generic files in a supplied folder for build().
         
         Parameters
         ----------
         searchDirectory : str or Path
             This directory and all subdirectories will be traversed.
-        genericStrings  : dict
+        filenameStrings : dict
             Dictionary of key-value pairs, where each key is the name of a
             generic data type and each value is a string contained by the
             end of the files corresponding to that data type.
@@ -625,21 +625,21 @@ class HDFDatabase(Database):
             globbed search.
         
         """
-        # TODO: Handle case when genericStrings is empty
+        # TODO: Handle case when filenameStrings is empty
         FilesGen = {}
         files    = {}
-        for genericName, fileID in genericStrings.items():
+        for filename, fileID in filenameStrings.items():
             # Do not process any generic type unless its currently registered
             # with B-Store
-            if genericName not in config.__Registered_DatasetTypes__:
+            if filename not in config.__Registered_DatasetTypes__:
                 continue
             else:
-                FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
+                FilesGen[filename] = searchDirectory.glob('**/*{:s}'.format(
                                                                        fileID))
         # Build the dictionary of files with keys describing
         # their generic dataset type                                                               
-        for genericName in FilesGen.keys():
-            files[genericName] = sorted(FilesGen[genericName])
+        for filename in FilesGen.keys():
+            files[filename] = sorted(FilesGen[filename])
             
         return files
     

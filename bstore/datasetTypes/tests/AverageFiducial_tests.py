@@ -133,7 +133,7 @@ def test_HDF_Database_Build_with_AverageFiducial():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'AverageFiducial' : '_AvgFid.dat'},
+               filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     # Test for existence of the data
@@ -175,7 +175,7 @@ def test_HDF_Database_Query_with_AverageFiducial():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'AverageFiducial' : '_AvgFid.dat'},
+               filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     results = myDB.query(datasetType = 'generic',

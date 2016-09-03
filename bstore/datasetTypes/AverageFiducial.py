@@ -73,12 +73,16 @@ class AverageFiducial(bstore.database.Dataset,
     
     @staticmethod        
     def readFromFile(filePath):
-        """Prototyping...
+        """Read a file on disk containing the DatasetType.
         
         Parameters
         ----------
         filePath : Path
             A pathlib object pointing towards the file to open.
+            
+        Returns
+        -------
+        Pandas DataFrame
             
         """
         return pd.read_csv(str(filePath))
