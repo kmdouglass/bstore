@@ -531,6 +531,9 @@ class HDFDatabase(Database):
         for datasetType in typesOfAtoms:
             files[datasetType] = sorted(FilesGen[datasetType])
             
+        # Check that all generic types are registered
+        self._checkForRegisteredTypes(list(genericStrings.keys()))
+            
         # Add generic files to the dict
         files['generic'] = self._buildGenericFileList(searchDirectory,
                                                       genericStrings)
@@ -638,6 +641,14 @@ class HDFDatabase(Database):
             files[genericName] = sorted(FilesGen[genericName])
             
         return files
+    
+    def _checkForRegisteredTypes(self, typeList):
+        """Verifies that each type in typeList is registered.
+        
+        """
+        for typeName in typeList:
+            if typeName not in config.__Registered_Generics__:
+                raise GenericTypeError(typeName)
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
@@ -1040,8 +1051,8 @@ class HDFDatabase(Database):
             # ('table' not in name) excludes the subgroup inside every
             # processed_localization parent group.
             resultGroups = []
-            def find_locs(name):
-                """Finds localization files matching the name pattern."""
+            def find_datasets(name):
+                """Finds datasets matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
                 if (ap + 'datasetType' in f[name].attrs) \
                     and (f[name].attrs[ap + 'datasetType'] == searchString) \
@@ -1066,7 +1077,7 @@ class HDFDatabase(Database):
                     and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)
                 
-            f.visit(find_locs)
+            f.visit(find_datasets)
         
         # Read attributes of each key in resultGroups for SMLM_*
         # and convert them to a dataset ID.
@@ -1156,6 +1167,15 @@ class HDFDatabase(Database):
 """
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class GenericTypeError(Exception):
+    """Error raised when a bad or unregistered genericTypeName is used.
     
     """
     def __init__(self, value):
