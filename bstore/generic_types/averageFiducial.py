@@ -67,3 +67,15 @@ class averageFiducial(bstore.database.Dataset,
             print("Unexpected error in put():", sys.exc_info()[0])
         finally:
             hdf.close()
+    
+    @staticmethod        
+    def readFromFile(filePath):
+        """Prototyping...
+        
+        Parameters
+        ----------
+        filePath : Path
+            A pathlib object pointing towards the file to open.
+            
+        """
+        return pd.read_csv(str(filePath))

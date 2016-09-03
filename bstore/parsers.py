@@ -375,7 +375,11 @@ class MMParser(Parser):
                 return img
         elif self.datasetType == 'generic':
             # TODO: Implement a generic function for reading data from files.
-            return None
+            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
+                                                         self.genericTypeName))
+            genericType = getattr(mod, self.genericTypeName)
+            return genericType.readFromFile(self._fullPath)  
+
     
     def parseFilename(self, filename, datasetType = 'locResults',
                       genericTypeName = None):

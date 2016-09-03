@@ -336,6 +336,10 @@ class GenericDatasetType(metaclass = ABCMeta):
     def put():
         pass
 
+    @abstractmethod
+    def readFromFile():
+        pass
+
 """Concrete classes
 -------------------------------------------------------------------------------
 """

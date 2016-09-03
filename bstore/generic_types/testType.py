@@ -63,3 +63,9 @@ class testType(bstore.database.Dataset,
         with h5py.File(database, 'a') as hdf:
             hdf.create_dataset(key, self.data.shape,
                                dtype = 'i', data = self.data)
+                               
+    def readFromFile(self):
+        """Required by the GenericDatasetType metaclass.
+        
+        """
+        return None

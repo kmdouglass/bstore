@@ -117,38 +117,44 @@ def test_averageFiducial_Get_Data():
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
         
-#def test_HDF_Database_Build_with_AverageFiducial():
-    #"""The database build is performed successfully.
-    #
-    #"""
-    #dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
-    #if dbName.exists():
-    #    remove(str(dbName))
-    #myDB = db.HDFDatabase(dbName)
-    #myParser = parsers.MMParser()    
+def test_HDF_Database_Build_with_AverageFiducial():
+    """The database build is performed successfully.
+    
+    """
+    dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    myDB = db.HDFDatabase(dbName)
+    myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
-    #searchDirectory = testDataRoot / Path('test_experiment_2')
+    searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build database
-    #myDB.build(myParser, searchDirectory,
-    #           locResultsString = '_DC.dat',
-    #           genericStrings   = {'averageFiducial' : '_AvgFid.dat'},
-    #           dryRun = False)
+    myDB.build(myParser, searchDirectory,
+               locResultsString = '_DC.dat',
+               genericStrings   = {'averageFiducial' : '_AvgFid.dat'},
+               dryRun = False)
     
     # Test for existence of the data
-    #with h5py.File(str(dbName), mode = 'r') as hdf:
-    #    key1 = 'HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0'
-    #    ok_('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0' in hdf)
-    #    ok_('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0' in hdf)
-    #    ok_(hdf[key1].attrs.__contains__('SMLM_acqID'))
-    #    ok_(hdf[key1].attrs.__contains__('SMLM_Metadata_Height'))
+    with h5py.File(str(dbName), mode = 'r') as hdf:
+        key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
+        ok_(key1 + 'locResults_A647_Pos0' in hdf)
+        ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
+        ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
+        ok_(key1 + 'averageFiducial_A647_Pos0' in hdf)
+        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
+                                                       'SMLM_Metadata_Height'))
         
-    #    key2 = 'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0'
-    #    ok_('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0' in hdf)
-    #    ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
-    #    ok_(hdf[key2].attrs.__contains__('SMLM_acqID'))
-    #    ok_(hdf[key2].attrs.__contains__('SMLM_Metadata_Height'))
+        key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
+        ok_(key2 + 'averageFiducial_A647_Pos0' in hdf)
+        
+        key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
+        ok_(key3 + 'averageFiducial_A647_Pos0' in hdf)
+        
+        key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
+        ok_(key4 + 'averageFiducial_A647_Pos0' in hdf)
     
     # Remove test database file
-    #remove(str(dbName))
+    remove(str(dbName))
