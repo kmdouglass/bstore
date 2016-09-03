@@ -327,6 +327,10 @@ class DatasetType(metaclass = ABCMeta):
     
     """
     @abstractproperty
+    def attributeOf():    
+        pass
+    
+    @abstractproperty
     def datasetTypeName():
         pass
     
@@ -925,7 +929,23 @@ class HDFDatabase(Database):
         
         """
         self._checkKeyExistence(atom)
-        key = self._genKey(atom)
+        
+        if atom.datasetType == 'generic' and atom.attributeOf is not None:
+            # Make the key so that the attribute DatasetType writes to  the
+            # type that it is an attribute of
+            dsIDs = atom.getInfoDict()
+            
+            tempAtom = Dataset(dsIDs['prefix'], dsIDs['acqID'],
+                               dsIDs['datasetType'], None,
+                               channelID = dsIDs['channelID'],
+                               dateID    = dsIDs['dateID'],
+                               posID     = dsIDs['posID'],
+                               sliceID   = dsIDs['sliceID'])
+            tempAtom.datasetTypeName = atom.attributeOf
+            
+            key = self._genKey(tempAtom)
+        else:
+            key = self._genKey(atom)
         
         # The put routine varies with atom's dataset type.
         if atom.datasetType == 'locResults':
@@ -949,9 +969,11 @@ class HDFDatabase(Database):
         elif atom.datasetType == 'generic':
             assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
                    'Type {0} is unregistered.'.format(atom.datasetTypeName)
-            
             atom.put(self._dbName, key)
-            self._writeDatasetIDs(atom)
+            
+            # Don't write IDs for attributes
+            if atom.attributeOf is None:            
+                self._writeDatasetIDs(atom)
     
     def _putLocMetadata(self, atom):
         """Writes localization metadata into the database.

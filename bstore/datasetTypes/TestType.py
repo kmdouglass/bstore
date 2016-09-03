@@ -23,7 +23,23 @@ class TestType(bstore.database.Dataset,
                                        dateID    = dateID,
                                        posID     = posID,
                                        sliceID   = sliceID)
-    
+
+    @property
+    def attributeOf(self):
+        """The other DatasetType that this DatasetType describes.
+        
+        If the DatasetType is an attribute of another type, return the name of
+        this other DatasetType. An attribute means that it simply contains
+        metadata and attributes that more fully describe another datasetType.
+        If this DatasetType is not an attribute, return None.
+
+        Returns
+        -------
+        str
+        
+        """
+        return None  
+   
     @property
     def datasetTypeName(self):
         """This should be set to the same name as the class.
