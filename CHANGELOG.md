@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
   add new datasetTypes to the HDF database. Furthermore, they decouple
   the put() and get() behaviors from the database so that each
   datasetType knows how to handle its own data.
+- Added `__version__` field to all modules.
 
 ### Changed
 - The `particle` column is now saved when using the MergeFang stats
@@ -26,8 +27,9 @@ All notable changes to this project will be documented in this file.
   other software environments.
 - Added an example Jupyter notebook on using the cluster/widefield
   overlays.
-- EstimatePhotons multiprocessor for estimating background-corrected
-  photon counts from fluorescent spots.
+- Created a new EstimatePhotons multiprocessor for estimating
+  background-corrected photon counts from fluorescent spots in
+  widefield images.
 
 ### Changed
 - Reformatted docstrings to better match the
