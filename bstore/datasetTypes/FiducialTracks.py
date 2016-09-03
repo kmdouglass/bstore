@@ -10,29 +10,29 @@ import bstore.database
 import pandas as pd
 import sys
 
-class averageFiducial(bstore.database.Dataset,
-                      bstore.database.GenericDatasetType):
+class FiducialTracks(bstore.database.Dataset,
+                     bstore.database.DatasetType):
     """Contains the average trajectory of many fiducial markers.
     
     """
     def __init__(self, prefix, acqID, datasetType, data,
                  channelID = None, dateID = None,
                  posID = None, sliceID = None):
-        super(averageFiducial, self).__init__(prefix, acqID, datasetType, data,
-                                              channelID = channelID,
-                                              dateID    = dateID,
-                                              posID     = posID,
-                                              sliceID   = sliceID)
+        super(FiducialTracks, self).__init__(prefix, acqID, datasetType, data,
+                                             channelID = channelID,
+                                             dateID    = dateID,
+                                             posID     = posID,
+                                             sliceID   = sliceID)
     
     @property
-    def genericTypeName(self):
+    def datasetTypeName(self):
         """This should be set to the same name as the class.
         
         """
-        return 'averageFiducial'
+        return 'FiducialTracks'
     
     def get(self, database, key):
-        """Returns a testType dataset from the database.
+        """Returns a dataset from the database.
         
         Parameters
         ----------
@@ -43,7 +43,7 @@ class averageFiducial(bstore.database.Dataset,
         
         Returns
         -------
-        data : NumPy array
+        data : Pandas DataFrame
             The data retrieved from the HDF file.
         """
         data = pd.read_hdf(database, key = key)
@@ -73,7 +73,7 @@ class averageFiducial(bstore.database.Dataset,
     
     @staticmethod        
     def readFromFile(filePath):
-        """Prototyping...
+        """Read a file on disk containing the generic type.
         
         Parameters
         ----------

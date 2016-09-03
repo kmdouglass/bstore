@@ -69,8 +69,8 @@ __Types_Of_Atoms__ = [
 """                     
 __MM_PixelSize__ = 'PixelSize_um'
 
-"""__Registered_Generics__ : list of str
-    The list of generic datasetTypes currently recognized by B-Store.
+"""__Registered_DatasetTypes__ : list of str
+    The list of datasetTypes currently recognized by B-Store.
 
 """
-__Registered_Generics__ = []
+__Registered_DatasetTypes__ = []

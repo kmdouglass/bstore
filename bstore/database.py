@@ -289,13 +289,13 @@ class DatabaseAtom(metaclass = ABCMeta):
         channelID       : str
         dateID          : str
         posID           : int, or (int, int)
-        genericTypeName : string (optional)
+        datasetTypeName : string (optional)
         
         """
         if self._datasetType == 'generic':
             return self._prefix, self._acqID, self._datasetType, \
                    self._channelID, self._dateID, self._posID, self._sliceID, \
-                   self.genericTypeName
+                   self.datasetTypeName
         else:
             return self._prefix, self._acqID, self._datasetType, \
                    self._channelID, self._dateID, self._posID, self._sliceID
@@ -318,16 +318,16 @@ class DatabaseAtom(metaclass = ABCMeta):
                  'dateID'      : self._dateID}
                  
         if self._datasetType == 'generic':
-            dsIDs['genericTypeName'] = self.genericTypeName
+            dsIDs['datasetTypeName'] = self.datasetTypeName
             
         return dsIDs
         
-class GenericDatasetType(metaclass = ABCMeta):
+class DatasetType(metaclass = ABCMeta):
     """Metaclass for a generic datasetType. Use this to add new datasetTypes.
     
     """
     @abstractproperty
-    def genericTypeName():
+    def datasetTypeName():
         pass
     
     @abstractmethod
@@ -515,7 +515,6 @@ class HDFDatabase(Database):
             added to the database.
             
         """ 
-        # TODO: Update this to work with generics
         # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
         FilesGen = {}
@@ -564,7 +563,7 @@ class HDFDatabase(Database):
             for currFile in files['generic'][genericType]:
                 try:
                     parser.parseFilename(currFile, datasetType = 'generic',
-                                         genericTypeName = genericType)
+                                         datasetTypeName = genericType)
                     if not dryRun:
                         self.put(parser.getDatabaseAtom())
                     
@@ -632,7 +631,7 @@ class HDFDatabase(Database):
         for genericName, fileID in genericStrings.items():
             # Do not process any generic type unless its currently registered
             # with B-Store
-            if genericName not in config.__Registered_Generics__:
+            if genericName not in config.__Registered_DatasetTypes__:
                 continue
             else:
                 FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
@@ -649,8 +648,8 @@ class HDFDatabase(Database):
         
         """
         for typeName in typeList:
-            if typeName not in config.__Registered_Generics__:
-                raise GenericTypeError(typeName)
+            if typeName not in config.__Registered_DatasetTypes__:
+                raise DatasetTypeError(typeName)
     
     def _checkKeyExistence(self, atom):
         """Checks for the existence of a key.
@@ -723,8 +722,8 @@ class HDFDatabase(Database):
         datasetType = otherIDs.split('_')[0]
         
         # Change datasetType to 'generic' for creation of a generic type later
-        if datasetType in config.__Registered_Generics__:
-            genericTypeName = datasetType
+        if datasetType in config.__Registered_DatasetTypes__:
+            datasetTypeName = datasetType
             datasetType     = 'generic'
         
         data        = None
@@ -759,9 +758,9 @@ class HDFDatabase(Database):
         
         # Build the return dataset
         if datasetType == 'generic':
-            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
-                                                              genericTypeName))
-            genericType = getattr(mod, genericTypeName)
+            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                              datasetTypeName))
+            genericType = getattr(mod, datasetTypeName)
             
             # Sets the return dataset to the genericType
             returnDS = genericType(prefix, acqID, datasetType, data,
@@ -809,13 +808,13 @@ class HDFDatabase(Database):
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
         
         # locMetadata should be appended to a dataset starting with locResults
-        # generic datasetTypes should be named after their genericTypeName
+        # generic datasetTypes should be named after their datasetTypeName
         if atom.datasetType != 'locMetadata' and atom.datasetType != 'generic':        
             return acqKey + '/' + atom.datasetType + otherIDs
         elif atom.datasetType == 'locMetadata':
             return acqKey + '/locResults' + otherIDs
         elif atom.datasetType == 'generic':
-            return acqKey + '/' + atom.genericTypeName + otherIDs
+            return acqKey + '/' + atom.datasetTypeName + otherIDs
             
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -835,8 +834,8 @@ class HDFDatabase(Database):
         ids = dsID.getInfoDict()             
         datasetType = ids['datasetType']
         
-        if 'genericTypeName' in ids:
-            assert ids['genericTypeName'] in config.__Registered_Generics__
+        if 'datasetTypeName' in ids:
+            assert ids['datasetTypeName'] in config.__Registered_DatasetTypes__
             
         hdfKey   = self._genKey(dsID)
 
@@ -948,8 +947,8 @@ class HDFDatabase(Database):
             self._putWidefieldImage(atom)
             self._writeDatasetIDs(atom)
         elif atom.datasetType == 'generic':
-            assert atom.genericTypeName in config.__Registered_Generics__, \
-                   'Type {0} is unregistered.'.format(atom.genericTypeName)
+            assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
+                   'Type {0} is unregistered.'.format(atom.datasetTypeName)
             
             atom.put(self._dbName, key)
             self._writeDatasetIDs(atom)
@@ -1024,15 +1023,15 @@ class HDFDatabase(Database):
         finally:
             hdf.close()
             
-    def query(self, datasetType = 'locResults', genericTypeName = None):
+    def query(self, datasetType = 'locResults', datasetTypeName = None):
         """Returns a set of database atoms inside this database.
 
         Parameters
         ----------
         datasetType     : str
             The type of data to search for.
-        genericTypeName : str
-            The generic dataset type to search for. This only matters when
+        datasetTypeName : str
+            The dataset type to search for. This only matters when
             datasetType is 'generic'.
         
         Returns
@@ -1062,11 +1061,11 @@ class HDFDatabase(Database):
                         resultGroups.append(name)
                                
                 # If 'generic' is the datasetType, check that the specific
-                # genericTypeName matches
+                # datasetTypeName matches
                 if (searchString == 'generic') \
-                    and (ap + 'genericTypeName' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'genericTypeName'] \
-                         == genericTypeName):
+                    and (ap + 'datasetTypeName' in f[name].attrs) \
+                    and (f[name].attrs[ap + 'datasetTypeName'] \
+                         == datasetTypeName):
                         resultGroups.append(name)
                                
                 # locMetadata is not explicitly saved as a dataset,
@@ -1161,8 +1160,8 @@ class HDFDatabase(Database):
                                                
             # Write the generic type name if this is a generic type
             if atom.datasetType == 'generic':
-                hdf[key].attrs[atomPrefix + 'genericTypeName'] = \
-                                                           atom.genericTypeName
+                hdf[key].attrs[atomPrefix + 'datasetTypeName'] = \
+                                                           atom.datasetTypeName
             
 """Exceptions
 -------------------------------------------------------------------------------
@@ -1176,8 +1175,8 @@ class DatasetError(Exception):
     def __str__(self):
         return repr(self.value)
         
-class GenericTypeError(Exception):
-    """Error raised when a bad or unregistered genericTypeName is used.
+class DatasetTypeError(Exception):
+    """Error raised when a bad or unregistered DatasetType is used.
     
     """
     def __init__(self, value):

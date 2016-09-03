@@ -17,9 +17,9 @@ from nose.tools                    import *
 
 # Register the type
 from bstore  import config
-config.__Registered_Generics__.append('averageFiducial')
+config.__Registered_DatasetTypes__.append('AverageFiducial')
 
-from bstore.generic_types.averageFiducial import averageFiducial
+from bstore.datasetTypes.AverageFiducial import AverageFiducial
 from bstore                        import database as db
 from bstore                        import parsers
 from pathlib                       import Path
@@ -41,7 +41,7 @@ def test_averageFiducial_Instantiation():
     datasetType = 'generic'
     data        = 42
     
-    averageFiducial(prefix, acqID, datasetType, data)
+    AverageFiducial(prefix, acqID, datasetType, data)
 
 def test_averageFiducial_Put_Data():
     """averageFiducial can put its own data and datasetIDs.
@@ -53,7 +53,7 @@ def test_averageFiducial_Put_Data():
         acqID       = 1
         datasetType = 'generic'
         data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = averageFiducial(prefix, acqID, datasetType, data)
+        ds = AverageFiducial(prefix, acqID, datasetType, data)
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -63,11 +63,11 @@ def test_averageFiducial_Put_Data():
         myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
-        key = 'test_prefix/test_prefix_1/averageFiducial'
+        key = 'test_prefix/test_prefix_1/AverageFiducial'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_genericTypeName'],
-                         'averageFiducial')
+            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
+                         'AverageFiducial')
         
         df = pd.read_hdf(str(pathToDB / Path('test_db.h5')), key = key)
         assert_equal(df.loc[0, 'A'], 1)
@@ -79,7 +79,7 @@ def test_averageFiducial_Put_Data():
         remove(str(pathToDB / Path('test_db.h5')))
         
 def test_averageFiducial_Get_Data():
-    """averageFiducial can get its own data and datasetIDs.
+    """The DatasetType can get its own data and datasetIDs.
     
     """
     try:
@@ -88,7 +88,7 @@ def test_averageFiducial_Get_Data():
         acqID       = 1
         datasetType = 'generic'
         data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = averageFiducial(prefix, acqID, datasetType, data)
+        ds = AverageFiducial(prefix, acqID, datasetType, data)
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -99,7 +99,7 @@ def test_averageFiducial_Get_Data():
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(averageFiducial(prefix, acqID, datasetType, None))
+        myNewDS = myDB.get(AverageFiducial(prefix, acqID, datasetType, None))
         ids     = myNewDS.getInfoDict()
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
@@ -108,7 +108,7 @@ def test_averageFiducial_Get_Data():
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
         assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['genericTypeName'], 'averageFiducial')   
+        assert_equal(ids['datasetTypeName'], 'AverageFiducial')   
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -133,7 +133,7 @@ def test_HDF_Database_Build_with_AverageFiducial():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'averageFiducial' : '_AvgFid.dat'},
+               genericStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     # Test for existence of the data
@@ -142,19 +142,19 @@ def test_HDF_Database_Build_with_AverageFiducial():
         ok_(key1 + 'locResults_A647_Pos0' in hdf)
         ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
         ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
-        ok_(key1 + 'averageFiducial_A647_Pos0' in hdf)
+        ok_(key1 + 'AverageFiducial_A647_Pos0' in hdf)
         ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
                                                        'SMLM_Metadata_Height'))
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
-        ok_(key2 + 'averageFiducial_A647_Pos0' in hdf)
+        ok_(key2 + 'AverageFiducial_A647_Pos0' in hdf)
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
-        ok_(key3 + 'averageFiducial_A647_Pos0' in hdf)
+        ok_(key3 + 'AverageFiducial_A647_Pos0' in hdf)
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
-        ok_(key4 + 'averageFiducial_A647_Pos0' in hdf)
+        ok_(key4 + 'AverageFiducial_A647_Pos0' in hdf)
     
     # Remove test database file
     remove(str(dbName))
@@ -175,16 +175,16 @@ def test_HDF_Database_Query_with_AverageFiducial():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               genericStrings   = {'averageFiducial' : '_AvgFid.dat'},
+               genericStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     results = myDB.query(datasetType = 'generic',
-                         genericTypeName = 'averageFiducial')
+                         datasetTypeName = 'AverageFiducial')
     
     ok_(len(results) != 0, 'Error: No AverageFiducial types found in DB.')
     for ds in results:
         assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.genericTypeName, 'averageFiducial')
+        assert_equal(ds.datasetTypeName, 'AverageFiducial')
     
     # Remove test database file
     remove(str(dbName))

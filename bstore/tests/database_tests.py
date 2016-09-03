@@ -15,9 +15,9 @@ __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools   import *
 
-# Register the test generic
+# Register the TestType DatasetType
 from bstore  import config
-config.__Registered_Generics__.append('testType')
+config.__Registered_DatasetTypes__.append('TestType')
 
 from bstore       import database, parsers
 from pathlib      import Path
@@ -26,7 +26,7 @@ from numpy.random import rand
 from os           import remove
 from os.path      import exists
 import h5py
-import bstore.generic_types.testType
+import bstore.datasetTypes.TestType
 from numpy        import array
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
@@ -930,9 +930,9 @@ def test_HDF_Database_Query_Generic_Types():
     
     """
     # Make up some dataset IDs and a dataset
-    ds  = bstore.generic_types.testType.testType('test_prefix', 1,
+    ds  = bstore.datasetTypes.TestType.TestType('test_prefix', 1,
                                                  'generic', array(42))
-    ds2 = bstore.generic_types.testType.testType('test_prefixx', 2,
+    ds2 = bstore.datasetTypes.TestType.TestType('test_prefixx', 2,
                                                 'generic', array(43))
                                                 
     # Extra dataset to try to confuse the query
@@ -951,7 +951,7 @@ def test_HDF_Database_Query_Generic_Types():
     myDB.put(ds3)
     
     # Create a new dataset containing only IDs to test getting of the data
-    gen = myDB.query(datasetType = 'generic', genericTypeName = 'testType')
+    gen = myDB.query(datasetType = 'generic', datasetTypeName = 'TestType')
     
     assert_equal(len(gen), 2)
     assert_equal(gen[0].prefix,       'test_prefix')
@@ -961,7 +961,7 @@ def test_HDF_Database_Query_Generic_Types():
     assert_equal(gen[0].dateID,                None)
     assert_equal(gen[0].posID,                 None)
     assert_equal(gen[0].sliceID,               None)
-    assert_equal(gen[0].genericTypeName, 'testType')
+    assert_equal(gen[0].datasetTypeName, 'TestType')
     
     assert_equal(gen[1].prefix,      'test_prefixx')
     assert_equal(gen[1].acqID,                    2)
@@ -970,7 +970,7 @@ def test_HDF_Database_Query_Generic_Types():
     assert_equal(gen[1].dateID,                None)
     assert_equal(gen[1].posID,                 None)
     assert_equal(gen[1].sliceID,               None)
-    assert_equal(gen[1].genericTypeName, 'testType')    
+    assert_equal(gen[1].datasetTypeName, 'TestType')    
     
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
@@ -992,12 +992,12 @@ def test_HDF_Database_Generic_GenAtomicID():
     """Generate atomic ID works for generic datasets.
     
     """
-    hdfKey = 'prefix/prefix_1/testType_A647_Pos0'
+    hdfKey = 'prefix/prefix_1/TestType_A647_Pos0'
     
     myDB= database.HDFDatabase('test')
     myDS = myDB._genAtomicID(hdfKey)
     
-    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    ok_(isinstance(myDS, bstore.datasetTypes.TestType.TestType))
     assert_equal(myDS.prefix,            'prefix')
     assert_equal(myDS.acqID,                    1)
     assert_equal(myDS.datasetType,      'generic')
@@ -1005,14 +1005,14 @@ def test_HDF_Database_Generic_GenAtomicID():
     assert_equal(myDS.dateID,                None)
     assert_equal(myDS.posID,                 (0,))
     assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.genericTypeName, 'testType')
+    assert_equal(myDS.datasetTypeName, 'TestType')
     
     # Does it work a second time?
-    hdfKey = 'prefix2/prefix2_2/testType_A750_Pos0'
+    hdfKey = 'prefix2/prefix2_2/TestType_A750_Pos0'
     
     myDS = myDB._genAtomicID(hdfKey)
     
-    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    ok_(isinstance(myDS, bstore.datasetTypes.TestType.TestType))
     assert_equal(myDS.prefix,           'prefix2')
     assert_equal(myDS.acqID,                    2)
     assert_equal(myDS.datasetType,      'generic')
@@ -1020,4 +1020,4 @@ def test_HDF_Database_Generic_GenAtomicID():
     assert_equal(myDS.dateID,                None)
     assert_equal(myDS.posID,                 (0,))
     assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.genericTypeName, 'testType')
+    assert_equal(myDS.datasetTypeName, 'TestType')

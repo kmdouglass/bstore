@@ -17,7 +17,7 @@ from nose.tools import *
 
 # Register the test generic
 from bstore  import config
-config.__Registered_Generics__.append('testType')
+config.__Registered_DatasetTypes__.append('TestType')
 
 from bstore  import parsers, database
 from pathlib import Path
@@ -441,7 +441,7 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     assert_equal(parser.sliceID,             None)
     assert_equal(parser.datasetType, 'locResults')
     
-@raises(parsers.GenericTypeError)    
+@raises(parsers.DatasetTypeError)    
 def test_MMParser_Bad_Generic():
     """MMParser recognizes when a bad generic type is passed.
     
@@ -451,7 +451,7 @@ def test_MMParser_Bad_Generic():
     parser = parsers.MMParser()
     parser.parseFilename(inputFile,
                          datasetType ='generic',
-                         genericTypeName = 'bogusType')
+                         datasetTypeName = 'bogusType')
                         
 def test_MMParser_Generic_GetDatabaseAtom():
     """MMParser returns a generic database atom.
@@ -462,7 +462,7 @@ def test_MMParser_Generic_GetDatabaseAtom():
     parser = parsers.MMParser()
     parser.parseFilename(inputFile,
                          datasetType ='generic',
-                         genericTypeName = 'testType')
+                         datasetTypeName = 'TestType')
     dba = parser.getDatabaseAtom()
     assert_equal(dba.prefix, 'Cos7_Microtubules')
     assert_equal(dba.acqID,                    3)
@@ -471,7 +471,7 @@ def test_MMParser_Generic_GetDatabaseAtom():
     assert_equal(dba.posID,                 (0,))
     assert_equal(dba.dateID,                None)
     assert_equal(dba.sliceID,               None)
-    assert_equal(dba.genericTypeName, 'testType')
+    assert_equal(dba.datasetTypeName, 'TestType')
     
 def test_FormatMap():
     """FormatMap provides a basic two-way hash table.

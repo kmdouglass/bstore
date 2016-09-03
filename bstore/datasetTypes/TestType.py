@@ -10,26 +10,26 @@ import bstore.database
 import h5py
 from numpy import array
 
-class testType(bstore.database.Dataset,
-               bstore.database.GenericDatasetType):
+class TestType(bstore.database.Dataset,
+               bstore.database.DatasetType):
     """A class for testing B-Store generic datasetTypes.
     
     """
     def __init__(self, prefix, acqID, datasetType, data,
                  channelID = None, dateID = None,
                  posID = None, sliceID = None):
-        super(testType, self).__init__(prefix, acqID, datasetType, data,
+        super(TestType, self).__init__(prefix, acqID, datasetType, data,
                                        channelID = channelID,
                                        dateID    = dateID,
                                        posID     = posID,
                                        sliceID   = sliceID)
     
     @property
-    def genericTypeName(self):
+    def datasetTypeName(self):
         """This should be set to the same name as the class.
         
         """
-        return 'testType'
+        return 'TestType'
     
     def get(self, database, key):
         """Returns a testType dataset from the database.

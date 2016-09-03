@@ -15,11 +15,11 @@ __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools                    import *
 
-# Register the test generic
+# Register the test type
 from bstore  import config
-config.__Registered_Generics__.append('testType')
+config.__Registered_DatasetTypes__.append('TestType')
 
-from bstore.generic_types.testType import testType
+from bstore.datasetTypes.TestType  import TestType
 from bstore                        import database as db
 from pathlib                       import Path
 from os                            import remove
@@ -30,7 +30,7 @@ import h5py
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
 def test_testType_Instantiation():
-    """testType is properly instantiated.
+    """The DatasetType is properly instantiated.
     
     """
     # Make up some dataset IDs
@@ -39,7 +39,7 @@ def test_testType_Instantiation():
     datasetType = 'generic'
     data        = 42
     
-    ds = testType(prefix, acqID, datasetType, data)
+    ds = TestType(prefix, acqID, datasetType, data)
     
 def test_testType_Put_Data():
     """testType can put its own data and datasetIDs.
@@ -50,7 +50,7 @@ def test_testType_Put_Data():
     acqID       = 1
     datasetType = 'generic'
     data        = array([42])
-    ds = testType(prefix, acqID, datasetType, data)
+    ds = TestType(prefix, acqID, datasetType, data)
     
     pathToDB = testDataRoot
     # Remove database if it exists
@@ -60,11 +60,11 @@ def test_testType_Put_Data():
     myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
     myDB.put(ds)
     
-    key = 'test_prefix/test_prefix_1/testType'
+    key = 'test_prefix/test_prefix_1/TestType'
     with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
         assert_equal(hdf[key][0], 42)
         assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-        assert_equal(hdf[key].attrs['SMLM_genericTypeName'], 'testType')
+        assert_equal(hdf[key].attrs['SMLM_datasetTypeName'], 'TestType')
 
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
@@ -78,7 +78,7 @@ def test_testType_DatasetIDs():
     acqID       = 1
     datasetType = 'generic'
     data        = array([42])
-    ds = testType(prefix, acqID, datasetType, data)
+    ds = TestType(prefix, acqID, datasetType, data)
     
     ids = ds.getInfoDict()
     assert_equal(ids['prefix'],       'test_prefix')
@@ -88,7 +88,7 @@ def test_testType_DatasetIDs():
     assert_equal(ids['dateID'],                None)
     assert_equal(ids['posID'],                 None)
     assert_equal(ids['sliceID'],               None)
-    assert_equal(ids['genericTypeName'], 'testType')
+    assert_equal(ids['datasetTypeName'], 'TestType')
     
 def test_testType_Get_Data():
     """testType can get its own data and datasetIDs.
@@ -99,7 +99,7 @@ def test_testType_Get_Data():
     acqID       = 1
     datasetType = 'generic'
     data        = array([42])
-    ds = testType(prefix, acqID, datasetType, data)
+    ds = TestType(prefix, acqID, datasetType, data)
     
     pathToDB = testDataRoot# / Path('generic_types/testType')
     
@@ -111,7 +111,7 @@ def test_testType_Get_Data():
     myDB.put(ds)
     
     # Create a new dataset containing only IDs to test getting of the data
-    myNewDS = myDB.get(testType(prefix, acqID, datasetType, None))
+    myNewDS = myDB.get(TestType(prefix, acqID, datasetType, None))
     ids     = myNewDS.getInfoDict()
     assert_equal(ids['prefix'],       'test_prefix')
     assert_equal(ids['acqID'],                    1)
@@ -120,7 +120,7 @@ def test_testType_Get_Data():
     assert_equal(ids['dateID'],                None)
     assert_equal(ids['posID'],                 None)
     assert_equal(ids['sliceID'],               None)
-    assert_equal(ids['genericTypeName'], 'testType')   
+    assert_equal(ids['datasetTypeName'], 'TestType')   
     assert_equal(myNewDS.data, 42)
     
     # Remove the test database
