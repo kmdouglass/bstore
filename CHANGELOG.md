@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- Generic datasetTypes are now available. These allow users to easily
+  add new datasetTypes to the HDF database. Furthermore, they decouple
+  the put() and get() behaviors from the database so that each
+  datasetType knows how to handle its own data.
+
+## [v0.2.0]
+### Added
 - OME-XML and Micro-Manager metadata are now recorded in the same HDF
   group as the image data for widefieldImage dataset types.
 - B-Store dataset IDs are now saved as attributes of the
@@ -87,7 +94,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0
 [v0.1.0b-rev3]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev2...v0.1.0b-rev3
