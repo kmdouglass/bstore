@@ -273,6 +273,7 @@ def test_MergeFang_Stats():
     assert_equal(mergedDF['frame'].iloc[0],           0)
     assert_equal(mergedDF['length'].iloc[0],          5)
     assert_equal(mergedDF['sigma'].iloc[0],         150)
+    ok_('particle' in mergedDF)
     
 def test_Merger():
     """Merger returns a Data Frame with particle column attached.

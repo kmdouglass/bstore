@@ -1391,6 +1391,9 @@ class MergeFang(MergeStats):
                       tempResultsLength)
         procdf = pd.concat(dataToJoin, axis = 1)
         
+        # Move the particle ID to a regular column        
+        procdf.reset_index(particleCol, inplace = True)
+        
         return procdf
         
 """Exceptions
