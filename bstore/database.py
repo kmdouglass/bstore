@@ -1106,14 +1106,15 @@ class HDFDatabase(Database):
         ap           = config.__HDF_AtomID_Prefix__
         mp           = config.__HDF_Metadata_Prefix__
         
-        # Determine whether the datasetTypeName is an attribute
-        assert datasetTypeName in config.__Registered_DatasetTypes__, ('Error: '
-            '{:s} not in __Registered_DatasetTypes__.'.format(datasetTypeName))
-        mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+        if datasetTypeName is not None:
+            # Determine whether the datasetTypeName is an attribute
+            assert datasetTypeName in config.__Registered_DatasetTypes__, (''
+            'Error: {:s} not in __Registered_DatasetTypes__.'.format(
                                                               datasetTypeName))
-        inputType = getattr(mod, datasetTypeName)
-        
-        tempDS = inputType('temp', 1, 'generic', None)                
+            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                              datasetTypeName))
+            inputType = getattr(mod, datasetTypeName)
+            tempDS = inputType('temp', 1, 'generic', None)                
         
         # Open the hdf file
         with h5py.File(self._dbName, 'r') as f:

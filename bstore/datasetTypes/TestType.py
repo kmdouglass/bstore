@@ -35,7 +35,7 @@ class TestType(bstore.database.Dataset,
 
         Returns
         -------
-        str
+        None
         
         """
         return None  

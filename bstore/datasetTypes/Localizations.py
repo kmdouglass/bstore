@@ -35,7 +35,7 @@ class Localizations(bstore.database.Dataset,
 
         Returns
         -------
-        str
+        None
         
         """
         return None    

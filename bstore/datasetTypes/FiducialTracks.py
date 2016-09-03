@@ -35,7 +35,7 @@ class FiducialTracks(bstore.database.Dataset,
 
         Returns
         -------
-        str
+        None
         
         """
         return None  
