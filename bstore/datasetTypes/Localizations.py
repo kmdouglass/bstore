@@ -47,7 +47,7 @@ class Localizations(bstore.database.Dataset,
         """
         return 'Localizations'
     
-    def get(self, database, key):
+    def get(self, database, key, **kwargs):
         """Returns a dataset from the database.
         
         Parameters
@@ -66,7 +66,7 @@ class Localizations(bstore.database.Dataset,
             
         return data
     
-    def put(self, database, key):
+    def put(self, database, key, **kwargs):
         """Puts the data into the database.
         
         Parameters
@@ -88,7 +88,7 @@ class Localizations(bstore.database.Dataset,
             hdf.close()
     
     @staticmethod        
-    def readFromFile(filePath):
+    def readFromFile(filePath, **kwargs):
         """Read a file on disk containing the DatasetType.
         
         Parameters

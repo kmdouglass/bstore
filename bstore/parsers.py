@@ -379,7 +379,8 @@ class MMParser(Parser):
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                          self.datasetTypeName))
             genericType = getattr(mod, self.datasetTypeName)
-            return genericType.readFromFile(self._fullPath)  
+            return genericType.readFromFile(self._fullPath,
+                                            readTiffTags = self.readTiffTags)  
 
     
     def parseFilename(self, filename, datasetType = 'locResults',
@@ -453,7 +454,11 @@ class MMParser(Parser):
                                            sliceID = sliceID)
                                            
         elif datasetType == 'generic':
-            parsedData = self._parseLocResults(filename)
+            if datasetTypeName == 'WidefieldImage':
+                parsedData = self._parseWidefieldImage(filename)
+            else:
+                parsedData = self._parseLocResults(filename)
+            
             (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData
           
             super(MMParser, self).__init__(prefix, acqID, datasetType,

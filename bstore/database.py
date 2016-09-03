@@ -565,6 +565,8 @@ class HDFDatabase(Database):
         # Next put the generic data; first put types that are not attributes
         for genericType in files['generic'].keys():
             for currFile in files['generic'][genericType]:
+                print(genericType)                
+                print(currFile)
                 try:
                     parser.parseFilename(currFile, datasetType = 'generic',
                                          datasetTypeName = genericType)
@@ -959,7 +961,7 @@ class HDFDatabase(Database):
         finally:
             file.close()
             
-    def put(self, atom):
+    def put(self, atom, **kwargs):
         """Writes a single database atom into the database.
         
         Parameters
@@ -1008,7 +1010,7 @@ class HDFDatabase(Database):
         elif atom.datasetType == 'generic':
             assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
                    'Type {0} is unregistered.'.format(atom.datasetTypeName)
-            atom.put(self._dbName, key)
+            atom.put(self._dbName, key, **kwargs)
             
             # Don't write IDs for attributes
             if atom.attributeOf is None:            
