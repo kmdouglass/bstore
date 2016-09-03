@@ -47,7 +47,7 @@ class TestType(bstore.database.Dataset,
         """
         return 'TestType'
     
-    def get(self, database, key):
+    def get(self, database, key, **kwargs):
         """Returns a testType dataset from the database.
         
         Parameters
@@ -67,7 +67,7 @@ class TestType(bstore.database.Dataset,
             
         return data
     
-    def put(self, database, key):
+    def put(self, database, key, **kwargs):
         """Puts the data into the database.
         
         Parameters
@@ -83,7 +83,7 @@ class TestType(bstore.database.Dataset,
             hdf.create_dataset(key, self.data.shape,
                                dtype = 'i', data = self.data)
                                
-    def readFromFile(self):
+    def readFromFile(self, **kwargs):
         """Required by the GenericDatasetType metaclass.
         
         """
