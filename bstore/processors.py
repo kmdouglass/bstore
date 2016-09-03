@@ -18,6 +18,8 @@ from bstore             import config
 from bstore.parsers     import FormatMap
 import warnings
 
+__version__ = config.__bstore_Version__
+
 """Metaclasses
 -------------------------------------------------------------------------------
 """

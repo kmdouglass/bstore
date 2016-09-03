@@ -16,6 +16,8 @@ from dateutil.parser import parse
 from tifffile import TiffFile
 import importlib
 
+__version__ = config.__bstore_Version__
+
 pp = pprint.PrettyPrinter(indent=4)  
 
 typesOfAtoms = config.__Types_Of_Atoms__

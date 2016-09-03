@@ -2,6 +2,9 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
+import bstore.config
+__version__ = bstore.config.__bstore_Version__
+
 # Be sure not to use the from ... import syntax to avoid cyclical imports!
 import bstore.database
 import pandas as pd

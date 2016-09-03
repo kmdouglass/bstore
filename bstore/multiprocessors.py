@@ -10,6 +10,9 @@ DataFrames, such as localizations in multiple channels, widefield images, etc.
 
 """
 
+import bstore.config
+__version__ = bstore.config.__bstore_Version__
+
 import numpy             as np
 import matplotlib.pyplot as plt
 from bstore import processors as proc

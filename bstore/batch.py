@@ -2,6 +2,9 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
+import bstore.config
+__version__ = bstore.config.__bstore_Version__
+
 import pandas as pd
 from pathlib import Path
 from abc import ABCMeta, abstractmethod, abstractproperty

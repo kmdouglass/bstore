@@ -15,6 +15,8 @@ from tifffile import TiffFile
 import importlib
 import sys
 
+__version__ = config.__bstore_Version__
+
 """Metaclasses
 -------------------------------------------------------------------------------
 """
