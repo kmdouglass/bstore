@@ -519,20 +519,6 @@ def test_HDF_Database_Put_WidefieldImage():
     with h5py.File(myDB._dbName, mode = 'r') as dbFile:
         ok_(saveKey in dbFile, 'Error: Could not find widefield image key.')
         
-def test_HDF_Database_Get_WidefieldImage():
-    """A widefield image is properly retrieved from the database.
-    
-    """
-     # Load the database
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-    
-    # Create a dataset of IDs for retrieving the data     
-    myDSID = database.Dataset('Cos7', 1, 'widefieldImage', None,
-                              channelID = 'A647', posID = (0,))
-    img    = myDB.get(myDSID)
-    assert_equal(img.data.shape, (512, 512))
-        
 def test_HDF_Database_Put_WidefieldImage_TiffFile():
     """Insertion of widefield image data works when parsed as a TiffFile.
     
@@ -612,39 +598,6 @@ def test_HDF_Database_WidefieldImage_DatasetID_Attributes():
         assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
         assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
         assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
-        
-def test_HDF_Database_Put_WidefieldImage_PixelSize():
-    """Widefield image data has the correct pixel size attributes.
-    
-    """
-    # Remake the database
-    dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDB     = database.HDFDatabase(dbName,
-                                    widefieldPixelSize = (0.130, 0.130))    
-    
-    # Load the widefield image and convert it to an atom
-    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
-    inputFile = testDataRoot / Path('database_test_files') \
-              / Path('Cos7_A647_WF1/') / Path(f)
-    datasetType = 'widefieldImage'
-    
-    # Set the parser to read TiffTags
-    mmParser = parsers.MMParser(readTiffTags = True)
-    mmParser.parseFilename(inputFile, datasetType)
-    
-    # Put the widefield image into the database
-    myDB.put(mmParser.getDatabaseAtom())
-    
-    # Ensure the attribute has been correctly written to the dataset
-    saveKey = 'Cos7/Cos7_1/widefieldImage_A647_Pos0/image_data'
-    with h5py.File(str(dbName), 'r') as hdf:
-        voxelSize = hdf[saveKey].attrs['element_size_um']
-        
-    assert_equal(voxelSize[0], 1)
-    assert_equal(voxelSize[1], 0.130)
-    assert_equal(voxelSize[2], 0.130)
      
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence_LocResults():
@@ -752,67 +705,6 @@ def test_HDF_Database_Build():
         ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
         ok_(hdf[key2].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key2].attrs.__contains__('SMLM_Metadata_Height'))
-    
-    # Remove test database file
-    remove(str(dbName))
-    
-def test_HDF_Database_Build_With_MM_PixelSize():
-    """The database build is performed with pixel sizes from Micro-Manager.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDB = database.HDFDatabase(dbName)
-    myParser = parsers.MMParser(readTiffTags = True)    
-    
-    # Directory to traverse for acquisition files
-    searchDirectory = testDataRoot / Path('test_experiment')
-    
-    # Build database
-    myDB.build(myParser, searchDirectory, dryRun = False)
-    
-    # Test for existence of the data
-    with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0/'
-                'image_data')
-        ok_('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0' in hdf)
-        ok_('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0' in hdf)
-        ok_('element_size_um' in hdf[key1].attrs)
-        
-        key2 = ('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0/'
-                'image_data')
-        ok_('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0' in hdf)
-        ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
-        ok_('element_size_um' in hdf[key2].attrs)
-    
-    # Remove test database file
-    remove(str(dbName))
-    
-def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
-    """element_size_um is correct when only OME-XML metadata is present."
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDB = database.HDFDatabase(dbName)
-    myParser = parsers.MMParser(readTiffTags = True)    
-    
-    # Directory to traverse for acquisition files
-    searchDirectory = testDataRoot / Path('database_test_files/OME-TIFF_No_MM_Metadata')
-    
-    # Build database
-    myDB.build(myParser, searchDirectory, dryRun = False)
-    
-    # Test for existence of the data
-    with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('Cos7/Cos7_2/widefieldImage_A647_Pos0/image_data')
-        ok_('Cos7/Cos7_2/widefieldImage_A647_Pos0' in hdf)
-        ok_('element_size_um' in hdf[key1].attrs)
-        assert_equal(hdf[key1].attrs['element_size_um'][0], 1)
-        assert_equal(hdf[key1].attrs['element_size_um'][1], 0.1)
-        assert_equal(hdf[key1].attrs['element_size_um'][2], 0.1)
     
     # Remove test database file
     remove(str(dbName))

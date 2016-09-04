@@ -12,6 +12,7 @@ import re
 import json
 from matplotlib.pyplot import imread
 from tifffile import TiffFile
+from numpy import array
 
 """Decorators
 -------------------------------------------------------------------------------
@@ -185,13 +186,10 @@ class WidefieldImage(bstore.database.Dataset,
         data : NumPy array
             The image data contained in the database.
         """
-        try:
-            key += '/image_data'
-            file = h5py.File(self._dbName, mode = 'r')
-            img  = file[key].value
+        key += '/image_data'
+        with h5py.File(database, mode = 'r') as file:
+            img  = array(file[key])
             return img
-        finally:
-            file.close()
     
     @putWidefieldImageWithMicroscopyTiffTags 
     def put(self, database, key, **kwargs):
