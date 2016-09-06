@@ -481,6 +481,17 @@ class HDFDatabase(Database):
     def __init__(self, dbName, *args, widefieldPixelSize = None, **kwargs):
         self.widefieldPixelSize = widefieldPixelSize
         super(HDFDatabase, self).__init__(dbName)
+        
+    def __repr__(self):
+        if self.widefieldPixelSize is None:
+            pxSizeStr = 'None'
+        else:
+            x, y = self.widefieldPixelSize[0], self.widefieldPixelSize[1]
+            pxSizeStr = '({0:.4f}, {1:.4f})'.format(x,y)
+        
+        return 'HDFDatabase(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
+                                                                  self._dbName,
+                                                                  pxSizeStr)
     
     @property
     def atomPrefix(self):

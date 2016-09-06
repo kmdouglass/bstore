@@ -247,6 +247,20 @@ def test_Database_CompleteSubclass():
     dbName = 'myDB.h5'
     myDatabase = Database(dbName)
     
+def test_Database__repr__():
+    """__repr__() returns the correct string representation.
+    
+    """
+    myDB = database.HDFDatabase('the_name', widefieldPixelSize=(0.108, 0.108))
+    assert_equal(myDB.__repr__(),
+                 ('HDFDatabase(\'the_name\', '
+                  'widefieldPixelSize = (0.1080, 0.1080))'))
+                  
+    myDB = database.HDFDatabase('the_name')
+    assert_equal(myDB.__repr__(),
+                 ('HDFDatabase(\'the_name\', '
+                  'widefieldPixelSize = None)'))
+    
 def test_HDFDatabase_KeyGeneration():
     """Key names are generated correctly from DatabaseAtoms.
     
