@@ -88,6 +88,34 @@ def test_Put_Data():
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
         
+@raises(db.LocResultsDoNotExist)
+def test_HDF_Database_Put_LocMetadata_Without_LocResults():
+    """Metadata cannot be put if localization data doesn't exist.
+    
+    """
+    dbName = testDataRoot / Path('database_test_files/myEmptyDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
+        
+    myEmptyDB     = db.HDFDatabase(dbName)
+
+    # Load a json metadata file
+    f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
+    inputFile   = testDataRoot / Path('database_test_files') / Path(f)
+    datasetType = 'locMetadata'
+    mmParser    = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType)
+    
+    # Create the dataset
+    dsMeta = db.Dataset(mmParser.prefix, mmParser.acqID,
+                        mmParser.datasetType, mmParser.data,
+                        channelID = mmParser.channelID,
+                        posID     = mmParser.posID, 
+                        sliceID   = mmParser.sliceID, )
+                          
+    # Write the metadata into the database; should raise LocResultsDoNotExist
+    myEmptyDB.put(dsMeta)
+        
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
