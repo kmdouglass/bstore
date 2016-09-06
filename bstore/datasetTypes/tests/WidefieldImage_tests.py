@@ -21,13 +21,11 @@ config.__Registered_DatasetTypes__.append('WidefieldImage')
 config.__Registered_DatasetTypes__.append('Localizations')
 
 from bstore.datasetTypes.WidefieldImage import WidefieldImage
-from bstore.datasetTypes.Localizations  import Localizations
 from bstore                             import database as db
 from pathlib                            import Path
 from os                                 import remove
 from os.path                            import exists
 from matplotlib.pyplot                  import imread
-from tifffile                           import TiffFile
 import bstore.parsers as parsers
 import h5py
 
@@ -322,16 +320,15 @@ def test_WidefieldImage_DatasetID_Attributes():
         assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
         assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
         assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
-    
-'''
-def test_HDF_Database_Query_with_fiducialTracks():
+
+def test_WidefieldImage_Database_Query():
     """The database query is performed successfully with the datasetType.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatabase(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
@@ -340,16 +337,19 @@ def test_HDF_Database_Query_with_fiducialTracks():
     # Build database
     myDB.build(myParser, searchDirectory,
                locResultsString = '_DC.dat',
-               filenameStrings  = {'Localizations'  : '_DC.dat'},
+               filenameStrings  = {'WidefieldImage'  : '.ome.tif'},
                dryRun = False)
     
     results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'Localizations')
+                         datasetTypeName = 'WidefieldImage')
     
     ok_(len(results) != 0, 'Error: No dataset types found in DB.')
+
+    # There are 8 widefield images    
+    assert_equal(len(results), 8)
     for ds in results:
         assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'Localizations')
+        assert_equal(ds.datasetTypeName, 'WidefieldImage')
     
     # Remove test database file
-    remove(str(dbName))'''
+    remove(str(dbName))
