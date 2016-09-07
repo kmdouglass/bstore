@@ -671,8 +671,7 @@ class NewHDFDatabase(Database):
                                                  'exist.'.format(key)))                    
         except IOError:
             pass
-    
-    # TODO: Pick up here with refactoring        
+           
     def _genAtomicID(self, key):
         """Generates an atomic ID from a HDF key. The inverse of _genKey.
         
@@ -715,11 +714,6 @@ class NewHDFDatabase(Database):
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
         
-        # Change datasetType to 'generic' for creation of a generic type later
-        if datasetType in config.__Registered_DatasetTypes__:
-            datasetTypeName = datasetType
-            datasetType     = 'generic'
-        
         data        = None
         
         channelID = [channel
@@ -751,19 +745,14 @@ class NewHDFDatabase(Database):
             sliceID = int(index[0])
         
         # Build the return dataset
-        if datasetType == 'generic':
-            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                              datasetTypeName))
-            genericType = getattr(mod, datasetTypeName)
+        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        dType = getattr(mod, datasetType)
             
-            # Sets the return dataset to the genericType
-            returnDS = genericType(prefix, acqID, datasetType, data,
-                                   channelID = channelID, dateID = dateID,
-                                   posID = posID, sliceID = sliceID)
-        else:
-            returnDS = Dataset(prefix, acqID, datasetType, data,
-                               channelID = channelID, dateID = dateID,
-                               posID = posID,sliceID = sliceID)
+        returnDS = dType(prefix, acqID, datasetType, data,
+                         channelID = channelID, dateID = dateID,
+                         posID = posID, sliceID = sliceID)
+                               
         return returnDS
 
     def _genKey(self, atom):
@@ -801,13 +790,11 @@ class NewHDFDatabase(Database):
         if atom.sliceID is not None:
             otherIDs += '_Slice{:d}'.format(atom.sliceID)
         
-        # locMetadata should be appended to a dataset starting with locResults
-        # generic datasetTypes should be named after their datasetTypeName
-        if atom.datasetType != 'locMetadata' and atom.datasetType != 'generic':        
-            return acqKey + '/' + atom.datasetType + otherIDs
-        elif atom.datasetType == 'locMetadata':
-            return acqKey + '/locResults' + otherIDs
-        elif atom.datasetType == 'generic':
+        # If an attribute, use the name of the DatasetType that this type is
+        # an attribute of.
+        if atom.attributeOf:
+            return acqKey + '/' + atom.attributeOf + otherIDs
+        else:
             return acqKey + '/' + atom.datasetTypeName + otherIDs
             
     def get(self, dsID):
@@ -826,8 +813,6 @@ class NewHDFDatabase(Database):
         
         """
         ids = dsID.getInfoDict()             
-        datasetType = ids['datasetType']
-        
         if 'datasetTypeName' in ids:
             assert ids['datasetTypeName'] in config.__Registered_DatasetTypes__
             
@@ -839,16 +824,9 @@ class NewHDFDatabase(Database):
         except HDF5KeyExists:
             pass
         
-        if datasetType == 'locResults':
-            dsID.data = read_hdf(self._dbName, key = hdfKey)
-        if datasetType == 'locMetadata':
-            dsID.data = self._getLocMetadata(hdfKey)
-        if datasetType == 'widefieldImage':
-            hdfKey = hdfKey + '/image_data'
-            dsID.data = self._getWidefieldImage(hdfKey)
-        if datasetType == 'generic' and dsID.attributeOf is None:
+        if not dsID.attributeOf:
             dsID.data = dsID.get(self._dbName, hdfKey)
-        if datasetType == 'generic' and dsID.attributeOf is not None:
+        elif dsID.attributeOf:
             # Recreate the hdf key to point towards the attributeOf dataset
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                              dsID.attributeOf))
@@ -871,9 +849,15 @@ class NewHDFDatabase(Database):
         atom   : DatabaseAtom or Dataset
         
         """
+        assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
+            'Type {0} is unregistered.'.format(atom.datasetTypeName)
+        if atom.attributeOf:
+            assert atom.attributeOf in config.__Registered_DatasetTypes__,\
+                'Type {0} is unregistered.'.format(atom.attributeOf)
+            
         self._checkKeyExistence(atom)
         
-        if atom.datasetType == 'generic' and atom.attributeOf is not None:
+        if atom.datasetType == 'generic' and atom.attributeOf:
             # Make the key so that the attribute DatasetType writes to  the
             # type that it is an attribute of
             dsIDs = atom.getInfoDict()
@@ -885,38 +869,15 @@ class NewHDFDatabase(Database):
                                posID     = dsIDs['posID'],
                                sliceID   = dsIDs['sliceID'])
             tempAtom.datasetTypeName = atom.attributeOf
-            
             key = self._genKey(tempAtom)
         else:
             key = self._genKey(atom)
-        
-        # The put routine varies with atom's dataset type.
-        if atom.datasetType == 'locResults':
-            try:
-                hdf = HDFStore(self._dbName)
-                hdf.put(key, atom.data, format = 'table',
-                        data_columns = True, index = False)
-            except:
-                print("Unexpected error in put():", sys.exc_info()[0])
-            finally:
-                hdf.close()
-                
-            # Write the attributes to the dataset;
-            self._writeDatasetIDs(atom)
-
-        elif atom.datasetType == 'locMetadata':
-            self._putLocMetadata(atom)
-        elif atom.datasetType == 'widefieldImage':
-            self._putWidefieldImage(atom)
-            self._writeDatasetIDs(atom)
-        elif atom.datasetType == 'generic':
-            assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
-                   'Type {0} is unregistered.'.format(atom.datasetTypeName)
-            atom.put(self._dbName, key, **kwargs)
             
-            # Don't write IDs for attributes
-            if atom.attributeOf is None:            
-                self._writeDatasetIDs(atom)
+        atom.put(self._dbName, key, **kwargs)
+            
+        # Don't write IDs for attributes
+        if not atom.attributeOf:            
+            self._writeDatasetIDs(atom)
             
     def query(self, datasetType = 'locResults', datasetTypeName = None):
         """Returns a set of database atoms inside this database.
@@ -941,7 +902,7 @@ class NewHDFDatabase(Database):
         mp           = config.__HDF_Metadata_Prefix__
         
         if datasetTypeName is not None:
-            # Determine whether the datasetTypeName is an attribute
+            # Used to determine whether the datasetTypeName is an attribute
             assert datasetTypeName in config.__Registered_DatasetTypes__, (''
             'Error: {:s} not in __Registered_DatasetTypes__.'.format(
                                                               datasetTypeName))
@@ -981,16 +942,6 @@ class NewHDFDatabase(Database):
                         == tempDS.attributeOf) \
                     and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)
-                               
-                # locMetadata is not explicitly saved as a dataset,
-                # so handle this case here. locMetadata has its own special
-                # attribute that identifies itself, seen as
-                # mp + ap + 'datasetType' below
-                if (searchString == 'locMetadata') \
-                    and (ap + 'datasetType' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'datasetType'] == 'locResults') \
-                    and (mp + ap + 'datasetType') in f[name].attrs:
-                        resultGroups.append(name)
                 
             f.visit(find_datasets)
         
@@ -1000,20 +951,9 @@ class NewHDFDatabase(Database):
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
         atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
-        
-        # Convert datasetType for locMetadata special case
-        if searchString == 'locMetadata':
-            for (index, atom) in enumerate(atomicIDs):
-                # Can't set atom attributes directly, so make new ones
-                ids = atom.getInfoDict()
-                ids['datasetType'] = 'locMetadata'
-                atomicIDs[index] = Dataset(ids['prefix'], ids['acqID'],
-                                           'locMetadata', None,
-                                           ids['channelID'], ids['dateID'],
-                                           ids['posID'], ids['sliceID'])
                                            
         # Convert datasetType for attributes special case
-        if searchString == 'generic' and tempDS.attributeOf is not None:
+        if searchString == 'generic' and tempDS.attributeOf:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
                 ids = atom.getInfoDict()
@@ -1088,6 +1028,7 @@ class NewHDFDatabase(Database):
             if atom.datasetType == 'generic':
                 hdf[key].attrs[atomPrefix + 'datasetTypeName'] = \
                                                            atom.datasetTypeName
+                                                           
 class HDFDatabase(Database):
     """A HDFDatabase structure for managing SMLM data.
     
