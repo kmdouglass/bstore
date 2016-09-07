@@ -15,6 +15,7 @@ import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
 import importlib
+from collections import namedtuple
 
 __version__ = config.__bstore_Version__
 
@@ -195,132 +196,39 @@ class DatabaseAtom(metaclass = ABCMeta):
     
     Parameters
     ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
+    datasetIDs : dict
+        Key-value pairs containing the atomic IDs that identify the
+        current dataset.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        if acqID is None:
-            raise ValueError('acqID cannot be \'None\'.')
-                
-        if datasetType is None:
-            raise ValueError('datasetType cannot be \'None\'.')
-            
-        # dateID should follow the format YYYY-MM-DD
-        # Note that Python's 'and' short circuits, so the order here
-        # is important. pattern.match(None) will raise a TypeError
-        pattern = re.compile('\d{4}-\d{2}-\d{2}')
-        if dateID and not pattern.match(dateID):
-            raise ValueError(('Error: The date is not of the format '
-                              'YYYY-MM-DD.'))
+    def __init__(self, datasetIDs):
+        assert datasetIDs, ('Cannot instantiate DatabaseAtom: No datasetIDs '
+                            'provided.')
+        self._datasetIDs = datasetIDs
 
-        _checkType(datasetType)
-            
-        self._acqID       = acqID
-        self._channelID   = channelID
-        self._data        = data
-        self._posID       = posID
-        self._prefix      = prefix
-        self._sliceID     = sliceID
-        self._datasetType = datasetType
-        self._dateID      = dateID
-        
-    @abstractproperty
-    def acqID(self):
-        pass
-    
-    @abstractproperty
-    def channelID(self):
-        pass
-    
-    @abstractproperty
-    def data(self):
-        pass
-    
-    @abstractproperty
-    def datasetType(self):
-        pass
-    
-    @abstractproperty
-    def dateID(self):
-        pass
-    
-    @abstractproperty
-    def posID(self):
-        pass
-    
-    @abstractproperty
-    def prefix(self):
-        pass
-    
-    @abstractproperty
-    def sliceID(self):
-        pass
-        
-    def getInfo(self):
-        """Returns the dataset information (without the data) as a tuple.
-        
-        Returns
-        -------
-        prefix          : str
-        acqID           : int
-        datasetType     : str
-        data            : mixed
-        channelID       : str
-        dateID          : str
-        posID           : int, or (int, int)
-        datasetTypeName : string (optional)
-        
-        """
-        if self._datasetType == 'generic':
-            return self._prefix, self._acqID, self._datasetType, \
-                   self._channelID, self._dateID, self._posID, self._sliceID, \
-                   self.datasetTypeName
-        else:
-            return self._prefix, self._acqID, self._datasetType, \
-                   self._channelID, self._dateID, self._posID, self._sliceID
-               
-    def getInfoDict(self):
+    def getDatasetIDs(self):
         """Returns the dataset information (without the data) as a dict.
         
         Returns
         -------
-        dsIDs : dict
+        self._datasetIDs : dict
             Key-value pairs representing the datasetIDs.
         
         """
-        dsIDs = {'acqID'       : self._acqID,
-                 'channelID'   : self._channelID,
-                 'posID'       : self._posID,
-                 'prefix'      : self._prefix,
-                 'sliceID'     : self._sliceID,
-                 'datasetType' : self._datasetType,
-                 'dateID'      : self._dateID}
-                 
-        if self._datasetType == 'generic':
-            dsIDs['datasetTypeName'] = self.datasetTypeName
-            
-        return dsIDs
+        return self._datasetIDs        
+        
+    def getDatasetIDsTuple(self):
+        """Returns the dataset information (without the data) as a tuple.
+        
+        Returns
+        -------
+        t : namedtuple
+            A namedtuple containing the dataset IDs, sorted alphabetically.
+        
+        """
+        t = namedtuple('DatasetIDs',
+                       sorted(self._datasetIDs.keys()))(**self._datasetIDs)
+        return t
         
 class DatasetType(metaclass = ABCMeta):
     """Metaclass for a generic datasetType. Use this to add new datasetTypes.
@@ -399,15 +307,30 @@ class Dataset(DatabaseAtom):
         The number identifying the z-axis slice of the dataset.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(Dataset, self).__init__(prefix, acqID, datasetType, data,
-                                      channelID = channelID,
-                                      dateID    = dateID,
-                                      posID     = posID,
-                                      sliceID   = sliceID)
-                                                
+    def __init__(self, prefix, acqID, **kwargs):
+                     
+        if acqID is None:
+            raise ValueError('acqID cannot be \'None\'.')
+            
+        # dateID should follow the format YYYY-MM-DD
+        # Note that Python's 'and' short circuits, so the order here
+        # is important. pattern.match(None) will raise a TypeError
+        pattern = re.compile('\d{4}-\d{2}-\d{2}')
+        if dateID and not pattern.match(dateID):
+            raise ValueError(('Error: The date is not of the format '
+                              'YYYY-MM-DD.'))
+        
+        _checkType(datasetType)
+        # TODO: Think about how class properties are set
+        self._acqID       = acqID
+        self._channelID   = channelID
+        self._data        = data
+        self._posID       = posID
+        self._prefix      = prefix
+        self._sliceID     = sliceID
+        self._datasetType = datasetType
+        self._dateID      = dateID
+        
     @property
     def acqID(self):
         return self._acqID
@@ -812,7 +735,7 @@ class NewHDFDatabase(Database):
             The same Dataset but with a filled/modified data field.
         
         """
-        ids = dsID.getInfoDict()             
+        ids = dsID.getDatasetIDs()             
         if 'datasetTypeName' in ids:
             assert ids['datasetTypeName'] in config.__Registered_DatasetTypes__
             
@@ -860,7 +783,7 @@ class NewHDFDatabase(Database):
         if atom.datasetType == 'generic' and atom.attributeOf:
             # Make the key so that the attribute DatasetType writes to  the
             # type that it is an attribute of
-            dsIDs = atom.getInfoDict()
+            dsIDs = atom.getDatasetIDs()
             
             tempAtom = Dataset(dsIDs['prefix'], dsIDs['acqID'],
                                dsIDs['datasetType'], None,
@@ -956,7 +879,7 @@ class NewHDFDatabase(Database):
         if searchString == 'generic' and tempDS.attributeOf:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                ids = atom.getInfoDict()
+                ids = atom.getDatasetIDs()
                 ids['datasetType']     = 'generic'
                 ids['datasetTypeName'] = tempDS.datasetTypeName
                 atomicIDs[index] = inputType(ids['prefix'], ids['acqID'],
@@ -1460,7 +1383,7 @@ class HDFDatabase(Database):
             The same Dataset but with a filled/modified data field.
         
         """
-        ids = dsID.getInfoDict()             
+        ids = dsID.getDatasetIDs()             
         datasetType = ids['datasetType']
         
         if 'datasetTypeName' in ids:
@@ -1570,7 +1493,7 @@ class HDFDatabase(Database):
         if atom.datasetType == 'generic' and atom.attributeOf is not None:
             # Make the key so that the attribute DatasetType writes to  the
             # type that it is an attribute of
-            dsIDs = atom.getInfoDict()
+            dsIDs = atom.getDatasetIDs()
             
             tempAtom = Dataset(dsIDs['prefix'], dsIDs['acqID'],
                                dsIDs['datasetType'], None,
@@ -1643,7 +1566,7 @@ class HDFDatabase(Database):
             
         except KeyError:
             # Raised when the hdf5 key does not exist in the database.
-            ids = json.dumps(atom.getInfoDict())
+            ids = json.dumps(atom.getDatasetIDs())
             raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
                                         'No localization results exist with '
                                         'these atomic IDs: ' + ids))
@@ -1769,7 +1692,7 @@ class HDFDatabase(Database):
         if searchString == 'locMetadata':
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                ids = atom.getInfoDict()
+                ids = atom.getDatasetIDs()
                 ids['datasetType'] = 'locMetadata'
                 atomicIDs[index] = Dataset(ids['prefix'], ids['acqID'],
                                            'locMetadata', None,
@@ -1780,7 +1703,7 @@ class HDFDatabase(Database):
         if searchString == 'generic' and tempDS.attributeOf is not None:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                ids = atom.getInfoDict()
+                ids = atom.getDatasetIDs()
                 ids['datasetType']     = 'generic'
                 ids['datasetTypeName'] = tempDS.datasetTypeName
                 atomicIDs[index] = inputType(ids['prefix'], ids['acqID'],
