@@ -1431,6 +1431,8 @@ class MergeFang(MergeStats):
 class MergeFangTS(MergeStats):
     """Merger for localizations computed from Fang's sCMOS MLE software.
     
+    This computer is for DataFrames in the ThunderSTORM column format.
+    
     """
     def computeStatistics(self, df, particleCol = 'particle'):
         """Calculates the statistics of the linked trajectories.
@@ -1448,11 +1450,13 @@ class MergeFangTS(MergeStats):
             DataFrame containing the fully merged localizations.
             
         """
-        particleGroups         = df.groupby(particleCol)        
+        particleGroups         = df.groupby(particleCol)
+
+        wAvg = lambda x, y: self._wAvg(x, y, photonsCol = 'intensity [photon]')        
         
-        tempResultsX           = particleGroups.apply(self._wAvg, 'x [nm]')
-        tempResultsY           = particleGroups.apply(self._wAvg, 'y [nm]')
-        tempResultsZ           = particleGroups.apply(self._wAvg, 'z [nm]')
+        tempResultsX           = particleGroups.apply(wAvg, 'x [nm]')
+        tempResultsY           = particleGroups.apply(wAvg, 'y [nm]')
+        tempResultsZ           = particleGroups.apply(wAvg, 'z [nm]')
         tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
                                                      'frame'         : 'min',
                                                     'intensity [photon]':'sum',
