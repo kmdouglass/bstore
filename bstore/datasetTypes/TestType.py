@@ -5,25 +5,18 @@
 import bstore.config
 __version__ = bstore.config.__bstore_Version__
 
-# Be sure not to use the from ... import syntex to avoid cyclical imports!
+# Be sure not to use the from ... import syntax to avoid cyclical imports!
 import bstore.database
 import h5py
 from numpy import array
 
-class TestType(bstore.database.Dataset,
-               bstore.database.DatasetType):
-    """A class for testing B-Store generic datasetTypes.
+class TestType(bstore.database.Dataset):
+    """A class for testing B-Store Datasets.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(TestType, self).__init__(prefix, acqID, datasetType, data,
-                                       channelID = channelID,
-                                       dateID    = dateID,
-                                       posID     = posID,
-                                       sliceID   = sliceID)
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    
     @property
     def attributeOf(self):
         """The other DatasetType that this DatasetType describes.

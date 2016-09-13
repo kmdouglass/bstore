@@ -28,18 +28,6 @@ from numpy                         import array
 import h5py
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
-
-def test_testType_Instantiation():
-    """The DatasetType is properly instantiated.
-    
-    """
-    # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
-    
-    ds = TestType(prefix, acqID, datasetType, data)
     
 def test_testType_Put_Data():
     """testType can put its own data and datasetIDs.

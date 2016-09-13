@@ -26,7 +26,7 @@ from numpy.random import rand
 from os           import remove
 from os.path      import exists
 import h5py
-import bstore.datasetTypes.TestType
+import bstore.datasetTypes.TestType as TestType
 from numpy        import array
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
@@ -39,67 +39,33 @@ mdPre = config.__HDF_Metadata_Prefix__
 
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
-  
-def test_Dataset_CompleteSubclass():
-    """Dataset instantiation correctly detects complete subclassing.
-    
-    """    
-    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
-                                 channelID = 'A647',
-                                 posID     = (0,),
-                                 sliceID   = 1)
 
-@raises(TypeError)    
-def test_Dataset_IncompleteSubclass():
-    """Dataset instantiation correctly detects an incomplete subclassing.
+def test_Dataset_IDs():
+    """Dataset IDs are assigned correctly.
     
     """
-    class Dataset(database.DatabaseAtom):
-        """A concrete realization of a DatabaseAtom.
+    t = TestType.TestType()
+    t.datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1}
+    assert_equal(t.datasetIDs['prefix'], 'HeLa')
+    assert_equal(t.datasetIDs['acqID'],       1)
+
+@raises(TypeError)    
+def test_Dataset_IDs_Bad_Input_Type():
+    """Exception is raised when a non-dict is passed to datasetIDs.
     
-        """
-        def __init__(self, prefix, acqID, datasetType, data,
-                     channelID = None, posID = None, sliceID = None):
-            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
-                                          channelID = channelID,
-                                          posID     = posID,
-                                          sliceID   = sliceID)
-                                                
-        @property
-        def acqID(self):
-            pass
-        
-        @property
-        def channelID(self):
-            pass
-        
-        @property
-        def data(self):
-            pass
-        
-        # posID not defined: Should throw an error
-        # @property
-        # def posID(self):
-        #    pass
-
-        @property
-        def prefix(self):
-            pass
-        
-        @property
-        def sliceID(self):
-            pass
-        
-        @property
-        def datasetType(self):
-            pass
-
-    # Should raise a TypeError because posID is not defined.
-    myDataset = Dataset('HeLa', 1, 'locResults', data,
-                        channelID = 'A647',
-                        posID     = (0,),
-                        sliceID   = 1)
-
+    """
+    t = TestType.TestType()
+    t.datasetIDs = 2
+    
+def test_DatasetIDs_Initialize_With_IDs():
+    """Datasets can be initialized with IDs.
+    
+    """
+    t = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1})
+    assert_equal(t.datasetIDs['prefix'], 'HeLa')
+    assert_equal(t.datasetIDs['acqID'],       1)
+    
+'''
 @raises(ValueError)
 def test_Dataset_NoAcqID():
     """Dataset instantiation correctly detects an acqID of None.
@@ -570,3 +536,4 @@ def test_HDF_Database_Generic_GenAtomicID():
     assert_equal(myDS.posID,                 (0,))
     assert_equal(myDS.sliceID,               None)
     assert_equal(myDS.datasetTypeName, 'TestType')
+'''
