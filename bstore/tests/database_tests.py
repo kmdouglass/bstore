@@ -65,155 +65,88 @@ def test_DatasetIDs_Initialize_With_IDs():
     assert_equal(t.datasetIDs['prefix'], 'HeLa')
     assert_equal(t.datasetIDs['acqID'],       1)
     
-'''
-@raises(ValueError)
-def test_Dataset_NoAcqID():
-    """Dataset instantiation correctly detects an acqID of None.
+def test_UnpackDatasetIDs():
+    """DatasetIDs are successfully interpreted by the Database.
     
     """
-    class Dataset(database.DatabaseAtom):
-        def __init__(self, prefix, acqID, datasetType, data,
-                     channelID = None, posID = None, sliceID = None):
-            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
-                                          channelID = channelID,
-                                          posID     = posID,
-                                          sliceID   = sliceID)
-                                                
-        @property
-        def acqID(self):
-            pass
-        
-        @property
-        def channelID(self):
-            pass
-        
-        @property
-        def data(self):
-            pass
-        
-        @property
-        def dateID(self):
-            pass
-        
-        @property
-        def posID(self):
-            pass
-
-        @property
-        def prefix(self):
-            pass
-        
-        @property
-        def sliceID(self):
-            pass
-        
-        @property
-        def datasetType(self):
-            pass
-
-    # Should raise ValueError because acqID is None.
-    myDataset = Dataset('HeLa', None, 'locResults', data,
-                        channelID = 'A647',
-                        posID     = (0,),
-                        sliceID   = 1)
-
-@raises(ValueError)
-def test_Dataset_NoDatasetType():
-    """Dataset instantiation correctly detects a datasetType of None.
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1})
+    t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
+                                           'channelID' : 'A647',
+                                           'dateID'    : '2016-09-16',
+                                           'posID'     : (0,),
+                                           'sliceID'   : 1})
+    ids1 = myDB._unpackDatasetIDs(t1)
+    ids2 = myDB._unpackDatasetIDs(t2)
+    
+    # Ground truths
+    gt1  = myDB.dsID(prefix = 'HeLa', acqID = 1, datasetType = 'TestType',
+                     attributeOf = None, channelID = None, dateID = None,
+                     posID = None, sliceID = None)
+    gt2  = myDB.dsID(prefix = 'HeLa', acqID = 2, datasetType = 'TestType',
+                     attributeOf = None, channelID = 'A647',
+                     dateID = '2016-09-16', posID = (0,), sliceID = 1)
+    
+    assert_equal(ids1, gt1)
+    assert_equal(ids2, gt2)
+    
+@raises(AssertionError)
+def test_UnpackDatasetIDs_AcqIDIsNone():
+    """HDFDatabase correctly detects an acqID of None.
     
     """
-    class Dataset(database.DatabaseAtom):
-        def __init__(self, prefix, acqID, datasetType, data,
-                     channelID = None, posID = None, sliceID = None):
-            super(Dataset, self).__init__(prefix, acqID, datasetType, data,
-                                          channelID = channelID,
-                                          posID     = posID,
-                                          sliceID   = sliceID)
-                                                
-        @property
-        def acqID(self):
-            pass
-        
-        @property
-        def channelID(self):
-            pass
-        
-        @property
-        def data(self):
-            pass
-        
-        @property
-        def dateID(self):
-            pass
-        
-        @property
-        def posID(self):
-            pass
-
-        @property
-        def prefix(self):
-            pass
-        
-        @property
-        def sliceID(self):
-            pass
-        
-        @property
-        def datasetType(self):
-            pass
-
-    # Should throw ValueError because datasetType is None.
-    myDataset = Dataset('HeLa', 1, None, data,
-                        channelID = 'A647',
-                        posID     = (0,),
-                        sliceID   = 1)
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : None})
+    myDB._unpackDatasetIDs(t1)
+    
+@raises(AssertionError)
+def test_UnpackDatasetIDs_PrefixIsNone():
+    """HDFDatabase correctly detects an acqID of None.
+    
+    """
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t1   = TestType.TestType(datasetIDs = {'prefix' : None, 'acqID' : 1})
+    myDB._unpackDatasetIDs(t1)
+    
+@raises(database.DatasetIDError)
+def test_UnpackDatasetIDs_AcqIDIsMissing():
+    """HDFDatabase correctly detects an acqID of None.
+    
+    """
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa'})
+    myDB._unpackDatasetIDs(t1)
+    
+@raises(database.DatasetIDError)
+def test_UnpackDatasetIDs_PrefixIsMissing():
+    """HDFDatabase correctly detects an acqID of None.
+    
+    """
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t1   = TestType.TestType(datasetIDs = {'acqID' : 1})
+    myDB._unpackDatasetIDs(t1)
 
 @raises(ValueError)
-def test_Dataset_BadDateFormat():
+def test_UnpackDatasetIDs_BadDateFormat():
     """The dataset raises an error when a bad date string is supplied.
     
     """
-    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
-                                  channelID = 'A647',
-                                  # Should be 2016-06-01
-                                  dateID    = '2016-06-1', 
-                                  posID     = (0,),
-                                  sliceID   = 1)
-                                  
-def test_Dataset_GoodDateFormat():
-    """The dataset accepts a good date string.
+    myDB = database.HDFDatabase('test_db.h5')
     
-    """
-    myDataset = database.Dataset('HeLa', 1, 'locResults', data,
-                                  channelID = 'A647',
-                                  dateID    = '2016-06-01', 
-                                  posID     = (0,),
-                                  sliceID   = 1)
-                                  
-    ok_(myDataset.dateID == '2016-06-01')
-                                  
-def test_Database_CompleteSubclass():
-    """Database instantiation is complete.
-    
-    """
-    class Database(database.Database):
-        
-        def build(self):
-            pass
-        
-        def get(self):
-            pass
-
-        def put(self):
-            pass
-        
-        def query(self):
-            pass
-    
-    dbName = 'myDB.h5'
-    myDatabase = Database(dbName)
-    
-def test_Database__repr__():
+    t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
+                                           'channelID' : 'A647',
+                                           # Should be YYYY-MM-DD
+                                           'dateID'    : '2016-9-16',
+                                           'posID'     : (0,),
+                                           'sliceID'   : 1})
+    myDB._unpackDatasetIDs(t2)
+                                
+def test_HDFDatabase__repr__():
     """__repr__() returns the correct string representation.
     
     """
@@ -226,62 +159,64 @@ def test_Database__repr__():
     assert_equal(myDB.__repr__(),
                  ('HDFDatabase(\'the_name\', '
                   'widefieldPixelSize = None)'))
-    
+  
 def test_HDFDatabase_KeyGeneration():
     """Key names are generated correctly from DatabaseAtoms.
     
     """
-    myDatasets = [
-                  database.Dataset('HeLa_Control', 1, 'locResults', data,
-                                   channelID = 'A647',
-                                   posID     = (0,)),
-                  database.Dataset('HeLa_Control', 43, 'locResults', data,
-                                   posID = (0,)),
-                  database.Dataset('HeLa_Control', 6, 'locResults', data),
-                  database.Dataset('HeLa_Control', 6, 'locResults', data,
-                                   channelID = 'Cy5',
-                                   posID     = (1,),
-                                   sliceID   = 3),
-                  database.Dataset('HeLa_Control', 89, 'locResults', data,
-                                   channelID = 'DAPI',
-                                   posID = (3, 12),
-                                   sliceID = 46),
-                  database.Dataset('HeLa_Control', 76, 'widefieldImage', data,
-                                   channelID = 'A750',
-                                   posID = (0,2)),
-                  database.Dataset('HeLa_Control', 76, 'widefieldImage', data,
-                                   channelID = 'A750',
-                                   dateID    = '2016-05-05',
-                                   posID = (0,2)),
-                  database.Dataset('HeLa_Control', 76, 'locMetadata', data,
-                                   channelID = 'A750',
-                                   posID = (0,2))
+    myDatasetIDs = [
+                  {'prefix' : 'HeLa_Control', 'acqID' : 1,
+                   'channelID' : 'A647', 'posID' : (0,)},
+
+                  {'prefix' : 'HeLa_Control', 'acqID' : 43, 'posID' : (0,)},
+                   
+                  {'prefix': 'HeLa_Control', 'acqID' : 6},
+
+                  {'prefix': 'HeLa_Control', 'acqID' : 6,
+                   'channelID' : 'Cy5', 'posID' : (1,),
+                   'sliceID'   : 3},
+                   
+                  {'prefix' : 'HeLa_Control', 'acqID' : 89,
+                   'channelID' : 'DAPI', 'posID' : (3, 12),
+                   'sliceID' : 46},
+                   
+                  {'prefix' : 'HeLa_Control', 'acqID' : 76,
+                   'channelID' : 'A750', 'posID' : (0,2)},
+
+                  {'prefix' : 'HeLa_Control', 'acqID' : 76,
+                   'channelID' : 'A750', 'dateID' : '2016-05-05',
+                   'posID' : (0,2)},
+
+                  {'prefix': 'HeLa_Control', 'acqID' : 76,
+                   'channelID' : 'A750', 'posID' : (0,2)}
                  ]
      
     # The last one should be locResults and not locMetadata because
     # metadata gets appended to locResults            
     keys       = [
-                  'HeLa_Control/HeLa_Control_1/locResults_A647_Pos0',
-                  'HeLa_Control/HeLa_Control_43/locResults_Pos0',
-                  'HeLa_Control/HeLa_Control_6/locResults',
-                  'HeLa_Control/HeLa_Control_6/locResults_Cy5_Pos1_Slice3',
+                  'HeLa_Control/HeLa_Control_1/TestType_A647_Pos0',
+                  'HeLa_Control/HeLa_Control_43/TestType_Pos0',
+                  'HeLa_Control/HeLa_Control_6/TestType',
+                  'HeLa_Control/HeLa_Control_6/TestType_Cy5_Pos1_Slice3',
                   'HeLa_Control/HeLa_Control_89' + \
-                      '/locResults_DAPI_Pos_003_012_Slice46',
+                      '/TestType_DAPI_Pos_003_012_Slice46',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/widefieldImage_A750_Pos_000_002',
+                      '/TestType_A750_Pos_000_002',
                   'HeLa_Control/d2016_05_05/HeLa_Control_76' + \
-                      '/widefieldImage_A750_Pos_000_002',
+                      '/TestType_A750_Pos_000_002',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/locResults_A750_Pos_000_002'
+                      '/TestType_A750_Pos_000_002'
                  ]
     
     dbName = 'myDB.h5'
     myDatabase = database.HDFDatabase(dbName)
     
-    for ds, key in zip(myDatasets, keys):
+    for currID, key in zip(myDatasetIDs, keys):
+        ds = TestType.TestType(datasetIDs = currID)
         keyString = myDatabase._genKey(ds)
         assert_equal(keyString, key)
         
+'''        
 def test_HDFDatabase_Put_Keys_AtomicMetadata():
     """Database creates an HDF file with the right keys and atomic metadata.
     

@@ -254,116 +254,6 @@ class Dataset(metaclass = ABCMeta):
 """Concrete classes
 -------------------------------------------------------------------------------
 """
-class xxxDatasetxxx():
-    """A concrete realization of a DatabaseAtom.
-    
-    Parameters
-    ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
-    
-    Attributes
-    ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
-    
-    """
-    def __init__(self, prefix, acqID, **kwargs):
-                     
-        if acqID is None:
-            raise ValueError('acqID cannot be \'None\'.')
-            
-        # dateID should follow the format YYYY-MM-DD
-        # Note that Python's 'and' short circuits, so the order here
-        # is important. pattern.match(None) will raise a TypeError
-        pattern = re.compile('\d{4}-\d{2}-\d{2}')
-        if dateID and not pattern.match(dateID):
-            raise ValueError(('Error: The date is not of the format '
-                              'YYYY-MM-DD.'))
-        
-        _checkType(datasetType)
-        # TODO: Think about how class properties are set
-        self._acqID       = acqID
-        self._channelID   = channelID
-        self._data        = data
-        self._posID       = posID
-        self._prefix      = prefix
-        self._sliceID     = sliceID
-        self._datasetType = datasetType
-        self._dateID      = dateID
-        
-    @property
-    def acqID(self):
-        return self._acqID
-    
-    @property
-    def channelID(self):
-        return self._channelID
-
-    @property
-    def data(self):
-        return self._data
-    
-    @data.setter
-    def data(self, value):
-        self._data = value
-        
-    @property
-    def datasetType(self):
-        return self._datasetType
-        
-    @property
-    def dateID(self):
-        return self._dateID
-    
-    @property
-    def posID(self):
-        return self._posID
-
-    @property
-    def prefix(self):
-        return self._prefix
-    
-    @property
-    def sliceID(self):
-        return self._sliceID
-
 class HDFDatabase(Database):
     """A HDFDatabase structure for managing SMLM data.
     
@@ -418,17 +308,25 @@ class HDFDatabase(Database):
         return config.__HDF_AtomID_Prefix__
         
     dsID = namedtuple('datasetID', ['prefix', 'acqID', 'datasetType',
-                                    'channelID', 'posID', 'sliceID'])
+                                    'attributeOf', 'channelID', 'dateID',
+                                    'posID', 'sliceID'])
     """Dataset IDs used by this database.
+    
+    Notes
+    -----
+    Fields' __doc__ attributes must contain the string "(optional)" if they
+    are not required.
         
     """
     dsID.prefix.__doc__      = ('The descriptive name given to '
                                 'the dataset by the user.')
     dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
     dsID.datasetType.__doc__ = 'The type specified by datasetTypeName'
-    dsID.channelID.__doc__   = 'String for the channel of the dataset.'
-    dsID.posID.__doc__       = 'One or two-tuple of integers.'
-    dsID.sliceID.__doc__     = 'Single integer identifying the axial slice.'
+    dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
+    dsID.channelID.__doc__   = '(optional) String for the channel (color).'
+    dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
+    dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
+    dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
     
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False):
         """Builds a database by traversing a directory for experimental files.
@@ -688,47 +586,49 @@ class HDFDatabase(Database):
                                
         return returnDS
 
-    def _genKey(self, atom):
-        """Generate a key name for a dataset atom. The inverse of _genAtomicID.
+    def _genKey(self, ds):
+        """Generate a key name for a dataset. The inverse of _genAtomicID.
         
         Parameters
         ----------
-        atoms  : DatabaseAtom
+        ds  : Dataset
         
         Returns
         -------
         str
         
         """
+        ids = self._unpackDatasetIDs(ds)
+        
         # 'd' and underscores are needed for PyTables naming conventions
-        if atom.dateID is not None:
-            acqKey = '/'.join([atom.prefix,
-                               'd' + atom.dateID.replace('-','_'),
-                               atom.prefix]) + \
-                     '_' + str(atom.acqID)
+        if ids.dateID is not None:
+            acqKey = '/'.join([ids.prefix,
+                               'd' + ids.dateID.replace('-','_'),
+                               ids.prefix]) + \
+                     '_' + str(ids.acqID)
         else:
-            acqKey = '/'.join([atom.prefix, atom.prefix]) + \
-                     '_' + str(atom.acqID)
+            acqKey = '/'.join([ids.prefix, ids.prefix]) + \
+                     '_' + str(ids.acqID)
                                  
         otherIDs = ''
-        if atom.channelID is not None:
-            otherIDs += '_' + atom.channelID
-        if atom.posID is not None:
-            if len(atom.posID) == 1:
-                posID = atom.posID[0]    
+        if ids.channelID is not None:
+            otherIDs += '_' + ids.channelID
+        if ids.posID is not None:
+            if len(ids.posID) == 1:
+                posID = ids.posID[0]    
                 otherIDs += '_Pos{:d}'.format(posID)
             else:
-                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(atom.posID[0], 
-                                                            atom.posID[1])
-        if atom.sliceID is not None:
-            otherIDs += '_Slice{:d}'.format(atom.sliceID)
+                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(ids.posID[0], 
+                                                            ids.posID[1])
+        if ids.sliceID is not None:
+            otherIDs += '_Slice{:d}'.format(ids.sliceID)
         
         # If an attribute, use the name of the DatasetType that this type is
         # an attribute of.
-        if atom.attributeOf:
-            return acqKey + '/' + atom.attributeOf + otherIDs
+        if ids.attributeOf:
+            return acqKey + '/' + ds.attributeOf + otherIDs
         else:
-            return acqKey + '/' + atom.datasetTypeName + otherIDs
+            return acqKey + '/' + ds.datasetTypeName + otherIDs
             
     def get(self, dsID):
         """Returns an atomic dataset matching dsID from the database.
@@ -935,10 +835,52 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        ds : Dataset
+        ds  : Dataset
+        
+        Returns
+        -------
+        ids : namedtuple
+            The ids for the dataset.
+        
         """
-        # TODO: write this
-        pass
+        idDict = ds.datasetIDs
+        
+        # Preconditioning of the IDs
+        # Require prefix and acqID to be specified
+        if ('prefix' not in idDict) | ('acqID' not in idDict):
+            raise DatasetIDError('DatasetID missing a \'key\' '
+                                 'or \'acqID\' key')
+        
+        assert idDict['prefix'] and idDict['acqID'],('Error: \'prefix\' and '
+                                                     '\'acqID\' cannot be '
+                                                     'None.')
+                                 
+        # dateID should follow the format YYYY-MM-DD
+        # Note that Python's 'and' short circuits, so the order here
+        # is important. pattern.match(None) will raise a TypeError
+        pattern = re.compile('\d{4}-\d{2}-\d{2}')
+        if 'dateID' in idDict and not pattern.match(idDict['dateID']):
+            raise ValueError(('Error: The date is not of the format '
+                              'YYYY-MM-DD.'))               
+        
+        # Fill in missing optional id fields
+        optional = [field for field in self.dsID._fields
+                          if '(optional)' in getattr(self.dsID, field).__doc__]
+        for field in optional:
+            if field not in idDict:            
+                idDict[field] = None
+        
+        # Create the datasetID        
+        ids = self.dsID(prefix      = idDict['prefix'],
+                        acqID       = idDict['acqID'],
+                        datasetType = ds.datasetTypeName,
+                        attributeOf = ds.attributeOf,
+                        channelID   = idDict['channelID'],
+                        dateID      = idDict['dateID'],
+                        posID       = idDict['posID'],
+                        sliceID     = idDict['sliceID'])
+                        
+        return ids
     
     def _writeDatasetIDs(self, atom):
         """Writes B-Store dataset IDs as attributes of the dataset.
@@ -977,6 +919,15 @@ class HDFDatabase(Database):
 """
 class DatasetError(Exception):
     """Error raised when a bad datasetType is passed.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class DatasetIDError(Exception):
+    """Error raised when a bad or missing dataset IDs are supplied.
     
     """
     def __init__(self, value):
