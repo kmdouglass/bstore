@@ -611,14 +611,18 @@ class HDFDatabase(Database):
         
         Parameters
         ----------
-        ds  : Dataset
+        ds : Dataset or datasetID
         
         Returns
         -------
         str
         
         """
-        ids = self._unpackDatasetIDs(ds)
+        # Account for whether a Dataset or a datasetIDs namedtuple was given.
+        if isinstance(ds, Dataset):
+            ids = self._unpackDatasetIDs(ds)
+        else:
+            ids = ds
         
         # 'd' and underscores are needed for PyTables naming conventions
         if ids.dateID is not None:
@@ -651,25 +655,21 @@ class HDFDatabase(Database):
             return acqKey + '/' + ds.datasetTypeName + otherIDs
             
     def get(self, dsID):
-        """Returns an atomic dataset matching dsID from the database.
+        """Returns a Dataset from the database.
         
         Parameters
         ----------
-        dsID     : Dataset
-            A Dataset with a possibly empty 'data' field that may be used to
-            identify the dataset.
+        dsID : datasetID
+            A namedtuple belonging to the HDFDatabase class.
             
         Returns
         -------
-        dsID : Dataset
-            The same Dataset but with a filled/modified data field.
+        dataset : Dataset
+            A complete dataset.
         
         """
-        ids = dsID.getDatasetIDs()             
-        if 'datasetTypeName' in ids:
-            assert ids['datasetTypeName'] in config.__Registered_DatasetTypes__
-            
-        hdfKey   = self._genKey(dsID)
+        assert dsID.datasetType in config.__Registered_DatasetTypes__
+        hdfKey = self._genKey(dsID)
 
         # Ensure that the key exists        
         try:
@@ -677,22 +677,23 @@ class HDFDatabase(Database):
         except HDF5KeyExists:
             pass
         
+        # TODO: Pick up here and create the dataset from the ID
         if not dsID.attributeOf:
-            dsID.data = dsID.get(self._dbName, hdfKey)
-        elif dsID.attributeOf:
+            data = dataset.get(self._dbName, hdfKey)
+        elif dataset.attributeOf:
             # Recreate the hdf key to point towards the attributeOf dataset
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                             dsID.attributeOf))
-            dsType = getattr(mod, dsID.attributeOf)
+                                                             dataset.attributeOf))
+            dsType = getattr(mod, dataset.attributeOf)
             tempID = dsType(ids['prefix'], ids['acqID'], 'generic', None,
                                 channelID = ids['channelID'],
                                 dateID = ids['dateID'], posID = ids['posID'],
                                 sliceID = ids['sliceID'])
             
             hdfKey    = self._genKey(tempID)
-            dsID.data = dsID.get(self._dbName, hdfKey)
+            dataset.data = dataset.get(self._dbName, hdfKey)
             
-        return dsID
+        return dataset
             
     def put(self, dataset, **kwargs):
         """Writes data from a single dataset into the database.
@@ -844,8 +845,8 @@ class HDFDatabase(Database):
         
         Returns
         -------
-        ids : namedtuple
-            The ids for the dataset.
+        ids : datasetID
+            The ids for the dataset; a namedtuple of the HDFDatabase class.
         
         """
         idDict = ds.datasetIDs.copy()

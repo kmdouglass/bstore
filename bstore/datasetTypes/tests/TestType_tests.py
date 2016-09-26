@@ -58,41 +58,36 @@ def test_testType_Put_Data():
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
 
-'''    
+  
 def test_testType_DatasetIDs():
     """testType can return the correct dataset IDs.
     
     """
     # Make up some dataset IDs and a dataset
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = array([42])
-    ds = TestType(prefix, acqID, datasetType, data)
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
+    ds              = TestType(datasetIDs = dsIDs)
+    ds.data         = array([42])
     
-    ids = ds.getInfoDict()
+    ids = ds.datasetIDs
     assert_equal(ids['prefix'],       'test_prefix')
     assert_equal(ids['acqID'],                    1)
-    assert_equal(ids['datasetType'],      'generic')
-    assert_equal(ids['channelID'],             None)
-    assert_equal(ids['dateID'],                None)
-    assert_equal(ids['posID'],                 None)
-    assert_equal(ids['sliceID'],               None)
-    assert_equal(ids['datasetTypeName'], 'TestType')
-    
+    assert_equal(ds.datasetTypeName,     'TestType')
+    assert_equal(ds.attributeOf,               None)
+''' 
 def test_testType_Get_Data():
     """testType can get its own data and datasetIDs.
     
     """
     # Make up some dataset IDs and a dataset
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = array([42])
-    ds = TestType(prefix, acqID, datasetType, data)
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
+    ds              = TestType(datasetIDs = dsIDs)
+    ds.data         = array([42])
     
-    pathToDB = testDataRoot# / Path('generic_types/testType')
-    
+    pathToDB = testDataRoot
     # Remove database if it exists
     if exists(str(pathToDB / Path('test_db.h5'))):
         remove(str(pathToDB / Path('test_db.h5')))

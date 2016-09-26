@@ -54,6 +54,7 @@ class TestType(bstore.database.Dataset):
         -------
         data : NumPy array
             The data retrieved from the HDF file.
+            
         """
         with h5py.File(database, 'r') as hdf:
             data = array(hdf.get(key))
