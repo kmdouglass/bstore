@@ -34,11 +34,11 @@ def test_testType_Put_Data():
     
     """
     # Make up some dataset IDs and a dataset
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = array([42])
-    ds = TestType(prefix, acqID, datasetType, data)
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
+    ds              = TestType(datasetIDs = dsIDs)
+    ds.data         = array([42])
     
     pathToDB = testDataRoot
     # Remove database if it exists
@@ -50,13 +50,15 @@ def test_testType_Put_Data():
     
     key = 'test_prefix/test_prefix_1/TestType'
     with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-        assert_equal(hdf[key][0], 42)
-        assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-        assert_equal(hdf[key].attrs['SMLM_datasetTypeName'], 'TestType')
+        assert_equal(hdf[key][0],                                42)
+        assert_equal(hdf[key].attrs['SMLM_datasetType'], 'TestType')
+        assert_equal(hdf[key].attrs['SMLM_prefix'],   'test_prefix')
+        assert_equal(hdf[key].attrs['SMLM_acqID'],                1)
 
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
-    
+
+'''    
 def test_testType_DatasetIDs():
     """testType can return the correct dataset IDs.
     
@@ -113,3 +115,4 @@ def test_testType_Get_Data():
     
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
+    '''

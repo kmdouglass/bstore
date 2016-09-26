@@ -295,7 +295,7 @@ def test_HDFDatabase_GetWithDate():
     ok_((data['y'] == retrievedDataset.data['y']).all())
      
 @raises(database.HDF5KeyExists)
-def test_HDF_Database_Check_Key_Existence_LocResults():
+def test_HDF_Database_Check_Key_Existence():
     """An error is raised if using a key that already exists for locResults.
     
     """
@@ -312,64 +312,6 @@ def test_HDF_Database_Check_Key_Existence_LocResults():
     # Raises error on the second put because the key already exists.
     myDB.put(myDS)
     myDB.put(myDS)
-    
-@raises(database.HDF5KeyExists)
-def test_HDF_Database_Check_Key_Existence_LocMetadata():
-    """An error is raised if using a key that already exists for locMetadata.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDB     = database.HDFDatabase(dbName)
-
-    # Load a json metadata file
-    f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile   = testDataRoot / Path('database_test_files') / Path(f)
-    datasetType = 'locMetadata'
-    mmParser    = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    
-    # Create the dataset; locMetadata needs locResults, so put those first
-    dsLocs = database.Dataset(mmParser.prefix, mmParser.acqID, 'locResults',
-                              data,
-                              channelID = mmParser.channelID,
-                              posID     = mmParser.posID, 
-                              sliceID   = mmParser.sliceID)
-    dsMeta = database.Dataset(mmParser.prefix, mmParser.acqID, 
-                              mmParser.datasetType, mmParser.data,
-                              channelID = mmParser.channelID,
-                              posID     = mmParser.posID, 
-                              sliceID   = mmParser.sliceID)
-                          
-    # Write the metadata into the database
-    myDB.put(dsLocs)
-    myDB.put(dsMeta)
-    
-    # Should raise error because metadata exists already
-    myDB.put(dsMeta)
-
-@raises(database.HDF5KeyExists)    
-def test_HDF_Database_Check_Key_Existence_WidefieldImage():
-    """An error is raised if using a key that already exists for widefieldImage
-    
-    """
-    # Load the database
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-    
-    # Load the widefield image and convert it to an atom
-    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
-    inputFile = testDataRoot / Path('database_test_files') \
-              / Path('Cos7_A647_WF1/') / Path(f)
-    datasetType = 'widefieldImage'
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    
-    myDB.put(mmParser.getDatabaseAtom())
-    
-    # Should raise an error because the dataset is inserted twice.
-    myDB.put(mmParser.getDatabaseAtom())
 
 def test_HDF_Database_Build():
     """The database build is performed successfully.

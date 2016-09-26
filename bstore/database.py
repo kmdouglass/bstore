@@ -196,6 +196,8 @@ class Dataset(metaclass = ABCMeta):
     
     Parameters
     ----------
+    data
+        The actual data held by the dataset.
     datasetIDs : dict
         The ID fields and their values that identify the datset inside the
         database.
@@ -203,17 +205,28 @@ class Dataset(metaclass = ABCMeta):
         
     Attributes
     ----------
+    data
+        The actual data held by the dataset.
     datasetIDs : dict
         The ID fields and their values that identify the datset inside the
         database.
     
     """
     def __init__(self, datasetIDs = {}):
+        self._data       = None        
         self._datasetIDs = datasetIDs
-    
+
     @abstractproperty
     def attributeOf():    
         pass
+    
+    @property
+    def data(self):
+        return self._data
+        
+    @data.setter
+    def data(self, value):
+        self._data = value
     
     @property
     def datasetIDs(self):
@@ -304,7 +317,7 @@ class HDFDatabase(Database):
                                                                   pxSizeStr)
     
     @property
-    def atomPrefix(self):
+    def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
         
     dsID = namedtuple('datasetID', ['prefix', 'acqID', 'datasetType',
@@ -472,27 +485,32 @@ class HDFDatabase(Database):
             if typeName not in config.__Registered_DatasetTypes__:
                 raise DatasetTypeError(typeName)
     
-    def _checkKeyExistence(self, atom):
+    def _checkKeyExistence(self, ds):
         """Checks for the existence of a key.
         
         Parameters
         ----------
-        atom : DatabaseAtom
+        ds : Dataset
+        
+        Returns
+        -------
+        key : str
+            The HDF key pointing to the dataset.
         
         """
-        key = self._genKey(atom)        
+        key = self._genKey(ds)        
         
         # If Database file doesn't exist, return without checking
         try:
             with h5py.File(self._dbName, mode = 'r') as dbFile:
                 # First check atoms that are not attributes
-                if key in dbFile and atom.attributeOf is None:
+                if key in dbFile and ds.attributeOf is None:
                     raise HDF5KeyExists(('Error: '
                                          '{0:s} already exists.'.format(key)))
                 
                 # Next search for *any* occurence of the attribute flag
                 # in the attribute names of dataset that key points to.
-                elif key in dbFile and atom.attributeOf is not None:
+                elif key in dbFile and ds.attributeOf is not None:
                     attrID = config.__HDF_Metadata_Prefix__                 
                     mdKeys = dbFile[key].attrs.keys()
                     for currKey in mdKeys:
@@ -502,6 +520,8 @@ class HDFDatabase(Database):
                                                  'exist.'.format(key)))                    
         except IOError:
             pass
+        
+        return key
            
     def _genAtomicID(self, key):
         """Generates an atomic ID from a HDF key. The inverse of _genKey.
@@ -674,43 +694,28 @@ class HDFDatabase(Database):
             
         return dsID
             
-    def put(self, atom, **kwargs):
-        """Writes a single database atom into the database.
+    def put(self, dataset, **kwargs):
+        """Writes data from a single dataset into the database.
         
         Parameters
         ----------
-        atom   : DatabaseAtom or Dataset
+        dataset : Dataset
         
         """
-        assert atom.datasetTypeName in config.__Registered_DatasetTypes__,\
-            'Type {0} is unregistered.'.format(atom.datasetTypeName)
-        if atom.attributeOf:
-            assert atom.attributeOf in config.__Registered_DatasetTypes__,\
-                'Type {0} is unregistered.'.format(atom.attributeOf)
-            
-        self._checkKeyExistence(atom)
+        assert dataset.datasetTypeName in config.__Registered_DatasetTypes__,\
+            'Type {0} is unregistered.'.format(dataset.datasetTypeName)
+        if dataset.attributeOf:
+            assert dataset.attributeOf in config.__Registered_DatasetTypes__,\
+                'Type {0} is unregistered.'.format(dataset.attributeOf)
         
-        if atom.datasetType == 'generic' and atom.attributeOf:
-            # Make the key so that the attribute DatasetType writes to  the
-            # type that it is an attribute of
-            dsIDs = atom.getDatasetIDs()
+        # Key generation automatically handles datasets that are attributes
+        key = self._checkKeyExistence(dataset)
             
-            tempAtom = Dataset(dsIDs['prefix'], dsIDs['acqID'],
-                               dsIDs['datasetType'], None,
-                               channelID = dsIDs['channelID'],
-                               dateID    = dsIDs['dateID'],
-                               posID     = dsIDs['posID'],
-                               sliceID   = dsIDs['sliceID'])
-            tempAtom.datasetTypeName = atom.attributeOf
-            key = self._genKey(tempAtom)
-        else:
-            key = self._genKey(atom)
-            
-        atom.put(self._dbName, key, **kwargs)
+        dataset.put(self._dbName, key, **kwargs)
             
         # Don't write IDs for attributes
-        if not atom.attributeOf:            
-            self._writeDatasetIDs(atom)
+        if not dataset.attributeOf:            
+            self._writeDatasetIDs(dataset)
             
     def query(self, datasetType = 'locResults', datasetTypeName = None):
         """Returns a set of database atoms inside this database.
@@ -843,7 +848,8 @@ class HDFDatabase(Database):
             The ids for the dataset.
         
         """
-        idDict = ds.datasetIDs
+        idDict = ds.datasetIDs.copy()
+        print(idDict)
         
         # Preconditioning of the IDs
         # Require prefix and acqID to be specified
@@ -882,37 +888,33 @@ class HDFDatabase(Database):
                         
         return ids
     
-    def _writeDatasetIDs(self, atom):
+    def _writeDatasetIDs(self, ds):
         """Writes B-Store dataset IDs as attributes of the dataset.
         
         Parameters
         ----------
-        atom : Dataset
+        ds : Dataset
         
         """
-        key        = self._genKey(atom)
-        atomPrefix = self.atomPrefix
+        key        = self._genKey(ds)
+        attrPrefix = self.attrPrefix
+        ids        = self._unpackDatasetIDs(ds)
         with  h5py.File(self._dbName, mode = 'a') as hdf:
-            hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
-            hdf[key].attrs[atomPrefix + 'channelID']   = \
-                'None' if atom.channelID is None else atom.channelID
-            hdf[key].attrs[atomPrefix + 'dateID']      = \
-                'None' if atom.dateID is None else atom.dateID
-            hdf[key].attrs[atomPrefix + 'posID']       = \
-                'None' if atom.posID is None else atom.posID
-            hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
-            hdf[key].attrs[atomPrefix + 'sliceID']     = \
-                'None' if atom.sliceID is None else atom.sliceID
-            hdf[key].attrs[atomPrefix + 'datasetType'] = atom.datasetType
+            hdf[key].attrs[attrPrefix + 'acqID']       = ids.acqID
+            hdf[key].attrs[attrPrefix + 'channelID']   = \
+                'None' if ids.channelID is None else ids.channelID
+            hdf[key].attrs[attrPrefix + 'dateID']      = \
+                'None' if ids.dateID is None else ids.dateID
+            hdf[key].attrs[attrPrefix + 'posID']       = \
+                'None' if ids.posID is None else ids.posID
+            hdf[key].attrs[attrPrefix + 'prefix']      = ids.prefix
+            hdf[key].attrs[attrPrefix + 'sliceID']     = \
+                'None' if ids.sliceID is None else ids.sliceID
+            hdf[key].attrs[attrPrefix + 'datasetType'] = ds.datasetTypeName
             
             # Current version of this software
-            hdf[key].attrs[atomPrefix +'Version'] = \
+            hdf[key].attrs[attrPrefix +'Version'] = \
                                                config.__bstore_Version__
-                                               
-            # Write the generic type name if this is a generic type
-            if atom.datasetType == 'generic':
-                hdf[key].attrs[atomPrefix + 'datasetTypeName'] = \
-                                                           atom.datasetTypeName
 
 """Exceptions
 -------------------------------------------------------------------------------
