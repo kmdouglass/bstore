@@ -12,7 +12,7 @@ import json
 
 class LocMetadata(bstore.database.Dataset,
                   bstore.database.DatasetType):
-    """Contains the average trajectory of many fiducial markers.
+    """Contains metadata associated with a localization results dataset.
     
     """
     def __init__(self, prefix, acqID, datasetType, data,

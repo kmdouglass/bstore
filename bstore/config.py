@@ -50,18 +50,6 @@ __Format_Default__['length [frames]']    = 'length'
 """
 __Path_To_Test_Data__ = '../bstore_test_files/'
 
-"""__Types_Of_Atoms__ : tuple
-    Strings identifying the types of atoms understood by the software.
-    
-    locMetadata must follow locResults in the list.
-       
-"""
-__Types_Of_Atoms__ = [
-                      'locResults',
-                      'locMetadata',
-                      'widefieldImage',
-                      'generic'
-                     ]
 
 """__MM_PixelSize__ : str
     Name of the field in the Micro-Manager metadata containing the pixel size.

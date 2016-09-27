@@ -13,33 +13,21 @@ nosetests should be run in the directory just above the `tests` folder.
 __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com' 
 
-from nose.tools import *
+from nose.tools import assert_equal, raises
 
 # Register the test generic
 from bstore  import config
 config.__Registered_DatasetTypes__.append('TestType')
 
 from bstore  import parsers, database
+import bstore.datasetTypes.TestType as TestType
+import bstore.datasetTypes.Localizations as Localizations
 from pathlib import Path
 from tifffile import TiffFile
-
-
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
 class TestParser(parsers.Parser):
-    @property
-    def data(self):
-        pass
-    
-    @property
-    def getDatabaseAtom(self):
-        pass
-    
-    @property
-    def uninitialized(self):
-        pass
-    
     def parseFilename():
         pass
 
@@ -47,82 +35,44 @@ def test_Parser_Attributes():
     """Will Parser accept and assign parameters to class attributes correctly?
     
     """
-    acqID       =            1
-    channelID   =       'A647'
-    dateID      =         None
-    posID       =         (0,) # Note that this is a tuple!
-    prefix      = 'my_dataset'
-    sliceID     =         None
-    datasetType = 'locResults'    
+    dsIDs = {'prefix' : 'my_dataset', 'acqID' : 1,
+             'channelID' : 'A647', 'posID' : (0,)}
+    myDS  = TestType.TestType(datasetIDs = dsIDs)
     
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        posID = posID, sliceID = sliceID)
-    assert_equal(parser.acqID,                  1)
-    assert_equal(parser.channelID,         'A647')
-    assert_equal(parser.posID,               (0,))
-    assert_equal(parser.prefix,      'my_dataset')
-    assert_equal(parser.sliceID,             None)
-    assert_equal(parser.datasetType, 'locResults')
+    parser         = TestParser()
+    parser.dataset = myDS
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
+    assert_equal(parser.dataset.datasetIDs['channelID'],         'A647')
+    assert_equal(parser.dataset.datasetIDs['posID'],               (0,))
+    assert_equal(parser.dataset.datasetIDs['prefix'],      'my_dataset')
+    assert_equal(parser.dataset.datasetType,                 'TestType')
 
-@raises(parsers.DatasetError)    
-def test_Parser_datasetType():
-    """Will Parser detect a bad value for datasetType?
-    
-    """
-    acqID       =            1
-    channelID   =       'A647'
-    dateID      =         None
-    posID       =         (0,)
-    prefix      = 'my_dataset'
-    sliceID     =         None
-    datasetType = 'locRseults' # misspelled
-    
-
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        posID = posID, sliceID = sliceID)
-    
-def test_Parser_getBasicInfo():
-    """Will getBasicInfo return the right values?
-    
-    """
-    acqID       =             3
-    channelID   =        'A750'
-    dateID      =          None
-    posID       =         (0,1)
-    prefix      =        'HeLa'
-    sliceID     =          None
-    datasetType = 'locMetadata'
-    
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        posID = posID, sliceID = sliceID)
-    basicInfo = parser.getBasicInfo()
-    assert_equal(basicInfo['acqID'],                    3)
-    assert_equal(basicInfo['channelID'],           'A750')
-    assert_equal(basicInfo['posID'],                (0,1))
-    assert_equal(basicInfo['prefix'],              'HeLa')
-    assert_equal(basicInfo['sliceID'],               None)
-    assert_equal(basicInfo['datasetType'],  'locMetadata')
-    
-def test_MMParser_LocResults_Attributes():
+def test_MMParser_ParseGenericFile():
     """Will MMParser properly extract the acquisition information?
     
     """
     inputFilename   = 'Cos7_Microtubules_A647_3_MMStack_Pos0_locResults.dat'
-    datasetType     = 'locResults'
+    datasetType     = 'TestType'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFilename, datasetType)
-    assert_equal(mmParser.acqID,                              3)
-    assert_equal(mmParser.channelID,                     'A647')
-    assert_equal(mmParser.dateID,                          None)
-    assert_equal(mmParser.posID,                           (0,))
-    assert_equal(mmParser.prefix,           'Cos7_Microtubules')
-    assert_equal(mmParser.sliceID,                         None)
-    assert_equal(mmParser.datasetType,             'locResults')
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],                    3)
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],           'A647')
+    assert_equal(mmParser.dataset.datasetIDs['posID'],                 (0,))
+    assert_equal(mmParser.dataset.datasetIDs['prefix'], 'Cos7_Microtubules')
+    assert_equal(mmParser.dataset.datasetType,                   'TestType')
+
+@raises(parsers.DatasetTypeError)
+def test_MMParser_UnregisteredType_WillNot_Parse():
+    """Unregistered datasetTypes should raise an error if parsed.
     
+    """
+    inputFilename   = 'Cos7_Microtubules_A647_3_MMStack_Pos0_locResults.dat'
+    datasetType     = 'Localizations'
+    
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFilename, datasetType)
+ 
 def test_MMParser_Channel_Underscores():
     """Will MMParser extract the prefix and channel with weird underscores?
     
@@ -134,18 +84,17 @@ def test_MMParser_Channel_Underscores():
                      'Cos7_MicrotubulesCy5_3_MMStack_Pos0_locResults.dat',
                      'Cos7_Microtubules__Cy5_3_MMStack_Pos0_locResults.dat',
                      'Cos7___Microtubules__Cy5_3_MMStack_Pos0_locResults.dat']
-    datasetType   = 'locResults'
+    datasetType   = 'TestType'
     
     mmParser = parsers.MMParser()
     for currFilename in inputFilename:
         mmParser.parseFilename(currFilename, datasetType)
-        assert_equal(mmParser.acqID,                              3)
-        assert_equal(mmParser.channelID,                      'Cy5')
-        assert_equal(mmParser.posID,                           (0,))
-        assert_equal(mmParser.prefix,           'Cos7_Microtubules')
-        assert_equal(mmParser.sliceID,                         None)
-        assert_equal(mmParser.datasetType,             'locResults')
-    
+        assert_equal(mmParser.dataset.datasetIDs['acqID'],                   3)
+        assert_equal(mmParser.dataset.datasetIDs['channelID'],           'Cy5')
+        assert_equal(mmParser.dataset.datasetIDs['posID'],                (0,))
+        assert_equal(mmParser.dataset.datasetIDs['prefix'],'Cos7_Microtubules')
+        assert_equal(mmParser.dataset.datasetType,                  'TestType')
+'''    
 def test_MMParser_Attributes_NoChannel():
     """Will MMParser extract the acquisition info w/o a channel identifier?
     
@@ -690,3 +639,4 @@ def test_Simple_Parser_No_Generics():
     """
     parser = parsers.SimpleParser()
     parser.parseFilename('File', datasetType = 'generic')
+'''

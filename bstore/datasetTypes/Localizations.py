@@ -10,8 +10,7 @@ import bstore.database
 import pandas as pd
 import sys
 
-class Localizations(bstore.database.Dataset,
-                    bstore.database.DatasetType):
+class Localizations(bstore.database.Dataset):
     """Contains the average trajectory of many fiducial markers.
     
     """

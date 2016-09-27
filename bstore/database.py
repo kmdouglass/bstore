@@ -21,10 +21,8 @@ __version__ = config.__bstore_Version__
 
 pp = pprint.PrettyPrinter(indent=4)  
 
-typesOfAtoms = config.__Types_Of_Atoms__
-
 def _checkType(typeString):
-    if typeString not in typesOfAtoms:
+    if typeString not in config.__Registered_DatasetTypes__:
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
                                                                    typeString))
 

@@ -27,7 +27,6 @@ from os           import remove
 from os.path      import exists
 import h5py
 import bstore.datasetTypes.TestType as TestType
-from numpy        import array, array_equal, around
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
