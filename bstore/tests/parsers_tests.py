@@ -295,77 +295,24 @@ def test_MMParser_Widefield_Data():
     
     assert_equal(ds.data.shape, (512, 512))
 
-'''    
-def test_MMParser_TiffFile():
-    """MMParser loads an image as a TiffFile, not as a numpy array.
-    
-    """
-    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
-    inputFile   = testDataRoot / Path('parsers_test_files') \
-                               / Path('Cos7_A647_WF1/') / Path(f)
-    datasetType = 'widefieldImage'
-    
-    mmParser = parsers.MMParser(readTiffTags = True)
-    mmParser.parseFilename(inputFile, datasetType)
-    ds = mmParser.getDatabaseAtom()
-    
-    ok_(isinstance(ds.data, TiffFile))
-    assert_equal(ds.data.asarray().shape, (512, 512))
-    
+   
 def test_MMParser_ConvertsSpacesToUnderscores():
     """The MMParser will convert spaces in the prefix to underscores.
     
     """
-    acqID       =            1
-    channelID   =       'A647'
-    dateID      =        None,
-    posID       =         (0,) 
-    prefix      = 'my dataset' # Note the space in the name!
-    sliceID     =         None
-    datasetType = 'locResults'    
-    
-    parser = TestParser(prefix, acqID, datasetType,
-                        channelID = channelID, dateID = dateID,
-                        posID = posID, sliceID = sliceID)
-    assert_equal(parser.acqID,                  1)
-    assert_equal(parser.channelID,         'A647')
-    assert_equal(parser.posID,               (0,))
-    assert_equal(parser.prefix,      'my_dataset') # Note the underscore
-    assert_equal(parser.sliceID,             None)
-    assert_equal(parser.datasetType, 'locResults')
-    
-@raises(parsers.DatasetTypeError)    
-def test_MMParser_Bad_Generic():
-    """MMParser recognizes when a bad generic type is passed.
-    
-    """
-    inputFile = Path('Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
+    # Note the space in prefix!
+    f = 'my dataset_A647_1_MMStack_Pos0_locResults.dat'    
     
     parser = parsers.MMParser()
-    parser.parseFilename(inputFile,
-                         datasetType ='generic',
-                         datasetTypeName = 'bogusType')
-                        
-def test_MMParser_Generic_GetDatabaseAtom():
-    """MMParser returns a generic database atom.
+    parser.parseFilename(f, 'TestType')
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
+    assert_equal(parser.dataset.datasetIDs['channelID'],         'A647')
+    assert_equal(parser.dataset.datasetIDs['posID'],               (0,))
     
-    """
-    inputFile = Path('Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
-    
-    parser = parsers.MMParser()
-    parser.parseFilename(inputFile,
-                         datasetType ='generic',
-                         datasetTypeName = 'TestType')
-    dba = parser.getDatabaseAtom()
-    assert_equal(dba.prefix, 'Cos7_Microtubules')
-    assert_equal(dba.acqID,                    3)
-    assert_equal(dba.datasetType,      'generic')
-    assert_equal(dba.channelID,           'A750')
-    assert_equal(dba.posID,                 (0,))
-    assert_equal(dba.dateID,                None)
-    assert_equal(dba.sliceID,               None)
-    assert_equal(dba.datasetTypeName, 'TestType')
-    
+    # The space should now be an underscore
+    assert_equal(parser.dataset.datasetIDs['prefix'],      'my_dataset')
+    assert_equal(parser.dataset.datasetType,                 'TestType')
+
 def test_FormatMap():
     """FormatMap provides a basic two-way hash table.
     
@@ -386,7 +333,8 @@ def test_FormatMap():
     
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
-    
+
+'''    
 def test_FormatMap_Dict_Constructor():
     """FormatMap accepts a dict in its constructor.
     

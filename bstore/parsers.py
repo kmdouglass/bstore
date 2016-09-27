@@ -134,10 +134,6 @@ class MMParser(Parser):
         All of the channel identifiers that the MMParser recognizes.
     initialized         : bool
         Indicates whether the Parser currently possesses parsed information.
-    readTiffTags        : bool
-        Determines whether Tiff tags are read in addition to the image data.
-        This may cause problems if set to true and the image is not a Tiff
-        whose format is supported by tifffile.
     widefieldIdentifier : str
         The string identifying the widefield image number.
     
@@ -150,10 +146,9 @@ class MMParser(Parser):
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']
     
-    def __init__(self, readTiffTags = False):
+    def __init__(self):
         # Start uninitialized because parseFilename has not yet been called
         self.initialized   = False
-        self.readTiffTags  = readTiffTags
     
     @property
     def dataset(self):
@@ -316,6 +311,9 @@ class MMParser(Parser):
         # These are not currently implemented by the MMParser
         sliceID = None
         dateID  = None
+        
+        # PyTables has problems with spaces in the name
+        prefix = prefix.replace(' ', '_')        
         
         return prefix, acqID, channelID, dateID, posID, sliceID
         
