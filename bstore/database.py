@@ -364,7 +364,7 @@ class HDFDatabase(Database):
         """ 
         searchDirectory = Path(searchDirectory)
             
-        # Check that all generic types are registered
+        # Check that all dataset types are registered
         self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
         # Obtain a list of all the files
@@ -373,14 +373,15 @@ class HDFDatabase(Database):
         # Keep a running record of what datasets were parsed
         datasets = []        
         
+        # TODO: Write a function that sorts the registered types by attributes        
+        
         # First put types that are not attributes because attributes depend
         # on the presence of their corresponding types in the database.
         for currType in files.keys():
             # files[currType] returns a list of string
             for currFile in files[currType]:
                 try:
-                    parser.parseFilename(currFile, datasetType = 'generic',
-                                         datasetTypeName = currType)
+                    parser.parseFilename(currFile, datasetType = currType)
                                          
                     dbAtom = parser.getDatabaseAtom()
                     # Move to the next type if it's an attribute
@@ -402,8 +403,7 @@ class HDFDatabase(Database):
             # files[currType] returns a list of string
             for currFile in files[currType]:
                 try:
-                    parser.parseFilename(currFile, datasetType = 'generic',
-                                         datasetTypeName = currType)
+                    parser.parseFilename(currFile, datasetType = currType)
                     
                     dbAtom = parser.getDatabaseAtom()
                     # Move to the next type if it's not an attribute
@@ -454,20 +454,20 @@ class HDFDatabase(Database):
         if not filenameStrings:
             return {}
             
-        FilesGen = {}
-        files    = {}
+        files = {}
         for filename, fileID in filenameStrings.items():
-            # Do not process any generic type unless its currently registered
+            # Do not process any type unless its currently registered
             # with B-Store
             if filename not in config.__Registered_DatasetTypes__:
                 continue
             else:
-                FilesGen[filename] = searchDirectory.glob('**/*{:s}'.format(
-                                                                       fileID))
+                files[filename] = sorted(searchDirectory.glob(
+                                                    '**/*{:s}'.format(fileID)))
+        
         # Build the dictionary of files with keys describing
-        # their generic dataset type                                                               
-        for filename in FilesGen.keys():
-            files[filename] = sorted(FilesGen[filename])
+        # their dataset type                                                             
+        #for filename in FilesGen.keys():
+        #    files[filename] = sorted(FilesGen[filename])
             
         return files
     

@@ -334,7 +334,6 @@ def test_FormatMap():
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
 
-'''    
 def test_FormatMap_Dict_Constructor():
     """FormatMap accepts a dict in its constructor.
     
@@ -354,6 +353,7 @@ def test_FormatMap_Dict_Constructor():
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
     
+'''   
 def test_SimpleParser_ParseFilename_LocResults():
     """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
     

@@ -23,6 +23,7 @@ from bstore       import database, parsers
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
+from numpy        import array_equal
 from os           import remove
 from os.path      import exists
 import h5py
