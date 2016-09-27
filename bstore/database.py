@@ -249,7 +249,7 @@ class Dataset(metaclass = ABCMeta):
             raise TypeError('datasetIDs must be a dict.')
     
     @abstractproperty
-    def datasetTypeName():
+    def datasetType():
         pass
     
     @abstractmethod
@@ -334,7 +334,7 @@ class HDFDatabase(Database):
     dsID.prefix.__doc__      = ('The descriptive name given to '
                                 'the dataset by the user.')
     dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
-    dsID.datasetType.__doc__ = 'The type specified by datasetTypeName'
+    dsID.datasetType.__doc__ = 'The type specified by datasetType'
     dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
     dsID.channelID.__doc__   = '(optional) String for the channel (color).'
     dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
@@ -620,8 +620,11 @@ class HDFDatabase(Database):
             
         """
         idDict      = dict(dsID._asdict())
-        datasetType = idDict['datasetType']; del(idDict['datasetType'])
-        attributeOf = idDict['attributeOf'];   del(idDict['attributeOf'])
+        datasetType = idDict['datasetType']
+        
+        # The following do not belong in the dict of ID's, so remove them.
+        # They are attributes of the datasetType.
+        del(idDict['datasetType']); del(idDict['attributeOf'])
         
         # Build the return dataset
         mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
@@ -676,7 +679,7 @@ class HDFDatabase(Database):
         if ids.attributeOf:
             return acqKey + '/' + ds.attributeOf + otherIDs
         else:
-            return acqKey + '/' + ds.datasetTypeName + otherIDs
+            return acqKey + '/' + ds.datasetType + otherIDs
             
     def get(self, dsID):
         """Returns a Dataset from the database.
@@ -701,21 +704,9 @@ class HDFDatabase(Database):
         except HDF5KeyExists:
             pass
         
-        # TODO: Pick up here and create the dataset from the ID
-        if not dsID.attributeOf:
-            data = dataset.get(self._dbName, hdfKey)
-        elif dsID.attributeOf:
-            # Recreate the hdf key to point towards the attributeOf dataset
-            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                             dsID.attributeOf))
-            dsType = getattr(mod, dataset.attributeOf)
-            tempID = dsType(ids['prefix'], ids['acqID'], 'generic', None,
-                                channelID = ids['channelID'],
-                                dateID = ids['dateID'], posID = ids['posID'],
-                                sliceID = ids['sliceID'])
-            
-            hdfKey    = self._genKey(tempID)
-            dataset.data = dataset.get(self._dbName, hdfKey)
+        # Generate the dataset and retrieve the data
+        dataset       = self._genDataset(dsID)
+        dataset.data = dataset.get(self._dbName, hdfKey)
             
         return dataset
             
@@ -727,8 +718,8 @@ class HDFDatabase(Database):
         dataset : Dataset
         
         """
-        assert dataset.datasetTypeName in config.__Registered_DatasetTypes__,\
-            'Type {0} is unregistered.'.format(dataset.datasetTypeName)
+        assert dataset.datasetType in config.__Registered_DatasetTypes__,\
+            'Type {0} is unregistered.'.format(dataset.datasetType)
         if dataset.attributeOf:
             assert dataset.attributeOf in config.__Registered_DatasetTypes__,\
                 'Type {0} is unregistered.'.format(dataset.attributeOf)
@@ -904,7 +895,7 @@ class HDFDatabase(Database):
         # Create the datasetID        
         ids = self.dsID(prefix      = idDict['prefix'],
                         acqID       = idDict['acqID'],
-                        datasetType = ds.datasetTypeName,
+                        datasetType = ds.datasetType,
                         attributeOf = ds.attributeOf,
                         channelID   = idDict['channelID'],
                         dateID      = idDict['dateID'],
@@ -935,7 +926,7 @@ class HDFDatabase(Database):
             hdf[key].attrs[attrPrefix + 'prefix']      = ids.prefix
             hdf[key].attrs[attrPrefix + 'sliceID']     = \
                 'None' if ids.sliceID is None else ids.sliceID
-            hdf[key].attrs[attrPrefix + 'datasetType'] = ds.datasetTypeName
+            hdf[key].attrs[attrPrefix + 'datasetType'] = ds.datasetType
             
             # Current version of this software
             hdf[key].attrs[attrPrefix +'Version'] = \

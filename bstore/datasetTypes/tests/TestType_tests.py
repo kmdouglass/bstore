@@ -73,9 +73,9 @@ def test_testType_DatasetIDs():
     ids = ds.datasetIDs
     assert_equal(ids['prefix'],       'test_prefix')
     assert_equal(ids['acqID'],                    1)
-    assert_equal(ds.datasetTypeName,     'TestType')
+    assert_equal(ds.datasetType,         'TestType')
     assert_equal(ds.attributeOf,               None)
-''' 
+ 
 def test_testType_Get_Data():
     """testType can get its own data and datasetIDs.
     
@@ -96,18 +96,20 @@ def test_testType_Get_Data():
     myDB.put(ds)
     
     # Create a new dataset containing only IDs to test getting of the data
-    myNewDS = myDB.get(TestType(prefix, acqID, datasetType, None))
-    ids     = myNewDS.getInfoDict()
+    dsID = myDB.dsID('test_prefix', 1, 'TestType', None,
+                     None, None, None, None)   
+    
+    myNewDS = myDB.get(dsID)
+    ids     = myNewDS.datasetIDs
     assert_equal(ids['prefix'],       'test_prefix')
     assert_equal(ids['acqID'],                    1)
-    assert_equal(ids['datasetType'],      'generic')
     assert_equal(ids['channelID'],             None)
     assert_equal(ids['dateID'],                None)
     assert_equal(ids['posID'],                 None)
     assert_equal(ids['sliceID'],               None)
-    assert_equal(ids['datasetTypeName'], 'TestType')   
-    assert_equal(myNewDS.data, 42)
+    assert_equal(myNewDS.datasetType,    'TestType')
+    assert_equal(myNewDS.attributeOf,          None)
+    assert_equal(myNewDS.data,                   42)
     
     # Remove the test database
     remove(str(pathToDB / Path('test_db.h5')))
-    '''

@@ -231,7 +231,7 @@ def test_HDFDatabase_genDataset():
     assert_equal(ds.datasetIDs['dateID'],          None)
     assert_equal(ds.datasetIDs['posID'],           (0,))
     assert_equal(ds.datasetIDs['sliceID'],            3)
-    assert_equal(ds.datasetTypeName,         'TestType')
+    assert_equal(ds.datasetType,         'TestType')
     assert_equal(ds.attributeOf,                   None)
     ok_(isinstance(ds,               TestType.TestType))
         
@@ -416,7 +416,7 @@ def test_HDF_Database_Generic_GenAtomicID():
     assert_equal(myDS.dateID,                None)
     assert_equal(myDS.posID,                 (0,))
     assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.datasetTypeName, 'TestType')
+    assert_equal(myDS.datasetType, 'TestType')
     
     # Does it work a second time?
     hdfKey = 'prefix2/prefix2_2/TestType_A750_Pos0'
@@ -431,5 +431,5 @@ def test_HDF_Database_Generic_GenAtomicID():
     assert_equal(myDS.dateID,                None)
     assert_equal(myDS.posID,                 (0,))
     assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.datasetTypeName, 'TestType')
+    assert_equal(myDS.datasetType, 'TestType')
 '''

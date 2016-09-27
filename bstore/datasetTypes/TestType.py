@@ -34,7 +34,7 @@ class TestType(bstore.database.Dataset):
         return None  
    
     @property
-    def datasetTypeName(self):
+    def datasetType(self):
         """This should be set to the same name as the class.
         
         """
