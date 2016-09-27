@@ -154,7 +154,18 @@ class MMParser(Parser):
         # Start uninitialized because parseFilename has not yet been called
         self.initialized   = False
         self.readTiffTags  = readTiffTags
-            
+    
+    @property
+    def dataset(self):
+        if self.initialized:
+            return self._dataset
+        else:
+            raise ParserNotInitializedError('Error: No dataset is parsed.')
+    
+    @dataset.setter
+    def dataset(self, ds):
+        self._dataset = ds
+        
     @property
     def initialized(self):
         return self._initialized
@@ -193,7 +204,8 @@ class MMParser(Parser):
         self.initialized = False   
         
         if datasetType not in config.__Registered_DatasetTypes__:
-            raise DatasetTypeError(datasetType)
+            raise DatasetTypeError(('{} is not a registered '
+                                    'type.').format(datasetType)) 
         
         # Convert Path objects to strings
         if isinstance(filename, pathlib.PurePath):
@@ -432,7 +444,8 @@ class SimpleParser(Parser):
         """
         # Check for a valid datasetType
         if datasetType not in database.typesOfAtoms:
-            raise DatasetTypeError(datasetType)    
+            raise DatasetTypeError(('{} is not a registered '
+                                    'type.').format(datasetType))    
             
         # Don't parse generics
         if datasetType == 'generic':

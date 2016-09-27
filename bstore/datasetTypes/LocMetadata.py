@@ -10,19 +10,12 @@ import bstore.database
 import h5py
 import json
 
-class LocMetadata(bstore.database.Dataset,
-                  bstore.database.DatasetType):
+class LocMetadata(bstore.database.Dataset):
     """Contains metadata associated with a localization results dataset.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(LocMetadata, self).__init__(prefix, acqID, datasetType, data,
-                                          channelID = channelID,
-                                          dateID    = dateID,
-                                          posID     = posID,
-                                          sliceID   = sliceID)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
                                           
     @property
     def attributeOf(self):
@@ -41,7 +34,7 @@ class LocMetadata(bstore.database.Dataset,
         return 'Localizations'
     
     @property
-    def datasetTypeName(self):
+    def datasetType(self):
         """This should be set to the same name as the class.
         
         """

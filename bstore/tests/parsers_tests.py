@@ -13,15 +13,16 @@ nosetests should be run in the directory just above the `tests` folder.
 __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com' 
 
-from nose.tools import assert_equal, raises
+from nose.tools import assert_equal, raises, ok_
 
 # Register the test generic
 from bstore  import config
 config.__Registered_DatasetTypes__.append('TestType')
+config.__Registered_DatasetTypes__.append('WidefieldImage')
+config.__Registered_DatasetTypes__.append('LocMetadata')
 
 from bstore  import parsers, database
 import bstore.datasetTypes.TestType as TestType
-import bstore.datasetTypes.Localizations as Localizations
 from pathlib import Path
 from tifffile import TiffFile
 
@@ -94,130 +95,70 @@ def test_MMParser_Channel_Underscores():
         assert_equal(mmParser.dataset.datasetIDs['posID'],                (0,))
         assert_equal(mmParser.dataset.datasetIDs['prefix'],'Cos7_Microtubules')
         assert_equal(mmParser.dataset.datasetType,                  'TestType')
-'''    
+  
 def test_MMParser_Attributes_NoChannel():
     """Will MMParser extract the acquisition info w/o a channel identifier?
     
     """
     inputFilename   = 'Cos7_Microtubules_12_MMStack_Pos1_locResults.dat'
-    datasetType     = 'locResults'
+    datasetType     = 'TestType'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFilename, datasetType)
-    assert_equal(mmParser.acqID,                        12)
-    assert_equal(mmParser.channelID,                  None)
-    assert_equal(mmParser.posID,                      (1,))
-    assert_equal(mmParser.prefix,      'Cos7_Microtubules')
-    assert_equal(mmParser.sliceID,                    None)
-    assert_equal(mmParser.datasetType,        'locResults')
-    
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],                      12)
+    assert_equal(mmParser.dataset.datasetIDs['posID'],                    (1,))
+    assert_equal(mmParser.dataset.datasetIDs['prefix'],    'Cos7_Microtubules')
+    assert_equal(mmParser.dataset.datasetType,                      'TestType')
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],                None)
+   
 def test_MMParser_Attributes_NoPosition():
     """Will MMParser extract the acquisition info w/o a position identifier?
     
     """
     inputFilename   = 'Cos7_Microtubules_12_MMStack_locResults.dat'
-    datasetType     = 'locResults'
+    datasetType     = 'TestType'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFilename, datasetType)
-    assert_equal(mmParser.acqID,                        12)
-    assert_equal(mmParser.channelID,                  None)
-    assert_equal(mmParser.posID,                      None)
-    assert_equal(mmParser.prefix,      'Cos7_Microtubules')
-    assert_equal(mmParser.sliceID,                    None)
-    assert_equal(mmParser.datasetType,        'locResults')
-    
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],                      12)
+    assert_equal(mmParser.dataset.datasetIDs['posID'],                    None)
+    assert_equal(mmParser.dataset.datasetIDs['prefix'],    'Cos7_Microtubules')
+    assert_equal(mmParser.dataset.datasetType,                      'TestType')
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],                None)
+  
 def test_MMParser_Attributes_MultipleXY():
     """Will MMParser extract multiple xy positions?
     
     """
     inputFilename   = 'HeLa_Actin_4_MMStack_1-Pos_012_003_locResults.dat'
-    datasetType     = 'locResults'
+    datasetType     = 'TestType'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFilename, datasetType)
-    assert_equal(mmParser.acqID,                        4)
-    assert_equal(mmParser.channelID,                  None)
-    assert_equal(mmParser.posID,                    (12,3))
-    assert_equal(mmParser.prefix,             'HeLa_Actin')
-    assert_equal(mmParser.sliceID,                    None)
-    assert_equal(mmParser.datasetType,        'locResults')
-    
-  
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],             4)
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],      None)
+    assert_equal(mmParser.dataset.datasetIDs['posID'],        (12,3))
+    assert_equal(mmParser.dataset.datasetIDs['prefix'], 'HeLa_Actin')
+    assert_equal(mmParser.dataset.datasetIDs['sliceID'],        None)
+    assert_equal(mmParser.dataset.datasetType,            'TestType')
+ 
 def test_MMParser_Path_Input():
     """Will MMParser properly convert Path inputs to strings?
     
     """
     inputFile = \
         Path('results/Cos7_Microtubules_A750_3_MMStack_Pos0_locResults.dat')
-    datasetType = 'locResults'
+    datasetType = 'TestType'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
-    assert_equal(mmParser.acqID,                              3)
-    assert_equal(mmParser.channelID,                     'A750')
-    assert_equal(mmParser.posID,                           (0,))
-    assert_equal(mmParser.prefix,           'Cos7_Microtubules')
-    assert_equal(mmParser.sliceID,                         None)
-    assert_equal(mmParser.datasetType,             'locResults')
-    
-def test_MMParser_Metadata():
-    """Will MMParser properly read a metadata file with double position info?
-    
-    """
-    f = 'bacteria_HaloInduced_A647_1_MMStack_1-Pos_002_002_locMetadata.json'
-    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
-    datasetType = 'locMetadata'
-    
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    assert_equal(mmParser.acqID,                                            1)
-    assert_equal(mmParser.channelID,                                   'A647')
-    assert_equal(mmParser.posID,                                        (2,2))
-    assert_equal(mmParser.prefix,                      'bacteria_HaloInduced')
-    assert_equal(mmParser.sliceID,                                       None)
-    assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.data['InitialPositionList']['Label'],
-                                                              '1-Pos_002_002')
-                                                              
-def test_MMParser_Metadata_NoPosition_Metadata():
-    """Will MMParser properly read a metadata file with empty position info?
-    
-    """
-    # Note that the json entry for position information is empty in this file!
-    f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
-    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
-    datasetType = 'locMetadata'
-    
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    assert_equal(mmParser.acqID,                                            1)
-    assert_equal(mmParser.channelID,                                   'A750')
-    assert_equal(mmParser.posID,                                         (0,))
-    assert_equal(mmParser.prefix,                              'HeLa_Control')
-    assert_equal(mmParser.sliceID,                                       None)
-    assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.data['InitialPositionList'],                   None)
-    
-def test_MMParser_Metadata_SinglePosition():
-    """Will MMParser properly read a metadata file with a single position?
-    
-    """
-    # Note that the json entry for position information is empty in this file!
-    f = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
-    inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
-    datasetType = 'locMetadata'
-    
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    assert_equal(mmParser.acqID,                                            2)
-    assert_equal(mmParser.channelID,                                   'A750')
-    assert_equal(mmParser.posID,                                         (0,))
-    assert_equal(mmParser.prefix,                              'HeLa_Control')
-    assert_equal(mmParser.sliceID,                                       None)
-    assert_equal(mmParser.datasetType,                          'locMetadata')
-    assert_equal(mmParser.data['InitialPositionList']['Label'],        'Pos0')
-    
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],                       3)
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],              'A750')
+    assert_equal(mmParser.dataset.datasetIDs['posID'],                    (0,))
+    assert_equal(mmParser.dataset.datasetIDs['prefix'],    'Cos7_Microtubules')
+    assert_equal(mmParser.dataset.datasetIDs['sliceID'],                  None)
+    assert_equal(mmParser.dataset.datasetType,                      'TestType')
+                                                                    
 def test_MMParser_Widefield_Attributes():
     """Will MMParser properly extract information from a widefield image?
     
@@ -236,13 +177,13 @@ def test_MMParser_Widefield_Attributes():
     
     mmParser = parsers.MMParser()
     for filename in f:
-        mmParser.parseFilename(filename, 'widefieldImage')
-        assert_equal(mmParser.acqID,                                        13)
-        assert_equal(mmParser.channelID,                                'A647')
-        assert_equal(mmParser.posID,                                      (0,))
-        assert_equal(mmParser.prefix,                           'HeLa_Control')
-        assert_equal(mmParser.sliceID,                                    None)
-        assert_equal(mmParser.datasetType,                    'widefieldImage')
+        mmParser.parseFilename(filename, 'WidefieldImage')
+        assert_equal(mmParser.dataset.datasetIDs['acqID'],                  13)
+        assert_equal(mmParser.dataset.datasetIDs['channelID'],          'A647')
+        assert_equal(mmParser.dataset.datasetIDs['posID'],                (0,))
+        assert_equal(mmParser.dataset.datasetIDs['prefix'],     'HeLa_Control')
+        assert_equal(mmParser.dataset.datasetIDs['sliceID'],              None)
+        assert_equal(mmParser.dataset.datasetType,            'WidefieldImage')
     
 def test_MMParser_Widefield_NoChannel():
     """Will MMParser properly extract widefield info w/o a channel?
@@ -262,14 +203,14 @@ def test_MMParser_Widefield_NoChannel():
     
     mmParser = parsers.MMParser()
     for filename in f:
-        mmParser.parseFilename(filename, 'widefieldImage')
-        assert_equal(mmParser.acqID,                                        13)
-        assert_equal(mmParser.channelID,                                  None)
-        assert_equal(mmParser.posID,                                      (0,))
-        assert_equal(mmParser.prefix,                           'HeLa_Control')
-        assert_equal(mmParser.sliceID,                                    None)
-        assert_equal(mmParser.datasetType,                    'widefieldImage')
-        
+        mmParser.parseFilename(filename, 'WidefieldImage')
+        assert_equal(mmParser.dataset.datasetIDs['acqID'],                  13)
+        assert_equal(mmParser.dataset.datasetIDs['channelID'],            None)
+        assert_equal(mmParser.dataset.datasetIDs['posID'],                (0,))
+        assert_equal(mmParser.dataset.datasetIDs['prefix'],     'HeLa_Control')
+        assert_equal(mmParser.dataset.datasetIDs['sliceID'],              None)
+        assert_equal(mmParser.dataset.datasetType,            'WidefieldImage')
+   
 def test_MMParser_Widefield_Bizarre_Underscores():
     """Will MMParser correctly parse this name with bizarre underscores?
     
@@ -277,41 +218,40 @@ def test_MMParser_Widefield_Bizarre_Underscores():
     filename = '__HeLa_Control__FISH___WF__173_MMStack_Pos0.ome.tif'
     
     mmParser = parsers.MMParser()
-    mmParser.parseFilename(filename, 'widefieldImage')
-    assert_equal(mmParser.acqID,                                           173)
-    assert_equal(mmParser.channelID,                                      None)
-    assert_equal(mmParser.posID,                                          (0,))
-    assert_equal(mmParser.prefix,                          'HeLa_Control_FISH')
-    assert_equal(mmParser.sliceID,                                        None)
-    assert_equal(mmParser.datasetType,                        'widefieldImage')
+    mmParser.parseFilename(filename, 'WidefieldImage')
+    assert_equal(mmParser.dataset.datasetIDs['acqID'],                     173)
+    assert_equal(mmParser.dataset.datasetIDs['channelID'],                None)
+    assert_equal(mmParser.dataset.datasetIDs['posID'],                    (0,))
+    assert_equal(mmParser.dataset.datasetIDs['prefix'],    'HeLa_Control_FISH')
+    assert_equal(mmParser.dataset.datasetIDs['sliceID'],                  None)
+    assert_equal(mmParser.dataset.datasetType,                'WidefieldImage')
     
-def test_MMParser_DatabaseAtom():
-    """MMParser returns the correct DatabaseAtom.
+def test_MMParser_Dataset():
+    """MMParser returns the correct Dataset.
     
     """
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
     inputFile = testDataRoot / Path('parsers_test_files') / Path(f)
-    datasetType = 'locMetadata'
+    datasetType = 'LocMetadata'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
-    dbAtom   = mmParser.getDatabaseAtom()
+    ds = mmParser.dataset
     
-    ok_(isinstance(dbAtom, database.DatabaseAtom), ('Wrong type returned. '
-                                                    'dbAtom should be a '
-                                                    'DatabaseAtom.'))
-    assert_equal(dbAtom.acqID,                                               1)
-    assert_equal(dbAtom.channelID,                                      'A750')
-    assert_equal(dbAtom.posID,                                            (0,))
-    assert_equal(dbAtom.prefix,                                 'HeLa_Control')
-    assert_equal(dbAtom.sliceID,                                          None)
-    assert_equal(dbAtom.datasetType,                             'locMetadata')
+    ok_(isinstance(ds, database.Dataset))
+    assert_equal(ds.datasetIDs['acqID'],                                     1)
+    assert_equal(ds.datasetIDs['channelID'],                            'A750')
+    assert_equal(ds.datasetIDs['posID'],                                  (0,))
+    assert_equal(ds.datasetIDs['prefix'],                       'HeLa_Control')
+    assert_equal(ds.datasetIDs['sliceID'],                                None)
+    assert_equal(ds.datasetType,                                 'LocMetadata')
     
-    # Test a few metadata entries    
-    assert_equal(dbAtom.data['Slices'],                                      1)
-    assert_equal(dbAtom.data['InitialPositionList'],                      None)
-    assert_equal(dbAtom.data['PixelType'],                             'GRAY8')
-    assert_equal(dbAtom.data['Positions'],                                   1)
+    # Test a few metadata entries
+    ds.data = ds.readFromFile(inputFile)
+    assert_equal(ds.data['Slices'],                                          1)
+    assert_equal(ds.data['InitialPositionList'],                          None)
+    assert_equal(ds.data['PixelType'],                                 'GRAY8')
+    assert_equal(ds.data['Positions'],                                       1)
 
 @raises(parsers.ParserNotInitializedError)    
 def test_MMParser_Uninitialized():
@@ -319,8 +259,8 @@ def test_MMParser_Uninitialized():
     
     """
     mmParser = parsers.MMParser()
-    mmParser.getDatabaseAtom()
-    
+    mmParser.dataset
+ 
 @raises(parsers.ParserNotInitializedError)    
 def test_MMParser_Uninitialized_After_Use():
     """Will MMParser throw an error if getDatabaseAtom is run after uninit'ing?
@@ -328,15 +268,16 @@ def test_MMParser_Uninitialized_After_Use():
     """
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'
     inputFile   = testDataRoot / Path('parsers_test_files') / Path(f)
-    datasetType = 'locMetadata'
+    datasetType = 'LocMetadata'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
-    mmParser.getDatabaseAtom()
+    mmParser.dataset
     
-    mmParser.uninitialized = True
-    mmParser.getDatabaseAtom()
-    
+    mmParser.initialized = False
+    mmParser.dataset
+
+   
 def test_MMParser_Widefield_Data():
     """MMParser correctly loads widefield image data.
     
@@ -344,14 +285,17 @@ def test_MMParser_Widefield_Data():
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
     inputFile   = testDataRoot / Path('parsers_test_files') \
                                / Path('Cos7_A647_WF1/') / Path(f)
-    datasetType = 'widefieldImage'
+    datasetType = 'WidefieldImage'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
-    ds = mmParser.getDatabaseAtom()    
+    
+    ds      = mmParser.dataset   
+    ds.data = ds.readFromFile(inputFile)
     
     assert_equal(ds.data.shape, (512, 512))
-    
+
+'''    
 def test_MMParser_TiffFile():
     """MMParser loads an image as a TiffFile, not as a numpy array.
     

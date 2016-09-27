@@ -134,19 +134,12 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
 """Concrete classes
 -------------------------------------------------------------------------------
 """
-class WidefieldImage(bstore.database.Dataset,
-                     bstore.database.DatasetType):
+class WidefieldImage(bstore.database.Dataset):
     """Contains the average trajectory of many fiducial markers.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(WidefieldImage, self).__init__(prefix, acqID, datasetType, data,
-                                             channelID = channelID,
-                                             dateID    = dateID,
-                                             posID     = posID,
-                                             sliceID   = sliceID)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
                                           
     @property
     def attributeOf(self):
@@ -165,7 +158,7 @@ class WidefieldImage(bstore.database.Dataset,
         return None
     
     @property
-    def datasetTypeName(self):
+    def datasetType(self):
         """This should be set to the same name as the class.
         
         """
