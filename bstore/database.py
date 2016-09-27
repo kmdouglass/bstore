@@ -605,6 +605,30 @@ class HDFDatabase(Database):
                          posID = posID, sliceID = sliceID)
                                
         return returnDS
+        
+    def _genDataset(self, dsID):
+        """Generate a dataset with an empty data attribute from a datasetID.
+        
+        Parameters
+        ----------
+        dsID : datasetID
+            Namedtuple representing a dataset in the database.
+            
+        Returns
+        -------
+        : Dataset
+            
+        """
+        idDict      = dict(dsID._asdict())
+        datasetType = idDict['datasetType']; del(idDict['datasetType'])
+        attributeOf = idDict['attributeOf'];   del(idDict['attributeOf'])
+        
+        # Build the return dataset
+        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        dType = getattr(mod, datasetType)
+            
+        return dType(datasetIDs = idDict)
 
     def _genKey(self, ds):
         """Generate a key name for a dataset. The inverse of _genAtomicID.
@@ -680,10 +704,10 @@ class HDFDatabase(Database):
         # TODO: Pick up here and create the dataset from the ID
         if not dsID.attributeOf:
             data = dataset.get(self._dbName, hdfKey)
-        elif dataset.attributeOf:
+        elif dsID.attributeOf:
             # Recreate the hdf key to point towards the attributeOf dataset
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                             dataset.attributeOf))
+                                                             dsID.attributeOf))
             dsType = getattr(mod, dataset.attributeOf)
             tempID = dsType(ids['prefix'], ids['acqID'], 'generic', None,
                                 channelID = ids['channelID'],

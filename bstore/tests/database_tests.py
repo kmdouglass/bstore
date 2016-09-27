@@ -215,6 +215,25 @@ def test_HDFDatabase_KeyGeneration():
         ds = TestType.TestType(datasetIDs = currID)
         keyString = myDatabase._genKey(ds)
         assert_equal(keyString, key)
+
+def test_HDFDatabase_genDataset():
+    """Empty datasets are generated properly from id tuples.
+    
+    """
+    myDB = database.HDFDatabase('test_db.h5')
+    ids  = myDB.dsID('test_prefix', 2, 'TestType', None,
+                     'A647', None, (0,), 3)
+    
+    ds = myDB._genDataset(ids)
+    assert_equal(ds.datasetIDs['prefix'], 'test_prefix')
+    assert_equal(ds.datasetIDs['acqID'],              2)
+    assert_equal(ds.datasetIDs['channelID'],     'A647')
+    assert_equal(ds.datasetIDs['dateID'],          None)
+    assert_equal(ds.datasetIDs['posID'],           (0,))
+    assert_equal(ds.datasetIDs['sliceID'],            3)
+    assert_equal(ds.datasetTypeName,         'TestType')
+    assert_equal(ds.attributeOf,                   None)
+    ok_(isinstance(ds,               TestType.TestType))
         
 '''        
 def test_HDFDatabase_Put_Keys_AtomicMetadata():
