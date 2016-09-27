@@ -75,7 +75,7 @@ class TestType(bstore.database.Dataset):
         # Writes the data in the dataset to the HDF file.
         with h5py.File(database, 'a') as hdf:
             hdf.create_dataset(key, self.data.shape,
-                               dtype = 'i', data = self.data)
+                               dtype = 'float64', data = self.data)
                                
     def readFromFile(self, **kwargs):
         """Required by the GenericDatasetType metaclass.

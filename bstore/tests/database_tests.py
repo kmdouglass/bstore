@@ -27,7 +27,7 @@ from os           import remove
 from os.path      import exists
 import h5py
 import bstore.datasetTypes.TestType as TestType
-from numpy        import array
+from numpy        import array, array_equal, around
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -234,10 +234,9 @@ def test_HDFDatabase_genDataset():
     assert_equal(ds.datasetType,         'TestType')
     assert_equal(ds.attributeOf,                   None)
     ok_(isinstance(ds,               TestType.TestType))
-        
-'''        
-def test_HDFDatabase_Put_Keys_AtomicMetadata():
-    """Database creates an HDF file with the right keys and atomic metadata.
+             
+def test_HDFDatabase_Put_Keys_DatabaseMetadata():
+    """Database creates an HDF file with the right keys and database metadata.
     
     """
     dbName = testDataRoot / Path('database_test_files/myDB.h5')
@@ -245,16 +244,16 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         remove(str(dbName))
     
     myDB  = database.HDFDatabase(dbName)
-    myDS  = database.Dataset('Cos7', 1, 'locResults', data,
-                             channelID = 'A647',
-                             posID     = (0,))
-    myDS2 = database.Dataset('Cos7', 1, 'locResults', data, 
-                             channelID = 'A647',
-                             posID     = (1,2))
-    myDS3 = database.Dataset('Cos7', 1, 'locResults', data, 
-                             channelID = 'A647',
-                             dateID    = '2016-05-05',
-                             posID     = (1,2))
+    myDS  = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1,
+                                   'channelID' : 'A647', 'posID' : (0,)})
+    myDS2 = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1, 
+                                   'channelID' : 'A647', 'posID' : (1,2)})
+    myDS3 = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1,
+                                   'channelID' : 'A647',
+                                   'dateID' : '2016-05-05', 'posID' : (1,2)})
+    myDS.data  = data.as_matrix()
+    myDS2.data = data.as_matrix()
+    myDS3.data = data.as_matrix()
     
     myDB.put(myDS)
     myDB.put(myDS2)
@@ -264,8 +263,8 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
     # Get keys and attributes
     with h5py.File(str(dbName), 'r') as f:
         keys = sorted(list(f['Cos7/Cos7_1'].keys()))
-        assert_equal(keys[0], 'locResults_A647_Pos0')
-        assert_equal(keys[1], 'locResults_A647_Pos_001_002')
+        assert_equal(keys[0], 'TestType_A647_Pos0')
+        assert_equal(keys[1], 'TestType_A647_Pos_001_002')
     
         keyString0 = 'Cos7/Cos7_1/' + keys[0]
         assert_equal(f[keyString0].attrs[atomPre + 'acqID'],                 1)
@@ -273,7 +272,7 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString0].attrs[atomPre + 'posID'],                 0)
         assert_equal(f[keyString0].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString0].attrs[atomPre + 'sliceID'],          'None')
-        assert_equal(f[keyString0].attrs[atomPre + 'datasetType'],'locResults')
+        assert_equal(f[keyString0].attrs[atomPre + 'datasetType'],  'TestType')
         
         keyString1 = 'Cos7/Cos7_1/' + keys[1]
         assert_equal(f[keyString1].attrs[atomPre + 'acqID'],                 1)
@@ -282,7 +281,7 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString1].attrs[atomPre + 'posID'][1],              2)
         assert_equal(f[keyString1].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString1].attrs[atomPre + 'sliceID'],          'None')
-        assert_equal(f[keyString1].attrs[atomPre + 'datasetType'],'locResults')
+        assert_equal(f[keyString1].attrs[atomPre + 'datasetType'],  'TestType')
         
         keyString2 = 'Cos7/d2016_05_05/Cos7_1/' + keys[1]
         assert_equal(f[keyString2].attrs[atomPre + 'acqID'],                 1)
@@ -291,9 +290,8 @@ def test_HDFDatabase_Put_Keys_AtomicMetadata():
         assert_equal(f[keyString2].attrs[atomPre + 'posID'][1],              2)
         assert_equal(f[keyString2].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString2].attrs[atomPre + 'sliceID'],          'None')
-        assert_equal(f[keyString2].attrs[atomPre + 'datasetType'],'locResults')
-        f.close()
-    
+        assert_equal(f[keyString2].attrs[atomPre + 'datasetType'],  'TestType')
+
 def test_HDFDatabase_GetWithDate():
     """HDFDatabase.get() returns the correct Dataset with a dateID.
     
@@ -303,16 +301,14 @@ def test_HDFDatabase_GetWithDate():
     myDB     = database.HDFDatabase(dbName)
      
     # Create an ID with empty data for retrieving the dataset     
-    myDSID   = database.Dataset('Cos7', 1, 'locResults', None,
-                                channelID = 'A647',
-                                dateID    = '2016-05-05',
-                                posID     = (1,2))
+    myDS = myDB.dsID('Cos7', 1, 'TestType', None,
+                     'A647', '2016-05-05', (1,2), None)
     
     # Get the data from the database and compare it to the input data
-    retrievedDataset = myDB.get(myDSID)
-    ok_((data['x'] == retrievedDataset.data['x']).all())
-    ok_((data['y'] == retrievedDataset.data['y']).all())
-     
+    retrievedDataset = myDB.get(myDS)
+    ok_(array_equal(retrievedDataset.data, data))
+
+'''     
 @raises(database.HDF5KeyExists)
 def test_HDF_Database_Check_Key_Existence():
     """An error is raised if using a key that already exists for locResults.

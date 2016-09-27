@@ -865,7 +865,6 @@ class HDFDatabase(Database):
         
         """
         idDict = ds.datasetIDs.copy()
-        print(idDict)
         
         # Preconditioning of the IDs
         # Require prefix and acqID to be specified
