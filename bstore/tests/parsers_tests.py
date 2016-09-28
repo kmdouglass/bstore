@@ -18,6 +18,7 @@ from nose.tools import assert_equal, raises, ok_
 # Register the test generic
 from bstore  import config
 config.__Registered_DatasetTypes__.append('TestType')
+config.__Registered_DatasetTypes__.append('Localizations')
 config.__Registered_DatasetTypes__.append('WidefieldImage')
 config.__Registered_DatasetTypes__.append('LocMetadata')
 
@@ -352,9 +353,8 @@ def test_FormatMap_Dict_Constructor():
     # Tests undefined keys
     assert_equal(testMap['C'], 'C')
     
-'''   
 def test_SimpleParser_ParseFilename_LocResults():
-    """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
+    """SimpleParser correctly converts files to Datasets.
     
     """
     # File number 1
@@ -364,25 +364,28 @@ def test_SimpleParser_ParseFilename_LocResults():
                              
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile)
-    assert_equal(parser.acqID,                  1)
-    assert_equal(parser.channelID,           None)
-    assert_equal(parser.posID,               None)
-    assert_equal(parser.prefix,   'HeLaL_Control')
-    assert_equal(parser.sliceID,             None)
-    assert_equal(parser.datasetType, 'locResults')
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
+    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
+    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
+    assert_equal(parser.dataset.datasetIDs['posID'],               None)
+    assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaL_Control')
+    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
+    assert_equal(parser.dataset.datasetType,            'Localizations')
     
     f = 'HeLaS_Control_2.csv'
     inputFile = testDataRoot / Path('parsers_test_files') \
                              / Path('SimpleParser/') / Path(f)
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile)
-    assert_equal(parser.acqID,                  2)
-    assert_equal(parser.channelID,           None)
-    assert_equal(parser.posID,               None)
-    assert_equal(parser.prefix,   'HeLaS_Control')
-    assert_equal(parser.sliceID,             None)
-    assert_equal(parser.datasetType, 'locResults')
-    
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
+    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
+    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
+    assert_equal(parser.dataset.datasetIDs['posID'],               None)
+    assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaS_Control')
+    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
+    assert_equal(parser.dataset.datasetType,            'Localizations')
+
+'''    
 def test_SimpleParser_ParseFilename_Metadata():
     """SimpleParser correctly converts files to Datasets/DatabaseAtoms.
     
