@@ -13,6 +13,7 @@ Lightweight data management and analysis tools for single-molecule microscopy.
 - [Installation](#installation)
   - [Linux / OSX](#linux--osx)
   - [Windows](#windows)
+  - [Source Installs](#source-installs)
 - [What is B-Store?](#what-is-b-store)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
