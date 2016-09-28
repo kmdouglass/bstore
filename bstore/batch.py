@@ -209,51 +209,49 @@ class HDFBatchProcessor(BatchProcessor):
         self._outputDirectory = Path(outputDirectory)
         self._searchString    = searchString
         
-    def _genFileName(self, atom):
-        """Generate an output file name for a processed dataset atom.
+    def _genFileName(self, dsID):
+        """Generate an output file name for a processed dataset.
         
         Parameters
         ----------
-        atoms    : DatabaseAtom
+        dsID     : Dataset
         
         Returns
         -------
         fileName : Path
         
         """
-        acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
-                    '_' + str(atom.acqID)
+        acqKey    = '/'.join([dsID.prefix, dsID.prefix]) + \
+                    '_' + str(dsID.acqID)
                                  
         otherIDs = ''
-        if atom.channelID is not None:
-            otherIDs += '_' + atom.channelID
-        if atom.posID is not None:
-            if len(atom.posID) == 1:
-                posID = atom.posID[0]    
+        if dsID.channelID is not None:
+            otherIDs += '_' + dsID.channelID
+        if dsID.posID is not None:
+            if len(dsID.posID) == 1:
+                posID = dsID.posID[0]    
                 otherIDs += '_Pos{:d}'.format(posID)
             else:
-                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(atom.posID[0], 
-                                                            atom.posID[1])
-        if atom.sliceID is not None:
-            otherIDs += '_Slice{:d}'.format(atom.sliceID)
+                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(dsID.posID[0], 
+                                                            dsID.posID[1])
+        if dsID.sliceID is not None:
+            otherIDs += '_Slice{:d}'.format(dsID.sliceID)
         
-        assert atom.datasetType != 'locMetadata', \
-            'Error: locMetadata is not processed in batch.'
-        fileName = acqKey + '/locResults' + otherIDs
+        fileName = acqKey + '/' + dsID.datasetType + otherIDs
             
         return Path(fileName)
     
-    def _writeAtomicIDs(self, filename, atom):
+    def _writeAtomicIDs(self, filename, dsID):
         """Writes the atomic ID information to a text file.
         
         Parameters
         ----------
         filename : str
-        atom     : Dataset
+        dsID     : datasetID
         """
-        atomicIDs = atom.getInfoDict()
+        
         with open(filename, 'w') as outfile:
-            json.dump(atomicIDs, outfile)
+            json.dump(dsID, outfile)
     
     @property
     def datasetList(self):
@@ -287,7 +285,7 @@ class HDFBatchProcessor(BatchProcessor):
                 df = proc(df)
             
             # Build the directory structure
-            outputFile = self._outputDirectory / self._genFileName(atom)
+            outputFile = self._outputDirectory / self._genFileName(currDataset)
             if not outputFile.parent.parent.exists():
                 outputFile.parent.parent.mkdir()
             if not outputFile.parent.exists():

@@ -8,7 +8,7 @@ import re
 import warnings
 from bstore import database, config
 import pandas as pd
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 from matplotlib.pyplot import imread
 from os.path import splitext
 import importlib

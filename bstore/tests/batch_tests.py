@@ -49,6 +49,7 @@ if outputDirHDF.exists():
     shutil.rmtree(str(outputDirHDF))
     
 inputDB    = testDataRoot / Path('test_experiment/test_experiment_db.h5')
+myDB       = db.HDFDatabase(inputDB)
 locFilter1 = proc.Filter('loglikelihood', '<', 800)
 locFilter2 = proc.Filter('sigma',         '<', 200)
 pipeline   = [locFilter1, locFilter2]                               
@@ -98,10 +99,10 @@ def test_HDFBatchProcessor_DatasetParser():
     """HDFBatchProcessor correctly finds the datasets in the HDF file.
     
     """
-    knownDS = [bpHDF.dsID('HeLaL_Control', 1, 'Localizations', None,
-                          'A647', None, (0,), None),
-               bpHDF.dsID('HeLaS_Control', 2, 'Localizations', None,
-                          'A647', None, (0,), None)]
+    knownDS = [myDB.dsID('HeLaL_Control', 1, 'Localizations', None,
+                         'A647', None, (0,), None),
+               myDB.dsID('HeLaS_Control', 2, 'Localizations', None,
+                         'A647', None, (0,), None)]
                     
     assert_equal(len(bpHDF.datasetList), 2)
     
@@ -121,9 +122,9 @@ def test_HDFBatchProcess_Go():
     bpHDF.go()
     
     results = [outputDirHDF / \
-                Path('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0.csv'),
+                Path('HeLaL_Control/HeLaL_Control_1/Localizations_A647_Pos0.csv'),
                outputDirHDF / \
-                Path('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0.csv')]
+                Path('HeLaS_Control/HeLaS_Control_2/Localizations_A647_Pos0.csv')]
                 
     for currRes in results:
         df = pd.read_csv(str(currRes))
@@ -136,30 +137,30 @@ def test_HDFBatchProcess_Go():
     
     # Verify that the atomic ID information was written correctly        
     atomIDs = [outputDirHDF / \
-               Path('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0.json'),
+               Path('HeLaL_Control/HeLaL_Control_1/Localizations_A647_Pos0.json'),
                outputDirHDF / \
-               Path('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0.json')]
+               Path('HeLaS_Control/HeLaS_Control_2/Localizations_A647_Pos0.json')]
                
     with open(str(atomIDs[0]), 'r') as infile:        
         info = json.load(infile)
-    
-    # This is necessary because JSON has no tuple datatype
-    info['posID'] = tuple(info['posID'])
         
-    assert_equal(info['acqID'],                  1)
-    assert_equal(info['channelID'],         'A647')
-    assert_equal(info['posID'],               (0,))
-    assert_equal(info['prefix'],   'HeLaL_Control')
-    assert_equal(info['sliceID'],             None)
-    assert_equal(info['datasetType'], 'locResults')
+    assert_equal(info[0], 'HeLaL_Control')
+    assert_equal(info[1],               1)
+    assert_equal(info[2], 'Localizations')
+    assert_equal(info[3],            None)
+    assert_equal(info[4],          'A647')
+    assert_equal(info[5],            None)
+    assert_equal(info[6],             [0])
+    assert_equal(info[7],            None)
     
     with open(str(atomIDs[1]), 'r') as infile:        
         info = json.load(infile)
-    info['posID'] = tuple(info['posID'])
-    
-    assert_equal(info['acqID'],                  2)
-    assert_equal(info['channelID'],         'A647')
-    assert_equal(info['posID'],               (0,))
-    assert_equal(info['prefix'],   'HeLaS_Control')
-    assert_equal(info['sliceID'],             None)
-    assert_equal(info['datasetType'], 'locResults')
+
+    assert_equal(info[0], 'HeLaS_Control')
+    assert_equal(info[1],               2)
+    assert_equal(info[2], 'Localizations')
+    assert_equal(info[3],            None)
+    assert_equal(info[4],          'A647')
+    assert_equal(info[5],            None)
+    assert_equal(info[6],             [0])
+    assert_equal(info[7],            None)

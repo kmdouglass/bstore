@@ -21,10 +21,9 @@ config.__Registered_DatasetTypes__.append('TestType')
 config.__Registered_DatasetTypes__.append('WidefieldImage')
 config.__Registered_DatasetTypes__.append('LocMetadata')
 
-from bstore  import parsers, database
+from bstore import parsers, database
 import bstore.datasetTypes.TestType as TestType
 from pathlib import Path
-from tifffile import TiffFile
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -69,7 +68,7 @@ def test_MMParser_UnregisteredType_WillNot_Parse():
     
     """
     inputFilename   = 'Cos7_Microtubules_A647_3_MMStack_Pos0_locResults.dat'
-    datasetType     = 'Localizations'
+    datasetType     = 'Localizations_Cool'
     
     mmParser = parsers.MMParser()
     mmParser.parseFilename(inputFilename, datasetType)
