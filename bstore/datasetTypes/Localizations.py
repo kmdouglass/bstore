@@ -10,29 +10,38 @@ import bstore.database
 import pandas as pd
 import sys
 
-class averageFiducial(bstore.database.Dataset,
-                      bstore.database.GenericDatasetType):
-    """Contains the average trajectory of many fiducial markers.
+class Localizations(bstore.database.Dataset):
+    """DatasetType representing localization information.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(averageFiducial, self).__init__(prefix, acqID, datasetType, data,
-                                              channelID = channelID,
-                                              dateID    = dateID,
-                                              posID     = posID,
-                                              sliceID   = sliceID)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
     
     @property
-    def genericTypeName(self):
+    def attributeOf(self):
+        """The other DatasetType that this DatasetType describes.
+        
+        If the DatasetType is an attribute of another type, return the name of
+        this other DatasetType. An attribute means that it simply contains
+        metadata and attributes that more fully describe another datasetType.
+        If this DatasetType is not an attribute, return None.
+
+        Returns
+        -------
+        None
+        
+        """
+        return None    
+    
+    @property
+    def datasetType(self):
         """This should be set to the same name as the class.
         
         """
-        return 'averageFiducial'
+        return 'Localizations'
     
-    def get(self, database, key):
-        """Returns a testType dataset from the database.
+    def get(self, database, key, **kwargs):
+        """Returns a dataset from the database.
         
         Parameters
         ----------
@@ -43,14 +52,14 @@ class averageFiducial(bstore.database.Dataset,
         
         Returns
         -------
-        data : NumPy array
+        data : Pandas DataFrame
             The data retrieved from the HDF file.
         """
         data = pd.read_hdf(database, key = key)
             
         return data
     
-    def put(self, database, key):
+    def put(self, database, key, **kwargs):
         """Puts the data into the database.
         
         Parameters
@@ -72,13 +81,17 @@ class averageFiducial(bstore.database.Dataset,
             hdf.close()
     
     @staticmethod        
-    def readFromFile(filePath):
-        """Prototyping...
+    def readFromFile(filePath, **kwargs):
+        """Read a file on disk containing the DatasetType.
         
         Parameters
         ----------
         filePath : Path
             A pathlib object pointing towards the file to open.
+            
+        Returns
+        -------
+        Pandas DataFrame
             
         """
         return pd.read_csv(str(filePath))

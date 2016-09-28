@@ -5,33 +5,42 @@
 import bstore.config
 __version__ = bstore.config.__bstore_Version__
 
-# Be sure not to use the from ... import syntex to avoid cyclical imports!
+# Be sure not to use the from ... import syntax to avoid cyclical imports!
 import bstore.database
 import h5py
 from numpy import array
 
-class testType(bstore.database.Dataset,
-               bstore.database.GenericDatasetType):
-    """A class for testing B-Store generic datasetTypes.
+class TestType(bstore.database.Dataset):
+    """A class for testing B-Store Datasets.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(testType, self).__init__(prefix, acqID, datasetType, data,
-                                       channelID = channelID,
-                                       dateID    = dateID,
-                                       posID     = posID,
-                                       sliceID   = sliceID)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
     
     @property
-    def genericTypeName(self):
+    def attributeOf(self):
+        """The other DatasetType that this DatasetType describes.
+        
+        If the DatasetType is an attribute of another type, return the name of
+        this other DatasetType. An attribute means that it simply contains
+        metadata and attributes that more fully describe another datasetType.
+        If this DatasetType is not an attribute, return None.
+
+        Returns
+        -------
+        None
+        
+        """
+        return None  
+   
+    @property
+    def datasetType(self):
         """This should be set to the same name as the class.
         
         """
-        return 'testType'
+        return 'TestType'
     
-    def get(self, database, key):
+    def get(self, database, key, **kwargs):
         """Returns a testType dataset from the database.
         
         Parameters
@@ -45,13 +54,14 @@ class testType(bstore.database.Dataset,
         -------
         data : NumPy array
             The data retrieved from the HDF file.
+            
         """
         with h5py.File(database, 'r') as hdf:
             data = array(hdf.get(key))
             
         return data
     
-    def put(self, database, key):
+    def put(self, database, key, **kwargs):
         """Puts the data into the database.
         
         Parameters
@@ -65,9 +75,9 @@ class testType(bstore.database.Dataset,
         # Writes the data in the dataset to the HDF file.
         with h5py.File(database, 'a') as hdf:
             hdf.create_dataset(key, self.data.shape,
-                               dtype = 'i', data = self.data)
+                               dtype = 'float64', data = self.data)
                                
-    def readFromFile(self):
+    def readFromFile(self, **kwargs):
         """Required by the GenericDatasetType metaclass.
         
         """

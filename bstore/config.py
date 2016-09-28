@@ -1,4 +1,4 @@
-__bstore_Version__ = '0.2.1'
+__bstore_Version__ = '1.0.0-dev'
 
 """__HDF_AtomID_Prefix__ : str
     String that precedes all attributes marking database atom
@@ -50,18 +50,6 @@ __Format_Default__['length [frames]']    = 'length'
 """
 __Path_To_Test_Data__ = '../bstore_test_files/'
 
-"""__Types_Of_Atoms__ : tuple
-    Strings identifying the types of atoms understood by the software.
-    
-    locMetadata must follow locResults in the list.
-       
-"""
-__Types_Of_Atoms__ = [
-                      'locResults',
-                      'locMetadata',
-                      'widefieldImage',
-                      'generic'
-                     ]
 
 """__MM_PixelSize__ : str
     Name of the field in the Micro-Manager metadata containing the pixel size.
@@ -69,8 +57,8 @@ __Types_Of_Atoms__ = [
 """                     
 __MM_PixelSize__ = 'PixelSize_um'
 
-"""__Registered_Generics__ : list of str
-    The list of generic datasetTypes currently recognized by B-Store.
+"""__Registered_DatasetTypes__ : list of str
+    The list of datasetTypes currently recognized by B-Store.
 
 """
-__Registered_Generics__ = []
+__Registered_DatasetTypes__ = []

@@ -8,10 +8,9 @@ import re
 import warnings
 from bstore import database, config
 import pandas as pd
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 from matplotlib.pyplot import imread
 from os.path import splitext
-from tifffile import TiffFile
 import importlib
 import sys
 
@@ -25,117 +24,32 @@ class Parser(metaclass = ABCMeta):
     
     Parameters
     ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    genericTypeName : str
-        The specfic type of generic dataset currently held by the parser.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
+    datasetIDs : dict
+        The ID fields and their values that identify the datset inside the
+        database.
     
     Attributes
     ----------
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix name.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    genericTypeName : str
-        The specfic type of generic dataset currently held by the parser.
-    posID       : (int,) or (int, int)
-        The position identifier. It is a single element tuple if positions were
-        manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of 'locResults',
-        'locMetadata', or 'widefieldImage'.
+    datasetIDs : dict
+        The ID fields and their values that identify the datset inside the
+        database.   
        
     """
-    def __init__(self, prefix, acqID, datasetType,
-                 channelID = None, dateID = None, genericTypeName = None,
-                 posID = None, sliceID = None,):
-
-        if datasetType not in config.__Types_Of_Atoms__:
-            raise DatasetError(datasetType)
-            
-        if (genericTypeName is not None) \
-            and (genericTypeName not in config.__Registered_Generics__):
-            raise GenericTypeError(genericTypeName)
-        
-        
-        # These are the essential pieces of information to identify a dataset.
-        self.acqID           =           acqID
-        self.channelID       =       channelID
-        self.dateID          =          dateID
-        self.genericTypeName = genericTypeName
-        self.posID           =           posID
-        self.prefix          =          prefix
-        self.sliceID         =         sliceID
-        self.datasetType     =     datasetType
-    
-    @abstractproperty
-    def data(self):
-        """Loads the data into memory and maps it to the correct format.
-        
-        """
-        pass
+    def __init__(self):
+        # Holds a parsed dataset.
+        self._dataset = None
     
     @property
-    def prefix(self):
-        return self._prefix
+    def dataset(self):
+        return self._dataset
         
-    @prefix.setter
-    def prefix(self, value):
-        if value:
-            # Replaces spaces with '_' in prefix.
-            # This avoids problems with spaces in PyTables
-            self._prefix = value.replace(' ', '_')
-    
-    def getBasicInfo(self):
-        """Return a dictionary containing the basic dataset information.
-        
-        """
-        basicInfo = {
-                     'acqID'           : self.acqID,
-                     'channelID'       : self.channelID,
-                     'dateID'          : self.dateID,
-                     'posID'           : self.posID,
-                     'prefix'          : self.prefix,
-                     'sliceID'         : self.sliceID,
-                     'datasetType'     : self.datasetType,
-                     'genericTypeName' : self.genericTypeName
-                     }
-                     
-        return basicInfo
-
-    @abstractmethod
-    def getDatabaseAtom(self):
-        """Returns one atomic unit for insertion into the Database.
-        
-        """
-        pass
+    @dataset.setter
+    def dataset(self, ds):
+        self._dataset = ds
     
     @abstractmethod
     def parseFilename(self):
-        """Parses a file for conversion to a DatabaseAtom.
+        """Parses a file for conversion to a Dataset.
         
         """
         pass
@@ -205,9 +119,6 @@ class MMParser(Parser):
     
     Parameters
     ----------
-    dataGetter : func
-        The function defining how to read the various datasetTypes. Should be
-        similar to _getDataDefault().
     readTiffTags : bool
         Determines whether Tiff tags are read in addition to the image data.
         This may cause problems if set to true and the image is not a Tiff file
@@ -221,13 +132,7 @@ class MMParser(Parser):
     ----------
     channelIdentifier   : dict
         All of the channel identifiers that the MMParser recognizes.
-    dataGetter          : func
-        Optional function for customized reading of data.
-    readTiffTags        : bool
-        Determines whether Tiff tags are read in addition to the image data.
-        This may cause problems if set to true and the image is not a Tiff
-        whose format is supported by tifffile.
-    uninitialized       : bool
+    initialized         : bool
         Indicates whether the Parser currently possesses parsed information.
     widefieldIdentifier : str
         The string identifying the widefield image number.
@@ -241,36 +146,27 @@ class MMParser(Parser):
     # All identifiers of a widefield image in a file name.
     widefieldIdentifier = ['WF']
     
-    def __init__(self, dataGetter = None, readTiffTags = False):
+    def __init__(self):
         # Start uninitialized because parseFilename has not yet been called
-        self.uninitialized = True
-        
-        self.readTiffTags  = readTiffTags
-        
-        # Allows for customized reading of datasets, such as converting
-        # DataFrame column names or for reading non-csv files.
-        if dataGetter:        
-            self._dataGetter = dataGetter
-        else:
-            self._dataGetter = self._getDataDefault
+        self.initialized   = False
     
     @property
-    def data(self):
-        # The if statement is required because _getDataDefault is a bound
-        # method. This means it will always receive an instance of the
-        # calling parser as an argument. If a custom dataGetter is set,
-        # the self argument must be passed explicitly.
-        if self._dataGetter == self._getDataDefault:
-            return self._dataGetter()
+    def dataset(self):
+        if self.initialized:
+            return self._dataset
         else:
-            return self._dataGetter(self)
-            
-    @property
-    def uninitialized(self):
-        return self._uninitialized
+            raise ParserNotInitializedError('Error: No dataset is parsed.')
+    
+    @dataset.setter
+    def dataset(self, ds):
+        self._dataset = ds
         
-    @uninitialized.setter
-    def uninitialized(self, value):
+    @property
+    def initialized(self):
+        return self._initialized
+        
+    @initialized.setter
+    def initialized(self, value):
         """Resets the Parser to an uninitialized state if True is provided.
         
         Parameters
@@ -278,113 +174,14 @@ class MMParser(Parser):
         value : bool
         """
         if isinstance(value, bool):
-            self._uninitialized = value
+            self._initialized = value
             
-            if value:
-                self._fullPath       = None
-                self._filename       = None
-                self._metadata       = None
-                self.acqID           = None
-                self.channelID       = None
-                self.dateID          = None
-                self.genericTypeName = None
-                self.posID           = None
-                self.prefix          = None
-                self.sliceID         = None
-                self.datasetType     = None
+            if value == False:
+                self.dataset = None
         else:
-            raise ValueError('Error: _uninitialized must be a bool.')
-            
-    def getDatabaseAtom(self):
-        """Returns an object capable of insertion into a SMLM database.
-        
-        Returns 
-        -------
-        dba : DatabaseAtom
-            One atomic unit for insertion into the database.
-        
-        """
-        if self._uninitialized:
-            raise ParserNotInitializedError(('Error: Parser has not yet '
-                                             'been initialized.'))
-        
-        ids = self.getBasicInfo()
-        if ids['datasetType'] != 'generic':
-            dba = database.Dataset(ids['prefix'], ids['acqID'],
-                                   ids['datasetType'], self.data,
-                                   channelID = ids['channelID'],
-                                   dateID = ids['dateID'],
-                                   posID = ids['posID'], 
-                                   sliceID = ids['sliceID'])
-        elif ids['datasetType'] == 'generic':
-            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
-                                                       ids['genericTypeName']))
-            genericType = getattr(mod, ids['genericTypeName'])
-            
-            dba = genericType(ids['prefix'], ids['acqID'], ids['datasetType'],
-                              self.data, channelID = ids['channelID'],
-                              dateID = ids['dateID'], posID = ids['posID'], 
-                              sliceID = ids['sliceID'])
-            
-        return dba
-        
-    def _getDataDefault(self):
-        """Default function used for reading the data in a database atom.
-        
-        This function defines the default behaviors for reading data.
-        It may be overriden by this Parser's constructor to allow for
-        more specialized reading, such as converting DataFrame column
-        names upon import.
-        
-        Only one of many possible returns is actually returned by this
-        function, depending on the datasetType.
-        
-        Returns
-        -------
-        df       : Pandas DataFrame
-            The localizations if datasetType == 'locResults'.
-        metadata : dict
-            Dictionary of JSON strings containing the localization metadata.
-        img      : NumPy array
-            2D NumPy array containing the image.
-        
-        """
-        if self._uninitialized:
-            raise ParserNotInitializedError(('Error: this parser has not yet'
-                                             ' been initialized.'))
-        
-        if self.datasetType == 'locResults':
-            # Loading the csv file when data() is called reduces the
-            # chance that large DataFrames do not needlessly
-            # remain in memory.
-            with open(str(self._fullPath), 'r') as file:            
-                df = pd.read_csv(file)
-                return df
-                
-        elif self.datasetType == 'locMetadata':
-            # self._metadata is set by self._parseLocMetadata
-            metadata = self._metadata
-            return metadata
-            
-        elif self.datasetType == 'widefieldImage':
-            # Load the image data only when called
-            if self.readTiffTags:
-                with TiffFile(str(self._fullPath)) as tif:
-                    return tif
-            else:
-                # Read image data as a NumPy array
-                img = imread(str(self._fullPath))
-                return img
-        elif self.datasetType == 'generic':
-            # TODO: Implement a generic function for reading data from files.
-            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
-                                                         self.genericTypeName))
-            genericType = getattr(mod, self.genericTypeName)
-            return genericType.readFromFile(self._fullPath)  
+            raise ValueError('Error: initialized must be a bool.')
 
-    
-    def parseFilename(self, filename, datasetType = 'locResults',
-                      genericTypeName = None):
+    def parseFilename(self, filename, datasetType = 'LocResults'):
         """Parse the filename to extract the acquisition information.
         
         Running this method will reset the parser to an uninitialized state
@@ -395,19 +192,15 @@ class MMParser(Parser):
         filename        : str or Path
             A string or pathlib Path object containing the dataset's filename.
         datasetType     : str
-            One of the allowable datasetTypes.
-        genericTypeName : str or None
-            The generic dataset type to parse.
+            One of the registered datasetTypes.
             
         """
         # Reset the parser
-        self.uninitialized = True   
+        self.initialized = False   
         
-        if datasetType not in config.__Types_Of_Atoms__:
-            raise DatasetError(datasetType)   
-        if (genericTypeName is not None) \
-                   and (genericTypeName not in config.__Registered_Generics__):
-            raise GenericTypeError(genericTypeName)
+        if datasetType not in config.__Registered_DatasetTypes__:
+            raise DatasetTypeError(('{} is not a registered '
+                                    'type.').format(datasetType)) 
         
         # Convert Path objects to strings
         if isinstance(filename, pathlib.PurePath):
@@ -422,102 +215,29 @@ class MMParser(Parser):
         # Used to access data
         self._filename = filename
         self._fullPath = fullPath
-            
-        if datasetType == 'locResults':
-            parsedData = self._parseLocResults(filename)
-            (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData
-
-            # Assign ID's to the class fields            
-            super(MMParser, self).__init__(prefix, acqID, datasetType,
-                                           channelID = channelID,
-                                           dateID = dateID, posID = posID,
-                                           sliceID = sliceID)
-        elif datasetType == 'locMetadata':
-            parsedData = self._parseLocMetadata(fullPath)
-            (prefix, acqID, channelID, dateID, posID, sliceID, metadata) = \
-                                                                     parsedData
-                                                                     
-            # Assign ID's to the class fields  
-            super(MMParser, self).__init__(prefix, acqID, datasetType,
-                                           channelID = channelID,
-                                           dateID = dateID, posID = posID,
-                                           sliceID = sliceID)
-            self._metadata = metadata
-        elif datasetType == 'widefieldImage':
+        
+        # Do parsing for particular types here
+        if datasetType   == 'WidefieldImage':
             parsedData = self._parseWidefieldImage(filename)
-            (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData            
+        else:
+            parsedData = self._parse(filename)
+        
+        # Build the return dataset
+        prefix, acqID, channelID, dateID, posID, sliceID = parsedData
+        idDict = {'prefix' : prefix, 'acqID' : acqID, 'channelID' : channelID,
+                  'dateID' : dateID, 'posID' : posID, 'sliceID' : sliceID}
+        
+        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        dType = getattr(mod, datasetType)
             
-            # Assign ID's to the class fields
-            super(MMParser, self).__init__(prefix, acqID, datasetType,
-                                           channelID = channelID,
-                                           dateID = dateID, posID = posID,
-                                           sliceID = sliceID)
-                                           
-        elif datasetType == 'generic':
-            parsedData = self._parseLocResults(filename)
-            (prefix, acqID, channelID, dateID, posID, sliceID) = parsedData
-          
-            super(MMParser, self).__init__(prefix, acqID, datasetType,
-                                           channelID = channelID,
-                                           dateID = dateID, posID = posID,
-                                           sliceID = sliceID,
-                                           genericTypeName = genericTypeName)            
+        self.dataset = dType(datasetIDs = idDict)           
             
         # Parser is now set and initialized.
-        self._uninitialized = False
+        self.initialized = True
         
-    def _parseLocMetadata(self, fullPath):
-        """Parse a localization metadata file.
-        
-        Parameters
-        ----------
-        fullPath : Path
-            pathlib Path object to the metadata file.
-            
-        Returns
-        -------
-        prefix    : str
-        acqID     : int
-        channelID : str
-        dateID    : str
-        posID     : (int,) or (int, int)
-        sliceID   : int
-        metadata  : dict
-            A dictionary containing the metadata for this acquisition.
-        
-        """       
-        with open(str(fullPath), 'r') as file:
-            metadata = json.load(file)
-        
-        filename = str(fullPath.name)
-            
-        prefix, acqID, channelID, dateID, posID, sliceID = \
-                                            self._parseLocResults(filename)
-        
-        # Remove non-matching position information from the metadata
-        try:
-            if len(posID) == 2:
-                pos = 'Pos_{0:0>3d}_{1:0>3d}'.format(posID[0], posID[1])
-            else:
-                pos = 'Pos{0:d}'.format(posID[0])
-            
-            newPosList= [currPos \
-                         for currPos in metadata['InitialPositionList'] \
-                         if pos in currPos['Label']]
-            assert len(newPosList) <= 1,\
-                'Multiple positions found in metadata.'
-            metadata['InitialPositionList'] = newPosList[0]
-        except TypeError:
-            # When no position information is in the filename
-            metadata['InitialPositionList'] = None
-            
-        # TODO: FUTURE IMPLEMENTATION
-        # Isolate slice position from and change metadata accordingly
-
-        return prefix, acqID, channelID, dateID, posID, sliceID, metadata
-        
-    def _parseLocResults(self, filename, extractAcqID = True):
-        """Parse a localization results file.
+    def _parse(self, filename, extractAcqID = True):
+        """Parse a generic file, i.e. one not requiring special treatment.
         
         Parameters
         ----------
@@ -592,6 +312,9 @@ class MMParser(Parser):
         sliceID = None
         dateID  = None
         
+        # PyTables has problems with spaces in the name
+        prefix = prefix.replace(' ', '_')        
+        
         return prefix, acqID, channelID, dateID, posID, sliceID
         
     def _parseWidefieldImage(self, filename):
@@ -613,7 +336,7 @@ class MMParser(Parser):
             
         """
         prefix, acqID, channelID, dateID, posID, sliceID = \
-                        self._parseLocResults(filename, extractAcqID = False)
+                        self._parse(filename, extractAcqID = False)
                         
         # Extract the widefield image identifier from prefix and use it
         # to set the acquisition ID. See the widefieldIdentifier dict.
@@ -719,7 +442,8 @@ class SimpleParser(Parser):
         """
         # Check for a valid datasetType
         if datasetType not in database.typesOfAtoms:
-            raise DatasetError(datasetType)    
+            raise DatasetTypeError(('{} is not a registered '
+                                    'type.').format(datasetType))    
             
         # Don't parse generics
         if datasetType == 'generic':
@@ -754,17 +478,8 @@ class SimpleParser(Parser):
 Exceptions
 -------------------------------------------------------------------------------
 """    
-class DatasetError(Exception):
-    """Error raised when a bad datasetType is passed to Parser.
-    
-    """
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-        
-class GenericTypeError(Exception):
-    """Error raised when a bad genericTypeName is passed to Parser.
+class DatasetTypeError(Exception):
+    """Error raised when a bad datasetTypeName is passed to Parser.
     
     """
     def __init__(self, value):

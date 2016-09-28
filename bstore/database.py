@@ -4,7 +4,6 @@
 
 from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
-from pandas import HDFStore, read_hdf
 import h5py
 import json
 import bstore.config as config
@@ -15,15 +14,14 @@ import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
 import importlib
+from collections import namedtuple, OrderedDict
 
 __version__ = config.__bstore_Version__
 
 pp = pprint.PrettyPrinter(indent=4)  
 
-typesOfAtoms = config.__Types_Of_Atoms__
-
 def _checkType(typeString):
-    if typeString not in typesOfAtoms:
+    if typeString not in config.__Registered_DatasetTypes__:
         raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
                                                                    typeString))
 
@@ -189,145 +187,66 @@ class Database(metaclass = ABCMeta):
         
         """
         pass
-
-class DatabaseAtom(metaclass = ABCMeta):
-    """Metaclass representing one organizational unit in the database.
+        
+class Dataset(metaclass = ABCMeta):
+    """Metaclass for a Dataset. Use this to create new Datasets.
     
     Parameters
     ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
+    data
+        The actual data held by the dataset.
+    datasetIDs : dict
+        The ID fields and their values that identify the datset inside the
+        database.
+        
+        
+    Attributes
+    ----------
+    data
+        The actual data held by the dataset.
+    datasetIDs : dict
+        The ID fields and their values that identify the datset inside the
+        database.
     
     """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        if acqID is None:
-            raise ValueError('acqID cannot be \'None\'.')
-                
-        if datasetType is None:
-            raise ValueError('datasetType cannot be \'None\'.')
-            
-        # dateID should follow the format YYYY-MM-DD
-        # Note that Python's 'and' short circuits, so the order here
-        # is important. pattern.match(None) will raise a TypeError
-        pattern = re.compile('\d{4}-\d{2}-\d{2}')
-        if dateID and not pattern.match(dateID):
-            raise ValueError(('Error: The date is not of the format '
-                              'YYYY-MM-DD.'))
+    def __init__(self, datasetIDs = {}):
+        self._data       = None        
+        self._datasetIDs = datasetIDs
 
-        _checkType(datasetType)
-            
-        self._acqID       = acqID
-        self._channelID   = channelID
-        self._data        = data
-        self._posID       = posID
-        self._prefix      = prefix
-        self._sliceID     = sliceID
-        self._datasetType = datasetType
-        self._dateID      = dateID
-        
     @abstractproperty
-    def acqID(self):
+    def attributeOf():    
         pass
     
-    @abstractproperty
-    def channelID(self):
-        pass
-    
-    @abstractproperty
+    @property
     def data(self):
-        pass
-    
-    @abstractproperty
-    def datasetType(self):
-        pass
-    
-    @abstractproperty
-    def dateID(self):
-        pass
-    
-    @abstractproperty
-    def posID(self):
-        pass
-    
-    @abstractproperty
-    def prefix(self):
-        pass
-    
-    @abstractproperty
-    def sliceID(self):
-        pass
+        return self._data
         
-    def getInfo(self):
-        """Returns the dataset information (without the data) as a tuple.
+    @data.setter
+    def data(self, value):
+        self._data = value
+    
+    @property
+    def datasetIDs(self):
+        return self._datasetIDs
         
-        Returns
-        -------
-        prefix          : str
-        acqID           : int
-        datasetType     : str
-        data            : mixed
-        channelID       : str
-        dateID          : str
-        posID           : int, or (int, int)
-        genericTypeName : string (optional)
+    @datasetIDs.setter
+    def datasetIDs(self, ids):
+        """Assigns database IDs to this dataset.
         
-        """
-        if self._datasetType == 'generic':
-            return self._prefix, self._acqID, self._datasetType, \
-                   self._channelID, self._dateID, self._posID, self._sliceID, \
-                   self.genericTypeName
-        else:
-            return self._prefix, self._acqID, self._datasetType, \
-                   self._channelID, self._dateID, self._posID, self._sliceID
-               
-    def getInfoDict(self):
-        """Returns the dataset information (without the data) as a dict.
-        
-        Returns
-        -------
-        dsIDs : dict
-            Key-value pairs representing the datasetIDs.
-        
-        """
-        dsIDs = {'acqID'       : self._acqID,
-                 'channelID'   : self._channelID,
-                 'posID'       : self._posID,
-                 'prefix'      : self._prefix,
-                 'sliceID'     : self._sliceID,
-                 'datasetType' : self._datasetType,
-                 'dateID'      : self._dateID}
-                 
-        if self._datasetType == 'generic':
-            dsIDs['genericTypeName'] = self.genericTypeName
+        Parameters
+        ----------
+        ids : dict
+            Key-value pairs that specify the IDs and their values. Keys must
+            be strings.
             
-        return dsIDs
-        
-class GenericDatasetType(metaclass = ABCMeta):
-    """Metaclass for a generic datasetType. Use this to add new datasetTypes.
+        """
+        if isinstance(ids, dict):
+            self._datasetIDs = ids
+        else:
+            raise TypeError('datasetIDs must be a dict.')
     
-    """
     @abstractproperty
-    def genericTypeName():
+    def datasetType():
         pass
     
     @abstractmethod
@@ -345,101 +264,6 @@ class GenericDatasetType(metaclass = ABCMeta):
 """Concrete classes
 -------------------------------------------------------------------------------
 """
-class Dataset(DatabaseAtom):
-    """A concrete realization of a DatabaseAtom.
-    
-    Parameters
-    ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
-    
-    Attributes
-    ----------
-    prefix      : str
-        The descriptive name given to the dataset by the user.
-    acqID       : int
-        The number identifying the Multi-D acquisition for a given prefix
-        name.
-    datasetType : str
-        The type of data contained in the dataset. Can be one of
-        'locResults', 'locMetadata', or 'widefieldImage'.
-    data        : mixed
-        The actual microscopy data.
-    channelID   : str
-        The color channel associated with the dataset.
-    dateID      : str
-        The date of the acquistion in the format YYYY-mm-dd.
-    posID       : int, or (int, int)
-        The position identifier. It is a single element tuple if positions
-        were manually set; otherwise, it's a 2-tuple indicating the x and y
-        identifiers.
-    sliceID     : int
-        The number identifying the z-axis slice of the dataset.
-    
-    """
-    def __init__(self, prefix, acqID, datasetType, data,
-                 channelID = None, dateID = None,
-                 posID = None, sliceID = None):
-        super(Dataset, self).__init__(prefix, acqID, datasetType, data,
-                                      channelID = channelID,
-                                      dateID    = dateID,
-                                      posID     = posID,
-                                      sliceID   = sliceID)
-                                                
-    @property
-    def acqID(self):
-        return self._acqID
-    
-    @property
-    def channelID(self):
-        return self._channelID
-
-    @property
-    def data(self):
-        return self._data
-    
-    @data.setter
-    def data(self, value):
-        self._data = value
-        
-    @property
-    def datasetType(self):
-        return self._datasetType
-        
-    @property
-    def dateID(self):
-        return self._dateID
-    
-    @property
-    def posID(self):
-        return self._posID
-
-    @property
-    def prefix(self):
-        return self._prefix
-    
-    @property
-    def sliceID(self):
-        return self._sliceID
-
 class HDFDatabase(Database):
     """A HDFDatabase structure for managing SMLM data.
     
@@ -449,9 +273,9 @@ class HDFDatabase(Database):
         The name of the database file.
     widefieldPixelSize   : 2-tuple of float or None
         The x- and y-size of a widefield pixel in microns. This
-        informationis used to write attributes to the widefield image for
+        information is used to write attributes to the widefield image for
         opening with other software libraries, such as the HDF5 Plugin for
-        ImageJ and FIJI.
+        ImageJ and FIJI. Setting it will override all metadata information.
     
     Attributes
     ----------
@@ -474,19 +298,48 @@ class HDFDatabase(Database):
     .. [1] http://lmb.informatik.uni-freiburg.de/resources/opensource/imagej_plugins/hdf5.html
         
     """
-    def __init__(self, dbName, *args, widefieldPixelSize = None, **kwargs):
+    def __init__(self, dbName, widefieldPixelSize = None):
         self.widefieldPixelSize = widefieldPixelSize
         super(HDFDatabase, self).__init__(dbName)
+        
+    def __repr__(self):
+        if self.widefieldPixelSize is None:
+            pxSizeStr = 'None'
+        else:
+            x, y = self.widefieldPixelSize[0], self.widefieldPixelSize[1]
+            pxSizeStr = '({0:.4f}, {1:.4f})'.format(x,y)
+        
+        return 'HDFDatabase(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
+                                                                  self._dbName,
+                                                                  pxSizeStr)
     
     @property
-    def atomPrefix(self):
+    def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
+        
+    dsID = namedtuple('datasetID', ['prefix', 'acqID', 'datasetType',
+                                    'attributeOf', 'channelID', 'dateID',
+                                    'posID', 'sliceID'])
+    """Dataset IDs used by this database.
     
-    def build(self, parser, searchDirectory, dryRun = False,
-              genericStrings       = {},
-              locMetadataString    = 'locMetadata.json',
-              locResultsString     = 'locResults.dat',
-              widefieldImageString = 'WF*.ome.tif'):
+    Notes
+    -----
+    Fields' __doc__ attributes must contain the string "(optional)" if they
+    are not required.
+        
+    """
+    dsID.prefix.__doc__      = ('The descriptive name given to '
+                                'the dataset by the user.')
+    dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
+    dsID.datasetType.__doc__ = 'The type specified by datasetType'
+    dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
+    dsID.channelID.__doc__   = '(optional) String for the channel (color).'
+    dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
+    dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
+    dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
+    
+    def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
+              **kwargs):
         """Builds a database by traversing a directory for experimental files.
         
         Parameters
@@ -495,18 +348,14 @@ class HDFDatabase(Database):
             Instance of a parser for converting files to DatabaseAtoms.
         searchDirectory      : str or Path
             This directory and all subdirectories will be traversed.
+        filenameStrings      : dict
+            Dictionary of key-value pairs, where each key is the name of a
+            DataType and each value is a string contained by the end of the
+            files corresponding to that DataType.
         dryRun               : bool
             Test the database build without actually creating the database.
-        genericStrings       : dict
-            Dictionary of key-value pairs, where each key is the name of a
-            generic data type and each value is a string contained by the
-            end of the files corresponding to that data type.
-        locMetadataString    : str
-            String that identifies locMetadata files.
-        locResultsString     : str
-            String that identifies locResults files.
-        widefieldImageString : str
-            Glob string that identifies widefield images.
+        **kwargs
+            Keyword arguments to pass to the parser's readFromFile() method.
             
         Returns
         -------
@@ -515,84 +364,33 @@ class HDFDatabase(Database):
             added to the database.
             
         """ 
-        # TODO: Update this to work with generics
-        # Obtain a list of all the files to put into the database
         searchDirectory = Path(searchDirectory)
-        FilesGen = {}
-        FilesGen['locResults']     = searchDirectory.glob('**/*{:s}'.format(
-                                                             locResultsString))
-        FilesGen['locMetadata']    = searchDirectory.glob('**/*{:s}'.format(
-                                                            locMetadataString))
-        FilesGen['widefieldImage'] = searchDirectory.glob('**/*{:s}'.format(
-                                                         widefieldImageString))            
-        FilesGen['generic']        = []
-                                                         
-        # Build the dictionary of files with keys describing
-        # their dataset type
-        files = {}                                                 
-        for datasetType in typesOfAtoms:
-            files[datasetType] = sorted(FilesGen[datasetType])
             
-        # Check that all generic types are registered
-        self._checkForRegisteredTypes(list(genericStrings.keys()))
+        self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
-        # Add generic files to the dict
-        files['generic'] = self._buildGenericFileList(searchDirectory,
-                                                      genericStrings)
+        # Obtain a list of all the files
+        files = self._buildFileList(searchDirectory, filenameStrings)
         
         # Keep a running record of what datasets were parsed
-        datasets = []        
-        
-        # Ensure that locResults get put first so the metadata has
-        # a place to go.
-        for dataset in files['locResults']:
-            try:
-                parser.parseFilename(dataset, datasetType = 'locResults')
+        datasets = []   
                 
-                if not dryRun:
-                    self.put(parser.getDatabaseAtom())
-                    
-                datasets.append(parser.getBasicInfo())
-            except Exception as err:
-                print("Unexpected error in build() while building locResults:",
-                      sys.exc_info()[0])
-                print(err)
-        del(files['locResults'])
-        
-        # Next put the generic data
-        for genericType in files['generic'].keys():
-            for currFile in files['generic'][genericType]:
-                try:
-                    parser.parseFilename(currFile, datasetType = 'generic',
-                                         genericTypeName = genericType)
-                    if not dryRun:
-                        self.put(parser.getDatabaseAtom())
-                    
-                    datasets.append(parser.getBasicInfo())
-                    
-                except Exception as err:
-                    print(("Unexpected error in build() while "
-                           "building generics:"),
-                    sys.exc_info()[0])
-                    print(err)
-        del(files['generic'])
-        
-        # Finally put all other data into the database
-        for currType in files.keys(): 
+        # files is an OrderedDict. Non-attributes are built before attributes.
+        for currType in files.keys():
+            # files[currType] returns a list of string
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(currFile, datasetType = currType)
-                
-                    if not dryRun:
-                        self.put(parser.getDatabaseAtom())
+                    parser.dataset.data = parser.dataset.readFromFile(currFile,
+                                                                      **kwargs)
                     
-                    datasets.append(parser.getBasicInfo())
-                except LocResultsDoNotExist:
-                    # Do not fail the build if metadata cannot be put.
-                    continue
+                    if not dryRun:
+                        self.put(parser.dataset)
+                    
+                    datasets.append(self._unpackDatasetIDs(parser.dataset))
+                
                 except Exception as err:
-                    print("Unexpected error in build():",
-                          sys.exc_info()[0])
+                    print(("Unexpected error in build():"),
+                    sys.exc_info()[0])
                     print(err)
 
         # Report on all the datasets that were parsed
@@ -606,85 +404,109 @@ class HDFDatabase(Database):
                 
         return buildResults
         
-    def _buildGenericFileList(self, searchDirectory, genericStrings):
-        """Builds a list of the generic files in a supplied folder for build().
+    def _buildFileList(self, searchDirectory, filenameStrings):
+        """Builds a list of the files in a supplied folder for build().
         
         Parameters
         ----------
         searchDirectory : str or Path
             This directory and all subdirectories will be traversed.
-        genericStrings  : dict
+        filenameStrings : dict
             Dictionary of key-value pairs, where each key is the name of a
-            generic data type and each value is a string contained by the
-            end of the files corresponding to that data type.
+            DatasetType and each value is a string contained by the end of
+            the files corresponding to that data type.
             
         Returns
         -------
-        files : dict of list of str
-            Dictionary whose keys are the generic type names and whose values
+        files : OrderedDict of list of str
+            Dictionary whose keys are the DatasetType names and whose values
             are lists of strings containing the path to files that satisfy the
             globbed search.
         
         """
-        # TODO: Handle case when genericStrings is empty
-        FilesGen = {}
-        files    = {}
-        for genericName, fileID in genericStrings.items():
-            # Do not process any generic type unless its currently registered
+        if not filenameStrings:
+            return {}
+            
+        files = {}
+        for filename, fileID in filenameStrings.items():
+            # Do not process any type unless its currently registered
             # with B-Store
-            if genericName not in config.__Registered_Generics__:
+            if filename not in config.__Registered_DatasetTypes__:
                 continue
             else:
-                FilesGen[genericName] = searchDirectory.glob('**/*{:s}'.format(
-                                                                       fileID))
-        # Build the dictionary of files with keys describing
-        # their generic dataset type                                                               
-        for genericName in FilesGen.keys():
-            files[genericName] = sorted(FilesGen[genericName])
-            
+                files[filename] = sorted(searchDirectory.glob(
+                                                    '**/*{:s}'.format(fileID)))
+                                                    
+        def sortKey(x):
+            # Create instances of datasetType to place attribute types
+            # after non-attributes
+            dsTypeString = x[0]
+            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                 dsTypeString))
+            ds  = getattr(mod, dsTypeString)() # Note () for instantiation
+            if ds.attributeOf:
+                return 1
+            else:
+                return 0
+              
+        files = OrderedDict(sorted(files.items(), key=sortKey))
         return files
     
     def _checkForRegisteredTypes(self, typeList):
         """Verifies that each type in typeList is registered.
         
+        Parameters
+        ----------
+        typeList : list of str
+        
         """
         for typeName in typeList:
-            if typeName not in config.__Registered_Generics__:
-                raise GenericTypeError(typeName)
+            if typeName not in config.__Registered_DatasetTypes__:
+                raise DatasetTypeError(typeName)
     
-    def _checkKeyExistence(self, atom):
+    def _checkKeyExistence(self, ds):
         """Checks for the existence of a key.
         
         Parameters
         ----------
-        atom : DatabaseAtom
+        ds : Dataset
+        
+        Returns
+        -------
+        key : str
+            The HDF key pointing to the dataset.
         
         """
-        key = self._genKey(atom)        
+        key = self._genKey(ds)        
         
         # If Database file doesn't exist, return without checking
         try:
             with h5py.File(self._dbName, mode = 'r') as dbFile:
-                if key in dbFile and atom.datasetType != 'locMetadata':
+                # First check atoms that are not attributes
+                if key in dbFile and ds.attributeOf is None:
                     raise HDF5KeyExists(('Error: '
                                          '{0:s} already exists.'.format(key)))
-                elif key in dbFile and atom.datasetType == 'locMetadata':
-                    # Search for metadata flag presence in locResults dataset
+                
+                # Next search for *any* occurence of the attribute flag
+                # in the attribute names of dataset that key points to.
+                elif key in dbFile and ds.attributeOf is not None:
                     attrID = config.__HDF_Metadata_Prefix__                 
                     mdKeys = dbFile[key].attrs.keys()
                     for currKey in mdKeys:
                         if attrID in currKey:
-                            raise HDF5KeyExists(('Error: '
+                            raise HDF5KeyExists(('Error: Attributes for'
                                                  '{0:s} already '
-                                                 'exists.'.format(key)))                    
+                                                 'exist.'.format(key)))                    
         except IOError:
             pass
-            
-    def _genAtomicID(self, key):
-        """Generates an atomic ID from a HDF key. The inverse of _genKey.
         
-        Note that the data property is set to 'None.' Only the IDs are
-        retrieved.
+        return key
+           
+    def _genDatasetID(self, key):
+        """Generates an dataset ID (dsID) from a HDF key. Inverse of _genKey.
+        
+        Note that this will not return IDs for dataset types that are
+        attributes because their HDF key is ambiguous.
         
         Parameters
         ----------
@@ -693,9 +515,8 @@ class HDFDatabase(Database):
             
         Returns
         -------
-        returnDS : Dataset
-            The ID's of one database atom. No data is returned or read,
-            just the ID information.
+        returnDS : dsID
+            The ID's of one database atom. 
             
         """
         # Parse key for atomic IDs
@@ -721,13 +542,6 @@ class HDFDatabase(Database):
         
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
-        
-        # Change datasetType to 'generic' for creation of a generic type later
-        if datasetType in config.__Registered_Generics__:
-            genericTypeName = datasetType
-            datasetType     = 'generic'
-        
-        data        = None
         
         channelID = [channel
                      for channel in config.__Channel_Identifier__.keys()
@@ -758,87 +572,101 @@ class HDFDatabase(Database):
             sliceID = int(index[0])
         
         # Build the return dataset
-        if datasetType == 'generic':
-            mod = importlib.import_module('bstore.generic_types.{0:s}'.format(
-                                                              genericTypeName))
-            genericType = getattr(mod, genericTypeName)
-            
-            # Sets the return dataset to the genericType
-            returnDS = genericType(prefix, acqID, datasetType, data,
-                                   channelID = channelID, dateID = dateID,
-                                   posID = posID, sliceID = sliceID)
-        else:
-            returnDS = Dataset(prefix, acqID, datasetType, data,
-                               channelID = channelID, dateID = dateID,
-                               posID = posID,sliceID = sliceID)
+        returnDS = self.dsID(prefix, acqID, datasetType, None,
+                             channelID, dateID, posID, sliceID)
         return returnDS
-
-    def _genKey(self, atom):
-        """Generate a key name for a dataset atom. The inverse of _genAtomicID.
+        
+    def _genDataset(self, dsID):
+        """Generate a dataset with an empty data attribute from a datasetID.
         
         Parameters
         ----------
-        atoms  : DatabaseAtom
+        dsID : datasetID
+            Namedtuple representing a dataset in the database.
+            
+        Returns
+        -------
+        : Dataset
+            
+        """
+        idDict      = dict(dsID._asdict())
+        datasetType = idDict['datasetType']
+        
+        # The following do not belong in the dict of ID's, so remove them.
+        # They are attributes of the datasetType.
+        del(idDict['datasetType']); del(idDict['attributeOf'])
+        
+        # Build the return dataset
+        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        dType = getattr(mod, datasetType)
+            
+        return dType(datasetIDs = idDict)
+
+    def _genKey(self, ds):
+        """Generate a key name for a dataset. The inverse of _genAtomicID.
+        
+        Parameters
+        ----------
+        ds : Dataset or datasetID
         
         Returns
         -------
         str
         
         """
-        # 'd' and underscores are needed for PyTables naming conventions
-        if atom.dateID is not None:
-            acqKey = '/'.join([atom.prefix,
-                               'd' + atom.dateID.replace('-','_'),
-                               atom.prefix]) + \
-                     '_' + str(atom.acqID)
+        # Account for whether a Dataset or a datasetIDs namedtuple was given.
+        if isinstance(ds, Dataset):
+            ids = self._unpackDatasetIDs(ds)
         else:
-            acqKey = '/'.join([atom.prefix, atom.prefix]) + \
-                     '_' + str(atom.acqID)
+            ids = ds
+        
+        # 'd' and underscores are needed for PyTables naming conventions
+        if ids.dateID is not None:
+            acqKey = '/'.join([ids.prefix,
+                               'd' + ids.dateID.replace('-','_'),
+                               ids.prefix]) + \
+                     '_' + str(ids.acqID)
+        else:
+            acqKey = '/'.join([ids.prefix, ids.prefix]) + \
+                     '_' + str(ids.acqID)
                                  
         otherIDs = ''
-        if atom.channelID is not None:
-            otherIDs += '_' + atom.channelID
-        if atom.posID is not None:
-            if len(atom.posID) == 1:
-                posID = atom.posID[0]    
+        if ids.channelID is not None:
+            otherIDs += '_' + ids.channelID
+        if ids.posID is not None:
+            if len(ids.posID) == 1:
+                posID = ids.posID[0]    
                 otherIDs += '_Pos{:d}'.format(posID)
             else:
-                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(atom.posID[0], 
-                                                            atom.posID[1])
-        if atom.sliceID is not None:
-            otherIDs += '_Slice{:d}'.format(atom.sliceID)
+                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(ids.posID[0], 
+                                                            ids.posID[1])
+        if ids.sliceID is not None:
+            otherIDs += '_Slice{:d}'.format(ids.sliceID)
         
-        # locMetadata should be appended to a dataset starting with locResults
-        # generic datasetTypes should be named after their genericTypeName
-        if atom.datasetType != 'locMetadata' and atom.datasetType != 'generic':        
-            return acqKey + '/' + atom.datasetType + otherIDs
-        elif atom.datasetType == 'locMetadata':
-            return acqKey + '/locResults' + otherIDs
-        elif atom.datasetType == 'generic':
-            return acqKey + '/' + atom.genericTypeName + otherIDs
+        # If an attribute, use the name of the DatasetType that this type is
+        # an attribute of.
+        if ids.attributeOf:
+            return acqKey + '/' + ds.attributeOf + otherIDs
+        else:
+            return acqKey + '/' + ds.datasetType + otherIDs
             
     def get(self, dsID):
-        """Returns an atomic dataset matching dsID from the database.
+        """Returns a Dataset from the database.
         
         Parameters
         ----------
-        dsID     : Dataset
-            A Dataset with a possibly empty 'data' field that may be used to
-            identify the dataset.
+        dsID : datasetID
+            A namedtuple belonging to the HDFDatabase class.
             
         Returns
         -------
-        dsID : Dataset
-            The same Dataset but with a filled/modified data field.
+        dataset : Dataset
+            A complete dataset.
         
         """
-        ids = dsID.getInfoDict()             
-        datasetType = ids['datasetType']
-        
-        if 'genericTypeName' in ids:
-            assert ids['genericTypeName'] in config.__Registered_Generics__
-            
-        hdfKey   = self._genKey(dsID)
+        assert dsID.datasetType in config.__Registered_DatasetTypes__
+        hdfKey = self._genKey(dsID)
 
         # Ensure that the key exists        
         try:
@@ -846,206 +674,57 @@ class HDFDatabase(Database):
         except HDF5KeyExists:
             pass
         
-        if datasetType == 'locResults':
-            dsID.data = read_hdf(self._dbName, key = hdfKey)
-        if datasetType == 'locMetadata':
-            dsID.data = self._getLocMetadata(hdfKey)
-        if datasetType == 'widefieldImage':
-            hdfKey = hdfKey + '/image_data'
-            dsID.data = self._getWidefieldImage(hdfKey)
-        if datasetType == 'generic':
-            dsID.data = dsID.get(self._dbName, hdfKey)
+        # Generate the dataset and retrieve the data
+        dataset       = self._genDataset(dsID)
+        dataset.data = dataset.get(self._dbName, hdfKey)
             
-        return dsID
+        return dataset
             
-    def _getLocMetadata(self, hdfKey):
-        """Returns the metadata associated with a localization dataset.
+    def put(self, dataset, **kwargs):
+        """Writes data from a single dataset into the database.
         
         Parameters
         ----------
-        hdfKey : str
-            The key in the hdf file containing the dataset.
-        
-        Returns
-        -------
-        md     : dict
-            Metadata as key value pairs. All values are strings compatible
-            with Python's JSON's dump.
-        """
-        with h5py.File(self._dbName, mode = 'r') as hdf:
-            # Open the HDF file and get the dataset's attributes
-            attrKeys = hdf[hdfKey].attrs.keys()
-            attrID   = config.__HDF_Metadata_Prefix__
-            md = {}            
-            
-            # Currently h5py raises IOError when attributes are empty.
-            # See https://github.com/h5py/h5py/issues/279
-            # For this reason, I can't use a simple list comprehension
-            # with a filter over attrs.items() to get the metadata.
-            for currAttr in attrKeys:
-                try:
-                    # Filter out attributes irrelevant to the database.
-                    # Also remove the database's attribute flag.
-                    if currAttr[:len(attrID)] == attrID:
-                        md[currAttr[len(attrID):]] = \
-                                        json.loads(hdf[hdfKey].attrs[currAttr])
-                except IOError:
-                    # Ignore attirbutes that are empty.
-                    # See above comment.
-                    pass
-                
-        return md
-        
-    def _getWidefieldImage(self, hdfKey):
-        """Returns the widefield image at the specified key.
-        
-        Parameters
-        ----------
-        hdfKey : str
-            The key in the hdf file containing the image.
-        
-        Returns
-        -------
-        img    : array of int
-            The 2D image.
+        dataset : Dataset
         
         """
-        try:
-            file = h5py.File(self._dbName, mode = 'r')
-            img  = file[hdfKey].value
-            return img
-        finally:
-            file.close()
+        assert dataset.datasetType in config.__Registered_DatasetTypes__,\
+            'Type {0} is unregistered.'.format(dataset.datasetType)
+        if dataset.attributeOf:
+            assert dataset.attributeOf in config.__Registered_DatasetTypes__,\
+                'Type {0} is unregistered.'.format(dataset.attributeOf)
+        
+        # Key generation automatically handles datasets that are attributes
+        key = self._checkKeyExistence(dataset)
             
-    def put(self, atom):
-        """Writes a single database atom into the database.
-        
-        Parameters
-        ----------
-        atom   : DatabaseAtom or Dataset
-        
-        """
-        self._checkKeyExistence(atom)
-        key = self._genKey(atom)
-        
-        # The put routine varies with atom's dataset type.
-        if atom.datasetType == 'locResults':
-            try:
-                hdf = HDFStore(self._dbName)
-                hdf.put(key, atom.data, format = 'table',
-                        data_columns = True, index = False)
-            except:
-                print("Unexpected error in put():", sys.exc_info()[0])
-            finally:
-                hdf.close()
-                
-            # Write the attributes to the dataset;
-            self._writeDatasetIDs(atom)
-
-        elif atom.datasetType == 'locMetadata':
-            self._putLocMetadata(atom)
-        elif atom.datasetType == 'widefieldImage':
-            self._putWidefieldImage(atom)
-            self._writeDatasetIDs(atom)
-        elif atom.datasetType == 'generic':
-            assert atom.genericTypeName in config.__Registered_Generics__, \
-                   'Type {0} is unregistered.'.format(atom.genericTypeName)
+        dataset.put(self._dbName, key, **kwargs)
             
-            atom.put(self._dbName, key)
-            self._writeDatasetIDs(atom)
-    
-    def _putLocMetadata(self, atom):
-        """Writes localization metadata into the database.
-        
-        Parameters
-        ----------
-        atom   : DatabaseAtom
+        # Don't write IDs for attributes
+        if not dataset.attributeOf:            
+            self._writeDatasetIDs(dataset)
             
-        """
-        attrFlag = config.__HDF_AtomID_Prefix__
-        mdFlag   = config.__HDF_Metadata_Prefix__
-        
-        assert atom.datasetType == 'locMetadata', \
-            'Error: atom\'s datasetType is not \'locMetadata\''
-        dataset = self._genKey(atom)
-        
-        try:
-            hdf = h5py.File(self._dbName, mode = 'a')
-                
-            # Loop through metadata and write each attribute to the key
-            for currKey in atom.data.keys():
-                attrKey = '{0:s}{1:s}'.format(mdFlag, currKey)
-                attrVal = json.dumps(atom.data[currKey])
-                hdf[dataset].attrs[attrKey] = attrVal
-                
-            # Used for identification during database queries
-            attrKey = ('{0:s}{1:s}datasetType').format(mdFlag, attrFlag)
-            attrVal = json.dumps('locMetadata')
-            hdf[dataset].attrs[attrKey] = attrVal
-            
-        except KeyError:
-            # Raised when the hdf5 key does not exist in the database.
-            ids = json.dumps(atom.getInfoDict())
-            raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
-                                        'No localization results exist with '
-                                        'these atomic IDs: ' + ids))
-        finally:
-            hdf.close()
-    
-    @putWidefieldImageWithMicroscopyTiffTags        
-    def _putWidefieldImage(self, atom):
-        """Writes a widefield image into the database.
-        
-        Parameters
-        ----------
-        atom   : Dataset
-            Dataset containing the widefield image to insert into the database.
-        
-        """
-        assert atom.datasetType == 'widefieldImage', \
-            'Error: atom\'s datasetType is not \'widefieldImage\''
-        dataset = self._genKey(atom) + '/image_data'
-        
-        try:
-            hdf = h5py.File(self._dbName, mode = 'a')
-            
-            hdf.create_dataset(dataset,
-                               atom.data.shape,
-                               data = atom.data)
-                               
-            if self.widefieldPixelSize is not None:
-                # Write element_size_um attribute for HDF5 Plugin for ImageJ
-                # Note that this takes pixel sizes in the format zyx
-                elementSize = (1,
-                               self.widefieldPixelSize[1],
-                               self.widefieldPixelSize[0])
-                hdf[dataset].attrs['element_size_um'] = elementSize
-                
-        finally:
-            hdf.close()
-            
-    def query(self, datasetType = 'locResults', genericTypeName = None):
-        """Returns a set of database atoms inside this database.
+    def query(self, datasetType = 'Localizations'):
+        """Returns a list of datasets inside this database.
 
         Parameters
         ----------
         datasetType     : str
-            The type of data to search for.
-        genericTypeName : str
-            The generic dataset type to search for. This only matters when
-            datasetType is 'generic'.
+            The type of data to search for..
         
         Returns
         -------
-        atomicIDs   : list of Dataset
-            All of the atomic ids matching the datasetType
+        dsIDs   : list of Dataset
+            All of the dataset ids matching the datasetType
         
         """
-        _checkType(datasetType)       
+        self._checkForRegisteredTypes([datasetType])       
         searchString = datasetType
         ap           = config.__HDF_AtomID_Prefix__
         mp           = config.__HDF_Metadata_Prefix__
-        
+        mod    = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        tempDS = getattr(mod, datasetType)()
+
         # Open the hdf file
         with h5py.File(self._dbName, 'r') as f:
             # Extract all localization datasets from the HDF5 file by matching
@@ -1057,25 +736,14 @@ class HDFDatabase(Database):
                 """Finds datasets matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
                 if (ap + 'datasetType' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'datasetType'] == searchString) \
-                    and searchString != 'generic':
+                    and (f[name].attrs[ap + 'datasetType'] == searchString):
                         resultGroups.append(name)
-                               
-                # If 'generic' is the datasetType, check that the specific
-                # genericTypeName matches
-                if (searchString == 'generic') \
-                    and (ap + 'genericTypeName' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'genericTypeName'] \
-                         == genericTypeName):
-                        resultGroups.append(name)
-                               
-                # locMetadata is not explicitly saved as a dataset,
-                # so handle this case here. locMetadata has its own special
-                # attribute that identifies itself, seen as
-                # mp + ap + 'datasetType' below
-                if (searchString == 'locMetadata') \
-                    and (ap + 'datasetType' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'datasetType'] == 'locResults') \
+                        
+                # Read datasets that are attributes here.
+                if (ap + 'datasetType' in f[name].attrs) \
+                    and (tempDS.attributeOf is not None) \
+                    and (f[name].attrs[ap + 'datasetType'] \
+                        == tempDS.attributeOf) \
                     and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)
                 
@@ -1086,18 +754,17 @@ class HDFDatabase(Database):
         # Note: If you use Path and Not PurePosixPath, '/' will
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
-        atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
-        
-        # Convert datasetType for locMetadata special case
-        if searchString == 'locMetadata':
+        atomicIDs  = [self._genDatasetID(str(key)) for key in resultKeys]
+                                           
+        # Convert datasetType for the attributes special case
+        if tempDS.attributeOf:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                ids = atom.getInfoDict()
-                ids['datasetType'] = 'locMetadata'
-                atomicIDs[index] = Dataset(ids['prefix'], ids['acqID'],
-                                           'locMetadata', None,
-                                           ids['channelID'], ids['dateID'],
-                                           ids['posID'], ids['sliceID'])
+                atomicIDs[index]   = self.dsID(atom.prefix, atom.acqID,
+                                               tempDS.datasetType,
+                                               tempDS.attributeOf,
+                                               atom.channelID, atom.dateID,
+                                               atom.posID, atom.sliceID)
         
         return atomicIDs
         
@@ -1131,39 +798,88 @@ class HDFDatabase(Database):
             return df
         else:
             return None
+            
+    def _unpackDatasetIDs(self, ds):
+        """Unpack the dataset IDs into a format usable by this database.
+        
+        Parameters
+        ----------
+        ds  : Dataset
+        
+        Returns
+        -------
+        ids : datasetID
+            The ids for the dataset; a namedtuple of the HDFDatabase class.
+        
+        """
+        idDict = ds.datasetIDs.copy()
+        
+        # Preconditioning of the IDs
+        # Require prefix and acqID to be specified
+        if ('prefix' not in idDict) | ('acqID' not in idDict):
+            raise DatasetIDError('DatasetID missing a \'key\' '
+                                 'or \'acqID\' key')
+        
+        assert idDict['prefix'] and idDict['acqID'],('Error: \'prefix\' and '
+                                                     '\'acqID\' cannot be '
+                                                     'None.')
+                                 
+        # dateID should follow the format YYYY-MM-DD
+        # Note that Python's 'and' short circuits, so the order here
+        # is important. pattern.match(None) will raise a TypeError
+        pattern = re.compile('\d{4}-\d{2}-\d{2}')
+        if ('dateID' in idDict) and (idDict['dateID'] is not None) \
+                           and not pattern.match(idDict['dateID']):
+            raise ValueError(('Error: The date is not of the format '
+                              'YYYY-MM-DD.'))               
+        
+        # Fill in missing optional id fields
+        optional = [field for field in self.dsID._fields
+                          if '(optional)' in getattr(self.dsID, field).__doc__]
+        for field in optional:
+            if field not in idDict:            
+                idDict[field] = None
+        
+        # Create the datasetID        
+        ids = self.dsID(prefix      = idDict['prefix'],
+                        acqID       = idDict['acqID'],
+                        datasetType = ds.datasetType,
+                        attributeOf = ds.attributeOf,
+                        channelID   = idDict['channelID'],
+                        dateID      = idDict['dateID'],
+                        posID       = idDict['posID'],
+                        sliceID     = idDict['sliceID'])
+                        
+        return ids
     
-    def _writeDatasetIDs(self, atom):
+    def _writeDatasetIDs(self, ds):
         """Writes B-Store dataset IDs as attributes of the dataset.
         
         Parameters
         ----------
-        atom : Dataset
+        ds : Dataset
         
         """
-        key        = self._genKey(atom)
-        atomPrefix = self.atomPrefix
+        key        = self._genKey(ds)
+        attrPrefix = self.attrPrefix
+        ids        = self._unpackDatasetIDs(ds)
         with  h5py.File(self._dbName, mode = 'a') as hdf:
-            hdf[key].attrs[atomPrefix + 'acqID']       = atom.acqID
-            hdf[key].attrs[atomPrefix + 'channelID']   = \
-                'None' if atom.channelID is None else atom.channelID
-            hdf[key].attrs[atomPrefix + 'dateID']      = \
-                'None' if atom.dateID is None else atom.dateID
-            hdf[key].attrs[atomPrefix + 'posID']       = \
-                'None' if atom.posID is None else atom.posID
-            hdf[key].attrs[atomPrefix + 'prefix']      = atom.prefix
-            hdf[key].attrs[atomPrefix + 'sliceID']     = \
-                'None' if atom.sliceID is None else atom.sliceID
-            hdf[key].attrs[atomPrefix + 'datasetType'] = atom.datasetType
+            hdf[key].attrs[attrPrefix + 'acqID']       = ids.acqID
+            hdf[key].attrs[attrPrefix + 'channelID']   = \
+                'None' if ids.channelID is None else ids.channelID
+            hdf[key].attrs[attrPrefix + 'dateID']      = \
+                'None' if ids.dateID is None else ids.dateID
+            hdf[key].attrs[attrPrefix + 'posID']       = \
+                'None' if ids.posID is None else ids.posID
+            hdf[key].attrs[attrPrefix + 'prefix']      = ids.prefix
+            hdf[key].attrs[attrPrefix + 'sliceID']     = \
+                'None' if ids.sliceID is None else ids.sliceID
+            hdf[key].attrs[attrPrefix + 'datasetType'] = ds.datasetType
             
             # Current version of this software
-            hdf[key].attrs[atomPrefix +'Version'] = \
+            hdf[key].attrs[attrPrefix +'Version'] = \
                                                config.__bstore_Version__
-                                               
-            # Write the generic type name if this is a generic type
-            if atom.datasetType == 'generic':
-                hdf[key].attrs[atomPrefix + 'genericTypeName'] = \
-                                                           atom.genericTypeName
-            
+
 """Exceptions
 -------------------------------------------------------------------------------
 """
@@ -1176,8 +892,17 @@ class DatasetError(Exception):
     def __str__(self):
         return repr(self.value)
         
-class GenericTypeError(Exception):
-    """Error raised when a bad or unregistered genericTypeName is used.
+class DatasetIDError(Exception):
+    """Error raised when a bad or missing dataset IDs are supplied.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class DatasetTypeError(Exception):
+    """Error raised when a bad or unregistered DatasetType is used.
     
     """
     def __init__(self, value):
