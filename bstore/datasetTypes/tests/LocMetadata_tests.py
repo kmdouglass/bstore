@@ -13,7 +13,7 @@ nosetests should be run in the B-Store parent directory.
 __author__ = 'Kyle M. Douglass'
 __email__  = 'kyle.m.douglass@gmail.com'
 
-from nose.tools                    import *
+from nose.tools                    import assert_equal, ok_, raises
 
 # Register the type
 from bstore  import config
@@ -21,7 +21,7 @@ config.__Registered_DatasetTypes__.append('Localizations')
 config.__Registered_DatasetTypes__.append('LocMetadata')
 
 from bstore.datasetTypes.Localizations import Localizations
-from bstore.datasetTypes.LocMetadata   import LocMetadata
+from bstore.datasetTypes.LocMetadata   import LocMetadata, LocResultsDoNotExist
 from bstore                        import database as db
 from bstore                        import parsers
 from pathlib                       import Path
@@ -38,12 +38,11 @@ def test_Instantiation():
     
     """
     # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
     
-    LocMetadata(prefix, acqID, datasetType, data)
+    LocMetadata(datasetIDs = dsIDs)
 
 def test_Put_Data():
     """The datasetType can put its own data and datasetIDs.
@@ -51,16 +50,16 @@ def test_Put_Data():
     """
     mdPrefix = config.__HDF_Metadata_Prefix__
     try:
-        # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds          = Localizations(prefix, acqID, datasetType, data)
+         # Make up some dataset IDs and a dataset
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = Localizations(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         # Make up the attribute DatasetType
-        metadata = {'A' : 2, 'B' : 'hello'}
-        dsAttr   = LocMetadata(prefix, acqID, datasetType, metadata)
+        dsAttr      = LocMetadata(datasetIDs = dsIDs)
+        dsAttr.data = {'A' : 2, 'B' : 'hello'}
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -73,9 +72,7 @@ def test_Put_Data():
         
         key = 'test_prefix/test_prefix_1/Localizations'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
-                         'Localizations')
+            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'Localizations')
             assert_equal(hdf[key].attrs[mdPrefix + 'A'], '2')
             assert_equal(hdf[key].attrs[mdPrefix + 'B'], '"hello"')
         
@@ -87,8 +84,9 @@ def test_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-        
-@raises(db.LocResultsDoNotExist)
+
+     
+@raises(LocResultsDoNotExist)
 def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     """Metadata cannot be put if localization data doesn't exist.
     
@@ -102,35 +100,30 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
     inputFile   = testDataRoot / Path('database_test_files') / Path(f)
-    datasetType = 'locMetadata'
+    datasetType = 'LocMetadata'
     mmParser    = parsers.MMParser()
     mmParser.parseFilename(inputFile, datasetType)
-    
-    # Create the dataset
-    dsMeta = db.Dataset(mmParser.prefix, mmParser.acqID,
-                        mmParser.datasetType, mmParser.data,
-                        channelID = mmParser.channelID,
-                        posID     = mmParser.posID, 
-                        sliceID   = mmParser.sliceID, )
+    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile)
                           
     # Write the metadata into the database; should raise LocResultsDoNotExist
-    myEmptyDB.put(dsMeta)
-        
+    myEmptyDB.put(mmParser.dataset)
+
+      
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = Localizations(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = Localizations(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         # Make up the attribute DatasetType
-        metadata = {'A' : 2, 'B' : 'hello'}
-        dsAttr   = LocMetadata(prefix, acqID, datasetType, metadata)
+        dsAttr      = LocMetadata(datasetIDs = dsIDs)
+        dsAttr.data = {'A' : 2, 'B' : 'hello'}
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -141,23 +134,26 @@ def test_Get_Data():
         myDB.put(ds)
         myDB.put(dsAttr)
         
-        # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(LocMetadata(prefix, acqID, datasetType, None))
-        ids     = myNewDS.getInfoDict()
+        # Test the get() function now.
+        myNewDSID = myDB.dsID('test_prefix', 1, 'LocMetadata',
+                              'Localizations', None, None, None, None)
+        myNewDS   = myDB.get(myNewDSID)
+        ids       = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
-        assert_equal(ids['datasetType'],             'generic')
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
         assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['datasetTypeName'],     'LocMetadata')
+        assert_equal(myNewDS.datasetType,        'LocMetadata')
         assert_equal(myNewDS.data['A'],                      2)
         assert_equal(myNewDS.data['B'],                'hello')
     finally:
         # Remove the test database
-        remove(str(pathToDB / Path('test_db.h5')))
-             
+        #remove(str(pathToDB / Path('test_db.h5')))
+        pass
+
+'''             
 def test_HDF_Database_Build():
     """The database build is performed successfully.
     
@@ -250,3 +246,4 @@ def test_HDF_Database_Query():
     
     # Remove test database file
     remove(str(dbName))
+'''

@@ -376,19 +376,19 @@ class HDFDatabase(Database):
         for currType in files.keys():
             # files[currType] returns a list of string
             for currFile in files[currType]:
-                #try:
-                parser.parseFilename(currFile, datasetType = currType)
-                parser.dataset.data = parser.dataset.readFromFile(currFile)
+                try:
+                    parser.parseFilename(currFile, datasetType = currType)
+                    parser.dataset.data = parser.dataset.readFromFile(currFile)
+                    
+                    if not dryRun:
+                        self.put(parser.dataset)
+                    
+                    datasets.append(self._unpackDatasetIDs(parser.dataset))
                 
-                if not dryRun:
-                    self.put(parser.dataset)
-                
-                datasets.append(self._unpackDatasetIDs(parser.dataset))
-                
-                #except Exception as err:
-                #    print(("Unexpected error in build():"),
-                #    sys.exc_info()[0])
-                #    print(err)
+                except Exception as err:
+                    print(("Unexpected error in build():"),
+                    sys.exc_info()[0])
+                    print(err)
 
         # Report on all the datasets that were parsed
         buildResults = self._sortDatasets(datasets)
@@ -715,38 +715,28 @@ class HDFDatabase(Database):
         if not dataset.attributeOf:            
             self._writeDatasetIDs(dataset)
             
-    def query(self, datasetType = 'locResults', datasetTypeName = None):
-        """Returns a set of database atoms inside this database.
+    def query(self, datasetType = 'Localizations'):
+        """Returns a list of datasets inside this database.
 
         Parameters
         ----------
         datasetType     : str
-            The type of data to search for.
-        datasetTypeName : str
-            The dataset type to search for. This only matters when
-            datasetType is 'generic'.
+            The type of data to search for..
         
         Returns
         -------
-        atomicIDs   : list of Dataset
-            All of the atomic ids matching the datasetType
+        dsIDs   : list of Dataset
+            All of the dataset ids matching the datasetType
         
         """
-        _checkType(datasetType)       
+        self._checkForRegisteredTypes([datasetType])       
         searchString = datasetType
         ap           = config.__HDF_AtomID_Prefix__
         mp           = config.__HDF_Metadata_Prefix__
-        
-        if datasetTypeName is not None:
-            # Used to determine whether the datasetTypeName is an attribute
-            assert datasetTypeName in config.__Registered_DatasetTypes__, (''
-            'Error: {:s} not in __Registered_DatasetTypes__.'.format(
-                                                              datasetTypeName))
-            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                              datasetTypeName))
-            inputType = getattr(mod, datasetTypeName)
-            tempDS = inputType('temp', 1, 'generic', None)                
-        
+        mod    = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+        tempDS = getattr(mod, datasetType)()
+
         # Open the hdf file
         with h5py.File(self._dbName, 'r') as f:
             # Extract all localization datasets from the HDF5 file by matching
@@ -758,23 +748,13 @@ class HDFDatabase(Database):
                 """Finds datasets matching the name pattern."""
                 # Finds only datasets with the SMLM_datasetType attribute.
                 if (ap + 'datasetType' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'datasetType'] == searchString) \
-                    and searchString != 'generic':
-                        resultGroups.append(name)
-                               
-                # If 'generic' is the datasetType, check that the specific
-                # datasetTypeName matches
-                if (searchString == 'generic') \
-                    and (ap + 'datasetTypeName' in f[name].attrs) \
-                    and (f[name].attrs[ap + 'datasetTypeName'] \
-                         == datasetTypeName):
+                    and (f[name].attrs[ap + 'datasetType'] == searchString):
                         resultGroups.append(name)
                         
-                # Read generics that are attributes here.
-                if (searchString == 'generic') \
-                    and (ap + 'datasetTypeName' in f[name].attrs) \
+                # Read datasets that are attributes here.
+                if (ap + 'datasetType' in f[name].attrs) \
                     and (tempDS.attributeOf is not None) \
-                    and (f[name].attrs[ap + 'datasetTypeName'] \
+                    and (f[name].attrs[ap + 'datasetType'] \
                         == tempDS.attributeOf) \
                     and (mp + ap + 'datasetType') in f[name].attrs:
                         resultGroups.append(name)

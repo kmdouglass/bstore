@@ -93,7 +93,6 @@ class LocMetadata(bstore.database.Dataset):
         """
         attrFlag = config.__HDF_AtomID_Prefix__
         mdFlag   = config.__HDF_Metadata_Prefix__
-        print(key)
         try:
             hdf = h5py.File(database, mode = 'a')
                 
@@ -105,12 +104,12 @@ class LocMetadata(bstore.database.Dataset):
                 
             # Used for identification during database queries
             attrKey = ('{0:s}{1:s}datasetType').format(mdFlag, attrFlag)
-            attrVal = json.dumps('locMetadata')
+            attrVal = json.dumps(self.datasetType)
             hdf[key].attrs[attrKey] = attrVal
             
         except KeyError:
             # Raised when the hdf5 key does not exist in the database.
-            ids = json.dumps(self.getInfoDict())
+            ids = json.dumps(self.datasetIDs)
             raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
                                         'No localization results exist with '
                                         'these atomic IDs: ' + ids))

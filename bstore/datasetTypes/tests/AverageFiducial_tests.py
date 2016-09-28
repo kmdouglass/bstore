@@ -74,19 +74,18 @@ def test_averageFiducial_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-
-'''        
+        
 def test_averageFiducial_Get_Data():
     """The DatasetType can get its own data and datasetIDs.
     
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = AverageFiducial(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = AverageFiducial(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -97,16 +96,17 @@ def test_averageFiducial_Get_Data():
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(AverageFiducial(prefix, acqID, datasetType, None))
-        ids     = myNewDS.getInfoDict()
+        myNewDSID = myDB.dsID('test_prefix', 1, 'AverageFiducial', None,
+                              None, None, None, None)
+        myNewDS = myDB.get(myNewDSID)
+        ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
-        assert_equal(ids['datasetType'],             'generic')
+        assert_equal(myNewDS.datasetType,    'AverageFiducial')
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['datasetTypeName'], 'AverageFiducial')   
+        assert_equal(ids['sliceID'],                      None)   
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -130,33 +130,38 @@ def test_HDF_Database_Build_with_AverageFiducial():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        ok_(key1 + 'locResults_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
-        ok_(key1 + 'AverageFiducial_A647_Pos0' in hdf)
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
+        name = 'AverageFiducial_A647_Pos0'
+        ok_(key1 + name in hdf)
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_datasetType'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_channelID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_dateID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_posID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_sliceID'))
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
-        ok_(key2 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key2 + name in hdf)
+        ok_(hdf[key2 + name].attrs.__contains__('SMLM_acqID'))
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
-        ok_(key3 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key3 + name in hdf)
+        ok_(hdf[key3 + name].attrs.__contains__('SMLM_acqID'))
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
-        ok_(key4 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key4 + name in hdf)
+        ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
     
     # Remove test database file
     remove(str(dbName))
-    
+
+'''    
 def test_HDF_Database_Query_with_AverageFiducial():
     """The database query is performed successfully with AverageFiducial.
     
