@@ -338,7 +338,8 @@ class HDFDatabase(Database):
     dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
     dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
     
-    def build(self, parser, searchDirectory, filenameStrings, dryRun = False):
+    def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
+              **kwargs):
         """Builds a database by traversing a directory for experimental files.
         
         Parameters
@@ -353,6 +354,8 @@ class HDFDatabase(Database):
             files corresponding to that DataType.
         dryRun               : bool
             Test the database build without actually creating the database.
+        **kwargs
+            Keyword arguments to pass to the parser's readFromFile() method.
             
         Returns
         -------
@@ -377,7 +380,8 @@ class HDFDatabase(Database):
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(currFile, datasetType = currType)
-                    parser.dataset.data = parser.dataset.readFromFile(currFile)
+                    parser.dataset.data = parser.dataset.readFromFile(currFile,
+                                                                      **kwargs)
                     
                     if not dryRun:
                         self.put(parser.dataset)

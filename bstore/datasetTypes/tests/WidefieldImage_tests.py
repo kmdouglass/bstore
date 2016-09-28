@@ -86,8 +86,7 @@ def test_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-
-'''    
+   
 def test_Put_Data_kwarg_WidefieldPixelSize():
     """The WidefieldImage will write the correct pixel size if provided.
     
@@ -97,14 +96,12 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
     imgPath = testDataRoot / Path('test_experiment_2/HeLaS_Control_IFFISH') \
               / Path('HeLaS_Control_IFFISH_A647_WF1') \
               / Path('HeLaS_Control_IFFISH_A647_WF1_MMStack_Pos0.ome.tif')
-    img = imread(str(imgPath))
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = img
-        ds          = WidefieldImage(prefix, acqID, datasetType, data)
+        parser = parsers.MMParser()
+        parser.parseFilename(str(imgPath), 'WidefieldImage')
+        ds = parser.dataset
+        ds.data = ds.readFromFile(str(imgPath), readTiffTags = False)
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -118,7 +115,8 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
         # These values will be equal to 0.108, 0.108 if no widefieldPixelSize
         # is supplied because the default behavior is to read the MM or OME-XML
         # metadata.        
-        key = 'test_prefix/test_prefix_1/WidefieldImage'
+        key = ('HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
+               'WidefieldImage_A647_Pos0')
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][0],
                          1)
@@ -129,7 +127,7 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-               
+              
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
@@ -141,11 +139,11 @@ def test_Get_Data():
     img = imread(str(imgPath))
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = img
-        ds          = WidefieldImage(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = WidefieldImage(datasetIDs = dsIDs)
+        ds.data = img
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -155,7 +153,17 @@ def test_Get_Data():
         myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
         myDB.put(ds, widefieldPixelSize = (0.13, 0.13))
         
-        imgDS = myDB.get(ds)
+        myNewDSID = myDB.dsID('test_prefix', 1, 'WidefieldImage', None,
+                              None, None, None, None)
+        imgDS = myDB.get(myNewDSID)
+        ids     = imgDS.datasetIDs
+        assert_equal(ids['prefix'],              'test_prefix')
+        assert_equal(ids['acqID'],                           1)
+        assert_equal(imgDS.datasetType,       'WidefieldImage')
+        assert_equal(ids['channelID'],                    None)
+        assert_equal(ids['dateID'],                       None)
+        assert_equal(ids['posID'],                        None)
+        assert_equal(ids['sliceID'],                      None)   
         assert_equal(imgDS.data.shape, img.shape)
     finally:
         # Remove the test database
@@ -174,7 +182,7 @@ def test_HDF_Database_Build():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatabase(dbName)
-    myParser = parsers.MMParser(readTiffTags = True)    
+    myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment')
@@ -183,7 +191,7 @@ def test_HDF_Database_Build():
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'WidefieldImage' : '.ome.tif',
                                    'Localizations'  : 'locResults.dat'},
-               dryRun = False)
+               dryRun = False, readTiffTags = True)
                
     # Test for existence of the data.
     # Pixel sizes should have been obtained from Micro-Manager meta data.
@@ -217,7 +225,7 @@ def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatabase(dbName)
-    myParser = parsers.MMParser(readTiffTags = True)    
+    myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot \
@@ -227,7 +235,7 @@ def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'WidefieldImage' : '.ome.tif',
                                    'Localizations'  : 'locResults.dat'},
-               dryRun = False)
+               dryRun = False, readTiffTags = True)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
@@ -256,12 +264,14 @@ def test_Put_WidefieldImage_TiffFile():
     inputFile = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') / Path(f)
     
-    # Set the parser to read TiffTags
-    mmParser = parsers.MMParser(readTiffTags = True)
-    mmParser.parseFilename(inputFile, 'generic', 'WidefieldImage')
+    # Read TiffTags
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, datasetType = 'WidefieldImage')
+    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
+                                                          readTiffTags = True)
     
     # Put the widefield image into the database
-    myDB.put(mmParser.getDatabaseAtom())
+    myDB.put(mmParser.dataset)
     
     # Check that the data was put correctly
     saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
@@ -276,7 +286,7 @@ def test_Put_WidefieldImage_TiffFile():
             'Error: Could not find Micro-Manager metadata.')
         ok_(saveKey + '/MM_Summary_Metadata' in dbFile,
             'Error: Could not find Micro-Manager summary metadata.')
-            
+
 def test_WidefieldImage_DatasetID_Attributes():
     """Dataset IDs are written as attributes of the widefieldImage dataset.
     
@@ -293,11 +303,13 @@ def test_WidefieldImage_DatasetID_Attributes():
               / Path('Cos7_A647_WF1/') / Path(f)
     
     # Set the parser to read TiffTags
-    mmParser = parsers.MMParser(readTiffTags = True)
-    mmParser.parseFilename(inputFile, 'generic', 'WidefieldImage')
+    mmParser = parsers.MMParser()
+    mmParser.parseFilename(inputFile, 'WidefieldImage')
+    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
+                                                          readTiffTags = True)
     
     # Put the widefield image into the database
-    myDB.put(mmParser.getDatabaseAtom())
+    myDB.put(mmParser.dataset)
     
     # Check that the dataset IDs were put correctly
     saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
@@ -313,8 +325,8 @@ def test_WidefieldImage_DatasetID_Attributes():
         
         assert_equal(dbFile[saveKey].attrs['SMLM_prefix'], 'Cos7')
         assert_equal(dbFile[saveKey].attrs['SMLM_acqID'], 1)
-        assert_equal(dbFile[saveKey].attrs['SMLM_datasetType'],'generic')
-        assert_equal(dbFile[saveKey].attrs['SMLM_datasetTypeName'],'WidefieldImage')
+        assert_equal(dbFile[saveKey].attrs['SMLM_datasetType'],
+                                                              'WidefieldImage')
         assert_equal(dbFile[saveKey].attrs['SMLM_channelID'], 'A647')
         assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
         assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
@@ -335,21 +347,17 @@ def test_WidefieldImage_Database_Query():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings  = {'WidefieldImage'  : '.ome.tif'},
                dryRun = False)
     
-    results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'WidefieldImage')
+    results = myDB.query(datasetType = 'WidefieldImage')
     
     ok_(len(results) != 0, 'Error: No dataset types found in DB.')
 
     # There are 8 widefield images    
     assert_equal(len(results), 8)
     for ds in results:
-        assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'WidefieldImage')
+        assert_equal(ds.datasetType, 'WidefieldImage')
     
     # Remove test database file
     remove(str(dbName))
-'''
