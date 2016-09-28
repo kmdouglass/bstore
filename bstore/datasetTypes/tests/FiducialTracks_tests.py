@@ -116,8 +116,7 @@ def test_fiducialTracks_Get_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-
-'''     
+    
 def test_HDF_Database_Build_with_fiducialTracks():
     """The database build is performed successfully.
     
@@ -133,39 +132,42 @@ def test_HDF_Database_Build_with_fiducialTracks():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
-                                   'AverageFiducial' : '_AvgFid.dat'},
+                                    'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        ok_(key1 + 'locResults_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
-        ok_(key1 + 'AverageFiducial_A647_Pos0' in hdf)
-        ok_(key1 + 'FiducialTracks_A647_Pos0' in hdf)
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
+        name1 = 'FiducialTracks_A647_Pos0'
+        name2 = 'AverageFiducial_A647_Pos0'
+        ok_(key1 + name1 in hdf)
+        ok_(key1 + name2 in hdf)
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_prefix'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_datasetType'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_channelID'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_dateID'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_posID'))
+        ok_(hdf[key1 + name1].attrs.__contains__('SMLM_sliceID'))
+        
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
-        ok_(key2 + 'FiducialTracks_A647_Pos0' in hdf)
-        ok_(key2 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key2 + name1 in hdf)
+        ok_(key2 + name2 in hdf)
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
-        ok_(key3 + 'FiducialTracks_A647_Pos0' in hdf)
-        ok_(key3 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key3 + name1 in hdf)
+        ok_(key3 + name2 in hdf)
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
-        ok_(key4 + 'FiducialTracks_A647_Pos0' in hdf)
-        ok_(key4 + 'AverageFiducial_A647_Pos0' in hdf)
+        ok_(key4 + name1 in hdf)
+        ok_(key4 + name2 in hdf)
     
     # Remove test database file
     remove(str(dbName))
-  
-def test_HDF_Database_Query_with_fiducialTracks():
+
+def test_HDF_Database_Query_with_FiducialTracks():
     """The database query is performed successfully with the datasetType.
     
     """
@@ -180,19 +182,15 @@ def test_HDF_Database_Query_with_fiducialTracks():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                    'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
-    results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'FiducialTracks')
+    results = myDB.query(datasetType = 'FiducialTracks')
     
     ok_(len(results) != 0, 'Error: No FiducialTracks types found in DB.')
     for ds in results:
-        assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'FiducialTracks')
+        assert_equal(ds.datasetType, 'FiducialTracks')
     
     # Remove test database file
     remove(str(dbName))
-'''

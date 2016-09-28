@@ -25,7 +25,6 @@ from bstore                        import parsers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
-from numpy                         import array
 
 import pandas as pd
 import h5py
@@ -162,8 +161,8 @@ def test_HDF_Database_Build():
     # Remove test database file
     remove(str(dbName))
     
-''' 
-def test_HDF_Database_Query_with_fiducialTracks():
+
+def test_HDF_Database_Query_with_FiducialTracks():
     """The database query is performed successfully with the datasetType.
     
     """
@@ -178,18 +177,14 @@ def test_HDF_Database_Query_with_fiducialTracks():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings  = {'Localizations'  : '_DC.dat'},
                dryRun = False)
     
-    results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'Localizations')
+    results = myDB.query(datasetType = 'Localizations')
     
     ok_(len(results) != 0, 'Error: No dataset types found in DB.')
     for ds in results:
-        assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'Localizations')
+        assert_equal(ds.datasetType, 'Localizations')
     
     # Remove test database file
     remove(str(dbName))
-'''

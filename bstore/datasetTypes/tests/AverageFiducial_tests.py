@@ -160,8 +160,7 @@ def test_HDF_Database_Build_with_AverageFiducial():
     
     # Remove test database file
     remove(str(dbName))
-
-'''    
+  
 def test_HDF_Database_Query_with_AverageFiducial():
     """The database query is performed successfully with AverageFiducial.
     
@@ -177,18 +176,14 @@ def test_HDF_Database_Query_with_AverageFiducial():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
-    results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'AverageFiducial')
+    results = myDB.query(datasetType = 'AverageFiducial')
     
     ok_(len(results) != 0, 'Error: No AverageFiducial types found in DB.')
     for ds in results:
-        assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'AverageFiducial')
+        assert_equal(ds.datasetType, 'AverageFiducial')
     
     # Remove test database file
     remove(str(dbName))
-'''

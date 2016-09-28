@@ -13,7 +13,7 @@ nosetests should be run in the B-Store parent directory.
 __author__ = 'Kyle M. Douglass'
 __email__  = 'kyle.m.douglass@gmail.com'
 
-from nose.tools                    import *
+from nose.tools                    import assert_equal, ok_
 
 # Register the type
 from bstore  import config
@@ -36,12 +36,11 @@ def test_Instantiation():
     
     """
     # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
     
-    WidefieldImage(prefix, acqID, datasetType, data)
+    WidefieldImage(datasetIDs = dsIDs)
 
 def test_Put_Data():
     """The datasetType can put its own data and datasetIDs.
@@ -58,9 +57,10 @@ def test_Put_Data():
         
     try:
         # Make up some dataset IDs and a dataset
-        parser = parsers.MMParser(readTiffTags = True)
-        parser.parseFilename(str(imgPath), 'generic', 'WidefieldImage')
-        ds = parser.getDatabaseAtom()
+        parser = parsers.MMParser()
+        parser.parseFilename(str(imgPath), 'WidefieldImage')
+        ds = parser.dataset
+        ds.data = ds.readFromFile(str(imgPath), readTiffTags = True)
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -72,9 +72,7 @@ def test_Put_Data():
         
         key = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
-                         'WidefieldImage')
+            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'WidefieldImage')
             imgData = hdf[key + '/image_data'].value
             
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][0],
@@ -83,12 +81,13 @@ def test_Put_Data():
                          0)
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][2],
                          0)
-
+    
         assert_equal(imgData.shape, (512, 512))
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-    
+
+'''    
 def test_Put_Data_kwarg_WidefieldPixelSize():
     """The WidefieldImage will write the correct pixel size if provided.
     
@@ -353,3 +352,4 @@ def test_WidefieldImage_Database_Query():
     
     # Remove test database file
     remove(str(dbName))
+'''

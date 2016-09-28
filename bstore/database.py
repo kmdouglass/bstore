@@ -4,7 +4,6 @@
 
 from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
-from pandas import HDFStore, read_hdf
 import h5py
 import json
 import bstore.config as config
