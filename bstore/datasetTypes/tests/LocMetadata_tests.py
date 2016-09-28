@@ -152,8 +152,7 @@ def test_Get_Data():
         # Remove the test database
         #remove(str(pathToDB / Path('test_db.h5')))
         pass
-
-'''             
+           
 def test_HDF_Database_Build():
     """The database build is performed successfully.
     
@@ -169,53 +168,52 @@ def test_HDF_Database_Build():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)
-    
+               
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
+        name = 'Localizations_A647_Pos0'
         ok_(key1 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                                 'SMLM_acqID'))
-        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
-        ok_(hdf[key1 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_datasetType'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_channelID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_dateID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_posID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_sliceID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_Metadata_Height'))
+        ok_(hdf[key1 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
-        ok_(key2 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key2+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                                 'SMLM_acqID'))
-        ok_(hdf[key2+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
-        ok_(hdf[key2 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+        ok_(key2 + name in hdf)
+        ok_(hdf[key2 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key2 + name].attrs.__contains__('SMLM_Metadata_Height'))
+        ok_(hdf[key2 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
-        ok_(key3 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key3 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+        ok_(key3 + name in hdf)
+        ok_(hdf[key3 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
-        ok_(hdf[key3+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                                 'SMLM_acqID'))
-        ok_(hdf[key3+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
+        ok_(hdf[key3 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key3 + name].attrs.__contains__('SMLM_Metadata_Height'))
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
         ok_(key4 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key4 + 'Localizations_A647_Pos0'].attrs.__contains__(('SMLM_'
+        ok_(hdf[key4 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
-        ok_(hdf[key4+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                                 'SMLM_acqID'))
-        ok_(hdf[key4+'Localizations_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
+        ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key4 + name].attrs.__contains__('SMLM_Metadata_Height'))
     
     # Remove test database file
     remove(str(dbName))
 
+'''
 def test_HDF_Database_Query():
     """The database query is performed successfully with the datasetType.
     

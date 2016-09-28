@@ -435,24 +435,18 @@ class HDFDatabase(Database):
                                                     '**/*{:s}'.format(fileID)))
                                                     
         def sortKey(x):
-            # Create instances of datasetType to sort attribute types
+            # Create instances of datasetType to place attribute types
             # after non-attributes
             dsTypeString = x[0]
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                                  dsTypeString))
-            ds  = getattr(mod, dsTypeString)
+            ds  = getattr(mod, dsTypeString)() # Note () for instantiation
             if ds.attributeOf:
                 return 1
             else:
                 return 0
-                
+              
         files = OrderedDict(sorted(files.items(), key=sortKey))
-        
-        # Build the dictionary of files with keys describing
-        # their dataset type                                                             
-        #for filename in FilesGen.keys():
-        #    files[filename] = sorted(FilesGen[filename])
-            
         return files
     
     def _checkForRegisteredTypes(self, typeList):
