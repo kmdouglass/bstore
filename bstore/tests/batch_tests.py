@@ -13,15 +13,18 @@ nosetests should be run in the directory just above the `tests` folder.
 __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com' 
 
-from nose.tools import *
+from nose.tools import assert_equal, ok_
 from pathlib    import Path
 from bstore.batch import CSVBatchProcessor, HDFBatchProcessor
 from bstore       import processors as proc
 from bstore       import database   as db
 from bstore       import config
+from bstore.datasetTypes.Localizations import Localizations
 import shutil
 import pandas as pd
 import json
+
+config.__Registered_DatasetTypes__.append('Localizations')
 
 testDataRoot   = Path(config.__Path_To_Test_Data__)
 pathToTestData = testDataRoot / Path('test_experiment_2')
@@ -95,12 +98,10 @@ def test_HDFBatchProcessor_DatasetParser():
     """HDFBatchProcessor correctly finds the datasets in the HDF file.
     
     """
-    knownDS = [db.Dataset('HeLaL_Control', 1, 'locResults', None,
-                          channelID = 'A647',
-                          posID     = (0,)),
-               db.Dataset('HeLaS_Control', 2, 'locResults', None,
-                          channelID = 'A647',
-                          posID     = (0,))]
+    knownDS = [bpHDF.dsID('HeLaL_Control', 1, 'Localizations', None,
+                          'A647', None, (0,), None),
+               bpHDF.dsID('HeLaS_Control', 2, 'Localizations', None,
+                          'A647', None, (0,), None)]
                     
     assert_equal(len(bpHDF.datasetList), 2)
     

@@ -174,7 +174,7 @@ class HDFBatchProcessor(BatchProcessor):
                  inputDatabase,
                  pipeline,
                  outputDirectory = 'processed_data',
-                 searchString    = 'locResults'):
+                 searchString    = 'Localizations'):
         """Parse the input database by finding SMLM data files.
         
         The constructor parses the HDF database and creates a list of Path
@@ -189,7 +189,7 @@ class HDFBatchProcessor(BatchProcessor):
         outputDirectory : str or Path
             Relative path to the folder for saving the processed results.
         searchString    : str
-            The suffix identifying SMLM datasets.
+            The dataset type to process in batch.
         
         """
         # TODO: Check for file's existence
