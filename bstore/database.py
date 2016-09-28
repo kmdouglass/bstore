@@ -499,11 +499,11 @@ class HDFDatabase(Database):
         
         return key
            
-    def _genAtomicID(self, key):
-        """Generates an atomic ID from a HDF key. The inverse of _genKey.
+    def _genDatasetID(self, key):
+        """Generates an dataset ID (dsID) from a HDF key. Inverse of _genKey.
         
-        Note that the data property is set to 'None.' Only the IDs are
-        retrieved.
+        Note that this will not return IDs for dataset types that are
+        attributes because their HDF key is ambiguous.
         
         Parameters
         ----------
@@ -512,9 +512,8 @@ class HDFDatabase(Database):
             
         Returns
         -------
-        returnDS : Dataset
-            The ID's of one database atom. No data is returned or read,
-            just the ID information.
+        returnDS : dsID
+            The ID's of one database atom. 
             
         """
         # Parse key for atomic IDs
@@ -540,8 +539,6 @@ class HDFDatabase(Database):
         
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
-        
-        data        = None
         
         channelID = [channel
                      for channel in config.__Channel_Identifier__.keys()
@@ -572,14 +569,8 @@ class HDFDatabase(Database):
             sliceID = int(index[0])
         
         # Build the return dataset
-        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                                  datasetType))
-        dType = getattr(mod, datasetType)
-            
-        returnDS = dType(prefix, acqID, datasetType, data,
-                         channelID = channelID, dateID = dateID,
-                         posID = posID, sliceID = sliceID)
-                               
+        returnDS = self.dsID(prefix, acqID, datasetType, None,
+                             channelID, dateID, posID, sliceID)
         return returnDS
         
     def _genDataset(self, dsID):
@@ -760,19 +751,17 @@ class HDFDatabase(Database):
         # Note: If you use Path and Not PurePosixPath, '/' will
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
-        atomicIDs  = [self._genAtomicID(str(key)) for key in resultKeys]
+        atomicIDs  = [self._genDatasetID(str(key)) for key in resultKeys]
                                            
-        # Convert datasetType for attributes special case
-        if searchString == 'generic' and tempDS.attributeOf:
+        # Convert datasetType for the attributes special case
+        if tempDS.attributeOf:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                ids = atom.getDatasetIDs()
-                ids['datasetType']     = 'generic'
-                ids['datasetTypeName'] = tempDS.datasetTypeName
-                atomicIDs[index] = inputType(ids['prefix'], ids['acqID'],
-                                             'generic', None,
-                                             ids['channelID'], ids['dateID'],
-                                             ids['posID'], ids['sliceID'])
+                atomicIDs[index]   = self.dsID(atom.prefix, atom.acqID,
+                                               tempDS.datasetType,
+                                               tempDS.attributeOf,
+                                               atom.channelID, atom.dateID,
+                                               atom.posID, atom.sliceID)
         
         return atomicIDs
         

@@ -213,7 +213,6 @@ def test_HDF_Database_Build():
     # Remove test database file
     remove(str(dbName))
 
-'''
 def test_HDF_Database_Query():
     """The database query is performed successfully with the datasetType.
     
@@ -229,19 +228,16 @@ def test_HDF_Database_Query():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)
     
-    results = myDB.query(datasetType = 'generic',
-                         datasetTypeName = 'LocMetadata')
+    results = myDB.query(datasetType = 'LocMetadata')
     
-    ok_(len(results) != 0, 'Error: No dataset types found in DB.')
+    ok_(len(results) == 4, 'Error: No dataset types found in DB.')
     for ds in results:
-        assert_equal(ds.datasetType, 'generic')
-        assert_equal(ds.datasetTypeName, 'LocMetadata')
+        assert_equal(ds.datasetType, 'LocMetadata')
+        assert_equal(ds.attributeOf, 'Localizations')
     
     # Remove test database file
     remove(str(dbName))
-'''
