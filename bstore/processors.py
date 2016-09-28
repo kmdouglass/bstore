@@ -18,6 +18,8 @@ from bstore             import config
 from bstore.parsers     import FormatMap
 import warnings
 
+__version__ = config.__bstore_Version__
+
 """Metaclasses
 -------------------------------------------------------------------------------
 """
@@ -1279,6 +1281,33 @@ class Merge:
     autoFindMergeRadius : bool (default: False)
         If True, this will set the merge radius to three times the mean
         localization precision in the dataset.
+    coordCols           : list of str
+        List of strings identifying the x- and y-coordinate column names
+        in that order.
+    tOff                : int
+        The maximum time that a localization can vanish. Units are frames.
+    mergeRadius         : float (default: 50)
+        The maximum distance between localizations in space for them to be
+        considered as one. Units are the same as x, y, and z. This is
+        ignored if autoFindMergeRadius is True.
+    statsComputer       : MergeStats
+        Instance of a concrete MergeStats class for computing the
+        merged localization statistics. statsComputer is None by default,
+        which means that only particle ID's will be appended to the
+        DataFrame and merged statistics will not be calculated. This
+        allows handling of custom DataFrame columns and statistics.
+    precisionColumn     : str (default: 'precision')
+        The name of the column containing the localization precision. This
+        is ignored if autoFindMergeRadius is False.
+        
+    Attributes
+    ----------
+    autoFindMergeRadius : bool (default: False)
+        If True, this will set the merge radius to three times the mean
+        localization precision in the dataset.
+    coordCols           : list of str
+        List of strings identifying the x- and y-coordinate column names
+        in that order.
     tOff                : int
         The maximum time that a localization can vanish. Units are frames.
     mergeRadius         : float (default: 50)
@@ -1301,13 +1330,15 @@ class Merge:
                  mergeRadius         = 50,
                  autoFindMergeRadius = False,
                  statsComputer       = None,
-                 precisionColumn     = 'precision'):
+                 precisionColumn     = 'precision',
+                 coordCols           = ['x', 'y']):
                      
-        self._autoFindMergeRadius = autoFindMergeRadius
-        self._tOff                = tOff
-        self._mergeRadius         = mergeRadius
-        self._statsComputer       = statsComputer
-        self._precisionColumn     = precisionColumn
+        self.autoFindMergeRadius = autoFindMergeRadius
+        self.tOff                = tOff
+        self.mergeRadius         = mergeRadius
+        self.statsComputer       = statsComputer
+        self.precisionColumn     = precisionColumn
+        self.coordCols           = coordCols
     
     def __call__(self, df):
         """Merge nearby localizations into one.
@@ -1327,18 +1358,19 @@ class Merge:
             A DataFrame object with the merged localizations.
         
         """
-        if self._autoFindMergeRadius:
-            mergeRadius = 3 * df[self._precisionColumn].mean()
+        if self.autoFindMergeRadius:
+            mergeRadius = 3 * df[self.precisionColumn].mean()
         else:
-            mergeRadius = self._mergeRadius
+            mergeRadius = self.mergeRadius
         
         # Track individual localization trajectories
-        dfTracked = tp.link_df(df, mergeRadius, memory = self._tOff)
+        dfTracked = tp.link_df(df, mergeRadius, memory = self.tOff,
+                               pos_columns = self.coordCols)
         
         # Compute the statistics for each group of localizations
-        if self._statsComputer:
+        if self.statsComputer:
             # Return a DataFrame containing merged statistics
-            procdf = self._statsComputer.computeStatistics(dfTracked)
+            procdf = self.statsComputer.computeStatistics(dfTracked)
         else:
             # Return the original DataFrame with a new particle id column
             procdf = dfTracked
@@ -1390,6 +1422,64 @@ class MergeFang(MergeStats):
                       tempResultsMisc,
                       tempResultsLength)
         procdf = pd.concat(dataToJoin, axis = 1)
+        
+        # Move the particle ID to a regular column        
+        procdf.reset_index(particleCol, inplace = True)
+        
+        return procdf
+        
+class MergeFangTS(MergeStats):
+    """Merger for localizations computed from Fang's sCMOS MLE software.
+    
+    This computer is for DataFrames in the ThunderSTORM column format.
+    
+    """
+    def computeStatistics(self, df, particleCol = 'particle'):
+        """Calculates the statistics of the linked trajectories.
+        
+        Parameters
+        ----------
+        df          : Pandas DataFrame
+            DataFrame containing linked localizations.
+        particleCol : str
+            The name of column containing the merged partice ID's.
+            
+        Returns
+        -------
+        procdf : Pandas DataFrame
+            DataFrame containing the fully merged localizations.
+            
+        """
+        particleGroups         = df.groupby(particleCol)
+
+        wAvg = lambda x, y: self._wAvg(x, y, photonsCol = 'intensity [photon]')        
+        
+        tempResultsX           = particleGroups.apply(wAvg, 'x [nm]')
+        tempResultsY           = particleGroups.apply(wAvg, 'y [nm]')
+        tempResultsZ           = particleGroups.apply(wAvg, 'z [nm]')
+        tempResultsMisc        = particleGroups.agg({'loglikelihood' : 'mean',
+                                                     'frame'         : 'min',
+                                                    'intensity [photon]':'sum',
+                                                     'offset [photon]' : 'sum',
+                                                     'sigma [nm]'    : 'mean'})
+        tempResultsLength      = pd.Series(particleGroups.size())
+    
+        # Rename the series
+        tempResultsX.name      = 'x [nm]'
+        tempResultsY.name      = 'y [nm]'
+        tempResultsZ.name      = 'z [nm]'
+        tempResultsLength.name = 'length'
+        
+        # Create the merged DataFrame
+        dataToJoin = (tempResultsX,
+                      tempResultsY,
+                      tempResultsZ,
+                      tempResultsMisc,
+                      tempResultsLength)
+        procdf = pd.concat(dataToJoin, axis = 1)
+        
+        # Move the particle ID to a regular column        
+        procdf.reset_index(particleCol, inplace = True)
         
         return procdf
         

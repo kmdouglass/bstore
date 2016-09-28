@@ -14,13 +14,20 @@ __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
 from nose.tools   import *
-from bstore       import database, parsers, config
+
+# Register the test generic
+from bstore  import config
+config.__Registered_Generics__.append('testType')
+
+from bstore       import database, parsers
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
 from os           import remove
+from os.path      import exists
 import h5py
-import sys
+import bstore.generic_types.testType
+from numpy        import array
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -390,50 +397,6 @@ def test_HDFDatabase_GetWithDate():
     ok_((data['x'] == retrievedDataset.data['x']).all())
     ok_((data['y'] == retrievedDataset.data['y']).all())
     
-def test_HDFDatabase_Get_Dict():
-    """HDFDatabase.get() works when a dict is supplied.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'dateID'      : '2016-05-05',
-                'posID'       : (1,2),
-                'prefix'      : 'Cos7',
-                'sliceID'     : None,
-                'datasetType' : 'locResults'
-                }
-    
-    # Get the data from the database and compare it to the input data
-    retrievedDataset = myDB.get(myDSID)
-    ok_((data['x'] == retrievedDataset.data['x']).all())
-    ok_((data['y'] == retrievedDataset.data['y']).all())
-
-@raises(KeyError)    
-def test_HDFDatabase_Get_Dict_KeyError():
-    """HDFDatabase.get() detects when KeyError raised.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    myDB     = database.HDFDatabase(dbName)
-     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'posID'       : (0,),
-                'prefix'      : 'Cos7',
-                #'sliceID'     : None,
-                'datasetType' : 'locResults'
-                }
-    
-    # Should raise a key error because sliceID is not defined in myDSID
-    retrievedDataset = myDB.get(myDSID)
-    
 def test_HDFDatabase_Put_LocMetadata():
     """HDFDatabase correctly places metadata into the database.
     
@@ -478,18 +441,10 @@ def test_HDF_Database_Get_LocMetadata():
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 2,
-                'channelID'   : 'A750',
-                'dateID'      : None,
-                'posID'       : (0,),
-                'prefix'      : 'HeLa_Control',
-                'sliceID'     : None,
-                'datasetType' : 'locMetadata'
-                }
-    
-    md = myDB.get(myDSID)
+    # Create a dataset of IDs for retrieving the data     
+    myDS = database.Dataset('HeLa_Control', 2, 'locMetadata', None,
+                            channelID = 'A750', posID = (0,))
+    md = myDB.get(myDS)
     
     # Check that the basic ID information is correct.
     assert_equal(md.acqID,                   2)
@@ -572,18 +527,10 @@ def test_HDF_Database_Get_WidefieldImage():
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     myDB     = database.HDFDatabase(dbName)
     
-    # Create a dict of IDs for retrieving the dataset     
-    myDSID   = {
-                'acqID'       : 1,
-                'channelID'   : 'A647',
-                'dateID'      : None,
-                'posID'       : (0,),
-                'prefix'      : 'Cos7',
-                'sliceID'     : None,
-                'datasetType' : 'widefieldImage'
-                }
-    
-    img = myDB.get(myDSID)
+    # Create a dataset of IDs for retrieving the data     
+    myDSID = database.Dataset('Cos7', 1, 'widefieldImage', None,
+                              channelID = 'A647', posID = (0,))
+    img    = myDB.get(myDSID)
     assert_equal(img.data.shape, (512, 512))
         
 def test_HDF_Database_Put_WidefieldImage_TiffFile():
@@ -978,6 +925,56 @@ def test_HDF_Database_Query_LocMetadata():
     assert_equal(locMetadata[1].posID,                (0,))
     assert_equal(locMetadata[1].sliceID,              None)
     
+def test_HDF_Database_Query_Generic_Types():
+    """HDFDatabase can query generic types.
+    
+    """
+    # Make up some dataset IDs and a dataset
+    ds  = bstore.generic_types.testType.testType('test_prefix', 1,
+                                                 'generic', array(42))
+    ds2 = bstore.generic_types.testType.testType('test_prefixx', 2,
+                                                'generic', array(43))
+                                                
+    # Extra dataset to try to confuse the query
+    ds3 = database.Dataset('cell_image', 3,
+                           'widefieldImage', array([[1,2],[3,4]]))
+    
+    pathToDB = testDataRoot
+    
+    # Remove database if it exists
+    if exists(str(pathToDB / Path('test_db.h5'))):
+        remove(str(pathToDB / Path('test_db.h5')))
+    
+    myDB = database.HDFDatabase(pathToDB / Path('test_db.h5'))
+    myDB.put(ds)
+    myDB.put(ds2)
+    myDB.put(ds3)
+    
+    # Create a new dataset containing only IDs to test getting of the data
+    gen = myDB.query(datasetType = 'generic', genericTypeName = 'testType')
+    
+    assert_equal(len(gen), 2)
+    assert_equal(gen[0].prefix,       'test_prefix')
+    assert_equal(gen[0].acqID,                    1)
+    assert_equal(gen[0].datasetType,      'generic')
+    assert_equal(gen[0].channelID,             None)
+    assert_equal(gen[0].dateID,                None)
+    assert_equal(gen[0].posID,                 None)
+    assert_equal(gen[0].sliceID,               None)
+    assert_equal(gen[0].genericTypeName, 'testType')
+    
+    assert_equal(gen[1].prefix,      'test_prefixx')
+    assert_equal(gen[1].acqID,                    2)
+    assert_equal(gen[1].datasetType,      'generic')
+    assert_equal(gen[1].channelID,             None)
+    assert_equal(gen[1].dateID,                None)
+    assert_equal(gen[1].posID,                 None)
+    assert_equal(gen[1].sliceID,               None)
+    assert_equal(gen[1].genericTypeName, 'testType')    
+    
+    # Remove the test database
+    remove(str(pathToDB / Path('test_db.h5')))
+    
 def test_HDF_Database_WidefieldPixelSize():
     """Database object contains the correct pixel size attribute.
     
@@ -990,3 +987,37 @@ def test_HDF_Database_WidefieldPixelSize():
     myDatabase = database.HDFDatabase(dbName,
                                       widefieldPixelSize = (0.108, 0.108))
     assert_equal(myDatabase.widefieldPixelSize, (0.108, 0.108))
+    
+def test_HDF_Database_Generic_GenAtomicID():
+    """Generate atomic ID works for generic datasets.
+    
+    """
+    hdfKey = 'prefix/prefix_1/testType_A647_Pos0'
+    
+    myDB= database.HDFDatabase('test')
+    myDS = myDB._genAtomicID(hdfKey)
+    
+    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    assert_equal(myDS.prefix,            'prefix')
+    assert_equal(myDS.acqID,                    1)
+    assert_equal(myDS.datasetType,      'generic')
+    assert_equal(myDS.channelID,           'A647')
+    assert_equal(myDS.dateID,                None)
+    assert_equal(myDS.posID,                 (0,))
+    assert_equal(myDS.sliceID,               None)
+    assert_equal(myDS.genericTypeName, 'testType')
+    
+    # Does it work a second time?
+    hdfKey = 'prefix2/prefix2_2/testType_A750_Pos0'
+    
+    myDS = myDB._genAtomicID(hdfKey)
+    
+    ok_(isinstance(myDS, bstore.generic_types.testType.testType))
+    assert_equal(myDS.prefix,           'prefix2')
+    assert_equal(myDS.acqID,                    2)
+    assert_equal(myDS.datasetType,      'generic')
+    assert_equal(myDS.channelID,           'A750')
+    assert_equal(myDS.dateID,                None)
+    assert_equal(myDS.posID,                 (0,))
+    assert_equal(myDS.sliceID,               None)
+    assert_equal(myDS.genericTypeName, 'testType')

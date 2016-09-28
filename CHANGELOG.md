@@ -1,7 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v0.2.1]
+### Added
+- Generic datasetTypes are now available. These allow users to easily
+  add new datasetTypes to the HDF database. Furthermore, they decouple
+  the put() and get() behaviors from the database so that each
+  datasetType knows how to handle its own data.
+- Added `__version__` field to all modules.
+- MergeFangTS stats computer for computing statistics on merged
+  localizations in Fang's ThunderSTORM column format.
+
+### Changed
+- The `particle` column is now saved when using the MergeFang stats
+  computer with the Merge processor and CSVBatchProcessor. Previously,
+  it was not being saved because the the stats computer was making it
+  an index of the output DataFrame; the CSVBatchProcessor does not
+  save DataFrame indexes.
+- Merge processor now accepts a coordinate column name parameter for
+  merging columns with custom names.
+- Merge processor attributes are now public.
 
 ## [v0.2.0]
 ### Added
@@ -14,8 +32,9 @@ All notable changes to this project will be documented in this file.
   other software environments.
 - Added an example Jupyter notebook on using the cluster/widefield
   overlays.
-- EstimatePhotons multiprocessor for estimating background-corrected
-  photon counts from fluorescent spots.
+- Created a new EstimatePhotons multiprocessor for estimating
+  background-corrected photon counts from fluorescent spots in
+  widefield images.
 
 ### Changed
 - Reformatted docstrings to better match the
@@ -89,7 +108,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.1...HEAD
+[v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0
