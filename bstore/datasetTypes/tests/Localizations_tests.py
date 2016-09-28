@@ -137,17 +137,27 @@ def test_HDF_Database_Build():
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        ok_(key1 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
+        name = 'Localizations_A647_Pos0'
+        ok_(key1 + name in hdf)
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_datasetType'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_channelID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_dateID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_posID'))
+        ok_(hdf[key1 + name].attrs.__contains__('SMLM_sliceID'))
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
-        ok_(key2 + 'Localizations_A647_Pos0' in hdf)
+        ok_(key2 + name in hdf)
+        ok_(hdf[key2 + name].attrs.__contains__('SMLM_acqID'))
         
         key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
-        ok_(key3 + 'Localizations_A647_Pos0' in hdf)
+        ok_(key3 + name in hdf)
+        ok_(hdf[key3 + name].attrs.__contains__('SMLM_acqID'))
         
         key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
-        ok_(key4 + 'Localizations_A647_Pos0' in hdf)
+        ok_(key4 + name in hdf)
+        ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
     
     # Remove test database file
     remove(str(dbName))

@@ -13,7 +13,7 @@ nosetests should be run in the B-Store parent directory.
 __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
-from nose.tools                    import *
+from nose.tools                    import assert_equal, ok_
 
 # Register the type
 from bstore  import config
@@ -36,12 +36,11 @@ def test_averageFiducial_Instantiation():
     
     """
     # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
     
-    AverageFiducial(prefix, acqID, datasetType, data)
+    AverageFiducial(datasetIDs = dsIDs)
 
 def test_averageFiducial_Put_Data():
     """averageFiducial can put its own data and datasetIDs.
@@ -49,11 +48,11 @@ def test_averageFiducial_Put_Data():
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = AverageFiducial(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = AverageFiducial(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -65,9 +64,7 @@ def test_averageFiducial_Put_Data():
         
         key = 'test_prefix/test_prefix_1/AverageFiducial'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
-                         'AverageFiducial')
+            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'AverageFiducial')
         
         df = pd.read_hdf(str(pathToDB / Path('test_db.h5')), key = key)
         assert_equal(df.loc[0, 'A'], 1)
@@ -77,7 +74,8 @@ def test_averageFiducial_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-        
+
+'''        
 def test_averageFiducial_Get_Data():
     """The DatasetType can get its own data and datasetIDs.
     
@@ -188,3 +186,4 @@ def test_HDF_Database_Query_with_AverageFiducial():
     
     # Remove test database file
     remove(str(dbName))
+'''

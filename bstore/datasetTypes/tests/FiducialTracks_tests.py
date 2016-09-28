@@ -13,7 +13,7 @@ nosetests should be run in the B-Store parent directory.
 __author__ = 'Kyle M. Douglass'
 __email__  = 'kyle.m.douglass@gmail.com'
 
-from nose.tools                    import *
+from nose.tools                    import assert_equal, ok_
 
 # Register the type
 from bstore  import config
@@ -38,24 +38,23 @@ def test_fiducialTracks_Instantiation():
     
     """
     # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
     
-    FiducialTracks(prefix, acqID, datasetType, data)
-
+    FiducialTracks(datasetIDs = dsIDs)
+    
 def test_fiducialTracks_Put_Data():
     """The datasetType can put its own data and datasetIDs.
     
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = FiducialTracks(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = FiducialTracks(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -67,9 +66,7 @@ def test_fiducialTracks_Put_Data():
         
         key = 'test_prefix/test_prefix_1/FiducialTracks'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
-                         'FiducialTracks')
+            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'FiducialTracks')
         
         df = pd.read_hdf(str(pathToDB / Path('test_db.h5')), key = key)
         assert_equal(df.loc[0, 'A'], 1)
@@ -79,18 +76,18 @@ def test_fiducialTracks_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-        
+      
 def test_fiducialTracks_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = FiducialTracks(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = FiducialTracks(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -101,16 +98,17 @@ def test_fiducialTracks_Get_Data():
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(FiducialTracks(prefix, acqID, datasetType, None))
-        ids     = myNewDS.getInfoDict()
+        myNewDSID = myDB.dsID('test_prefix', 1, 'FiducialTracks', None,
+                              None, None, None, None)
+        myNewDS = myDB.get(myNewDSID)
+        ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
-        assert_equal(ids['datasetType'],             'generic')
+        assert_equal(myNewDS.datasetType,     'FiducialTracks')
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['datasetTypeName'],  'FiducialTracks')   
+        assert_equal(ids['sliceID'],                      None)   
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -118,7 +116,8 @@ def test_fiducialTracks_Get_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-       
+
+'''     
 def test_HDF_Database_Build_with_fiducialTracks():
     """The database build is performed successfully.
     
@@ -165,7 +164,7 @@ def test_HDF_Database_Build_with_fiducialTracks():
     
     # Remove test database file
     remove(str(dbName))
-   
+  
 def test_HDF_Database_Query_with_fiducialTracks():
     """The database query is performed successfully with the datasetType.
     
@@ -196,3 +195,4 @@ def test_HDF_Database_Query_with_fiducialTracks():
     
     # Remove test database file
     remove(str(dbName))
+'''
