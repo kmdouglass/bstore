@@ -413,8 +413,9 @@ class SimpleParser(Parser):
         
             mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                                   datasetType))
-            dType = getattr(mod, datasetType)
-            self.dataset = dType(datasetIDs = idDict)
+            dType             = getattr(mod, datasetType)
+            self.dataset      = dType(datasetIDs = idDict)
+            self.dataset.data = self.dataset.readFromFile(filename)
         except:
             print('Error: File could not be parsed.', sys.exc_info()[0])
             raise
