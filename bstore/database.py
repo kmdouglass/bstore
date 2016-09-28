@@ -15,7 +15,7 @@ import pandas as pd
 from dateutil.parser import parse
 from tifffile import TiffFile
 import importlib
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 __version__ = config.__bstore_Version__
 
@@ -364,61 +364,31 @@ class HDFDatabase(Database):
         """ 
         searchDirectory = Path(searchDirectory)
             
-        # Check that all dataset types are registered
         self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
         # Obtain a list of all the files
         files = self._buildFileList(searchDirectory, filenameStrings)
         
         # Keep a running record of what datasets were parsed
-        datasets = []        
-        
-        # TODO: Write a function that sorts the registered types by attributes        
-        
-        # First put types that are not attributes because attributes depend
-        # on the presence of their corresponding types in the database.
+        datasets = []   
+                
+        # files is an OrderedDict. Non-attributes are built before attributes.
         for currType in files.keys():
             # files[currType] returns a list of string
             for currFile in files[currType]:
-                try:
-                    parser.parseFilename(currFile, datasetType = currType)
-                                         
-                    dbAtom = parser.getDatabaseAtom()
-                    # Move to the next type if it's an attribute
-                    if dbAtom.attributeOf is not None:
-                        continue
-                    elif not dryRun:
-                        self.put(dbAtom)
-                    
-                    datasets.append(parser.getBasicInfo())
+                #try:
+                parser.parseFilename(currFile, datasetType = currType)
+                parser.dataset.data = parser.dataset.readFromFile(currFile)
                 
-                except Exception as err:
-                    print(("Unexpected error in build() while "
-                           "building generics:"),
-                    sys.exc_info()[0])
-                    print(err)
+                if not dryRun:
+                    self.put(parser.dataset)
                 
-        # Now place the datasets that are attributes
-        for currType in files.keys():
-            # files[currType] returns a list of string
-            for currFile in files[currType]:
-                try:
-                    parser.parseFilename(currFile, datasetType = currType)
-                    
-                    dbAtom = parser.getDatabaseAtom()
-                    # Move to the next type if it's not an attribute
-                    if dbAtom.attributeOf is None:
-                        continue                         
-                    if not dryRun:
-                        self.put(dbAtom)
-                    
-                    datasets.append(parser.getBasicInfo())
+                datasets.append(self._unpackDatasetIDs(parser.dataset))
                 
-                except Exception as err:
-                    print(("Unexpected error in build() while "
-                           "building generics:"),
-                    sys.exc_info()[0])
-                    print(err)            
+                #except Exception as err:
+                #    print(("Unexpected error in build():"),
+                #    sys.exc_info()[0])
+                #    print(err)
 
         # Report on all the datasets that were parsed
         buildResults = self._sortDatasets(datasets)
@@ -445,7 +415,7 @@ class HDFDatabase(Database):
             
         Returns
         -------
-        files : dict of list of str
+        files : OrderedDict of list of str
             Dictionary whose keys are the DatasetType names and whose values
             are lists of strings containing the path to files that satisfy the
             globbed search.
@@ -463,6 +433,20 @@ class HDFDatabase(Database):
             else:
                 files[filename] = sorted(searchDirectory.glob(
                                                     '**/*{:s}'.format(fileID)))
+                                                    
+        def sortKey(x):
+            # Create instances of datasetType to sort attribute types
+            # after non-attributes
+            dsTypeString = x[0]
+            mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                 dsTypeString))
+            ds  = getattr(mod, dsTypeString)
+            if ds.attributeOf:
+                return 1
+            else:
+                return 0
+                
+        files = OrderedDict(sorted(files.items(), key=sortKey))
         
         # Build the dictionary of files with keys describing
         # their dataset type                                                             
@@ -878,7 +862,8 @@ class HDFDatabase(Database):
         # Note that Python's 'and' short circuits, so the order here
         # is important. pattern.match(None) will raise a TypeError
         pattern = re.compile('\d{4}-\d{2}-\d{2}')
-        if 'dateID' in idDict and not pattern.match(idDict['dateID']):
+        if ('dateID' in idDict) and (idDict['dateID'] is not None) \
+                           and not pattern.match(idDict['dateID']):
             raise ValueError(('Error: The date is not of the format '
                               'YYYY-MM-DD.'))               
         

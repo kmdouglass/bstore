@@ -13,7 +13,7 @@ nosetests should be run in the B-Store parent directory.
 __author__ = 'Kyle M. Douglass'
 __email__  = 'kyle.m.douglass@gmail.com'
 
-from nose.tools                    import *
+from nose.tools                    import assert_equal, ok_
 
 # Register the type
 from bstore  import config
@@ -25,6 +25,7 @@ from bstore                        import parsers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
+from numpy                         import array
 
 import pandas as pd
 import h5py
@@ -36,12 +37,11 @@ def test_Instantiation():
     
     """
     # Make up some dataset IDs
-    prefix      = 'test_prefix'
-    acqID       = 1
-    datasetType = 'generic'
-    data        = 42
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    dsIDs['acqID']  = 1
     
-    Localizations(prefix, acqID, datasetType, data)
+    Localizations(datasetIDs = dsIDs)
 
 def test_Put_Data():
     """The datasetType can put its own data and datasetIDs.
@@ -49,11 +49,11 @@ def test_Put_Data():
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = Localizations(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = Localizations(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -65,9 +65,7 @@ def test_Put_Data():
         
         key = 'test_prefix/test_prefix_1/Localizations'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
-            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'generic')
-            assert_equal(hdf[key].attrs['SMLM_datasetTypeName'],
-                         'Localizations')
+            assert_equal(hdf[key].attrs['SMLM_datasetType'], 'Localizations')
         
         df = pd.read_hdf(str(pathToDB / Path('test_db.h5')), key = key)
         assert_equal(df.loc[0, 'A'], 1)
@@ -77,18 +75,18 @@ def test_Put_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-        
+       
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
     """
     try:
         # Make up some dataset IDs and a dataset
-        prefix      = 'test_prefix'
-        acqID       = 1
-        datasetType = 'generic'
-        data        = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
-        ds = Localizations(prefix, acqID, datasetType, data)
+        dsIDs           = {}
+        dsIDs['prefix'] = 'test_prefix'
+        dsIDs['acqID']  = 1
+        ds      = Localizations(datasetIDs = dsIDs)
+        ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
         # Remove database if it exists
@@ -99,16 +97,17 @@ def test_Get_Data():
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDS = myDB.get(Localizations(prefix, acqID, datasetType, None))
-        ids     = myNewDS.getInfoDict()
+        myNewDSID = myDB.dsID('test_prefix', 1, 'Localizations', None,
+                              None, None, None, None)
+        myNewDS = myDB.get(myNewDSID)
+        ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
         assert_equal(ids['acqID'],                           1)
-        assert_equal(ids['datasetType'],             'generic')
+        assert_equal(myNewDS.datasetType,      'Localizations')
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)
-        assert_equal(ids['datasetTypeName'],   'Localizations')   
+        assert_equal(ids['sliceID'],                      None)   
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -116,7 +115,7 @@ def test_Get_Data():
     finally:
         # Remove the test database
         remove(str(pathToDB / Path('test_db.h5')))
-       
+      
 def test_HDF_Database_Build():
     """The database build is performed successfully.
     
@@ -132,20 +131,14 @@ def test_HDF_Database_Build():
     
     # Build database
     myDB.build(myParser, searchDirectory,
-               locResultsString = '_DC.dat',
                filenameStrings  = {'Localizations' : '_DC.dat'},
                dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        ok_(key1 + 'locResults_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A647_Pos0' in hdf)
-        ok_(key1 + 'widefieldImage_A750_Pos0' in hdf)
         ok_(key1 + 'Localizations_A647_Pos0' in hdf)
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key1+'locResults_A647_Pos0'].attrs.__contains__(
-                                                       'SMLM_Metadata_Height'))
+        ok_(hdf[key1+'Localizations_A647_Pos0'].attrs.__contains__('SMLM_acqID'))
         
         key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
         ok_(key2 + 'Localizations_A647_Pos0' in hdf)
@@ -158,7 +151,8 @@ def test_HDF_Database_Build():
     
     # Remove test database file
     remove(str(dbName))
- 
+    
+''' 
 def test_HDF_Database_Query_with_fiducialTracks():
     """The database query is performed successfully with the datasetType.
     
@@ -188,3 +182,4 @@ def test_HDF_Database_Query_with_fiducialTracks():
     
     # Remove test database file
     remove(str(dbName))
+'''

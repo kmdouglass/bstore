@@ -145,6 +145,19 @@ def test_UnpackDatasetIDs_BadDateFormat():
                                            'posID'     : (0,),
                                            'sliceID'   : 1})
     myDB._unpackDatasetIDs(t2)
+    
+def test_UnpackDatasetIDs_DateIsNone():
+    """A dateID of None will not raise an error in _unpackDatasetIDs
+    
+    """
+    myDB = database.HDFDatabase('test_db.h5')
+    
+    t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
+                                           'channelID' : 'A647',
+                                           'dateID'    : None,
+                                           'posID'     : (0,),
+                                           'sliceID'   : 1})
+    myDB._unpackDatasetIDs(t2)
                                 
 def test_HDFDatabase__repr__():
     """__repr__() returns the correct string representation.
