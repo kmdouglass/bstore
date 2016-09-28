@@ -54,6 +54,18 @@ activate bstore
 conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 ```
 
+## Source Installs
+
+To install from source, simply clone this repository and install using
+B-Store using pip:
+
+```
+pip install <B-STORE DIRECTORY>
+```
+
+The most up-to-date code may be found on the development branch,
+though it may not be as thoroughly tested as code on the master.
+
 # What is B-Store?
 
 [B-Store](https://github.com/kmdouglass/bstore) is a lightweight data

@@ -21,6 +21,7 @@ requirements:
     - h5py
     - pytables
     - trackpy
+    - nb_conda
 
   run:
     - python
@@ -32,8 +33,9 @@ requirements:
     - pytables
     - h5py
     - pandas
-    - trackpy >= 0.3.2
+    - trackpy 0.3.2
     - tifffile 0.9.0
+    - nb_conda
 
 test:
   imports:
