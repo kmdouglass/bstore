@@ -1,6 +1,6 @@
 # B-Store
 [![Build Status](https://travis-ci.org/kmdouglass/bstore.svg?branch=master)](https://travis-ci.org/kmdouglass/bstore)
-[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/version.svg)](https://anaconda.org/kmdouglass/bstore)
+[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/installer/conda.svg)](https://conda.anaconda.org/kmdouglass)
 
 Lightweight data management and analysis tools for single-molecule microscopy.
 
