@@ -1,10 +1,10 @@
-# conda build <DIR_WITH_THIS_FILE> --channel soft-matter
+# conda build <DIR_WITH_THIS_FILE> --channel soft-matter --channel conda-forge
 package:
   name: bstore
-  version: "0.1.1"
+  version: "0.2.1"
 
 source:
-  git_rev: v0.1.1
+  git_rev: v0.2.1
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
@@ -14,26 +14,28 @@ requirements:
     - conda
     - nose
     - numpy
-    - scipy <=0.17.1
+    - scipy
     - matplotlib
     - scikit-learn
     - pandas
     - h5py
     - pytables
     - trackpy
+    - nb_conda
 
   run:
     - python
     - nose
     - numpy
-    - scipy <=0.17.1
+    - scipy
     - matplotlib
     - scikit-learn
     - pytables
     - h5py
     - pandas
-    - trackpy
+    - trackpy 0.3.2
     - tifffile 0.9.0
+    - nb_conda
 
 test:
   imports:

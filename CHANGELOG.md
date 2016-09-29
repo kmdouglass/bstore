@@ -2,12 +2,33 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Changed
+- Datasets were simplified into a parent class child classes. Child
+  classes were previously generics; now each child class represents
+  its own type of dataset. This effectively decouples dataset
+  information from the Database and Parser classes.
+- get() and put() behaviors were decoupled from the HDFDatabase. Now,
+  each Dataset knows how to get and put its down data from the
+  Database. HDFDatabase now only manages the identification and
+  sorting of Datasets.
+- readFromFile() behavior was decoupled from the Parser class. Each
+  Dataset now knows how to read and write its own data from files.
+
+### Removed
+- Generic dataset types were removed. This eliminates the distinction
+  that locResults, locMetadata, and widefieldImage had from other
+  types of datasets. Now, all datasets subclass the `Dataset` class
+  and have no special distinction over one another.
+
+## [v0.2.1]
 ### Added
 - Generic datasetTypes are now available. These allow users to easily
   add new datasetTypes to the HDF database. Furthermore, they decouple
   the put() and get() behaviors from the database so that each
   datasetType knows how to handle its own data.
 - Added `__version__` field to all modules.
+- MergeFangTS stats computer for computing statistics on merged
+  localizations in Fang's ThunderSTORM column format.
 
 ### Changed
 - The `particle` column is now saved when using the MergeFang stats
@@ -15,6 +36,9 @@ All notable changes to this project will be documented in this file.
   it was not being saved because the the stats computer was making it
   an index of the output DataFrame; the CSVBatchProcessor does not
   save DataFrame indexes.
+- Merge processor now accepts a coordinate column name parameter for
+  merging columns with custom names.
+- Merge processor attributes are now public.
 
 ## [v0.2.0]
 ### Added
@@ -103,7 +127,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.1...HEAD
+[v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/kmdouglass/bstore/compare/v0.1.0b-rev3...v0.1.0
