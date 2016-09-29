@@ -10,4 +10,8 @@ anaconda upload ../bstore-build/linux-64/bstore-0.2.1-py35_0.tar.bz2
 anaconda upload ../bstore-build/linux-32/bstore-0.2.1-py35_0.tar.bz2
 anaconda upload ../bstore-build/win-64/bstore-0.2.1-py35_0.tar.bz2
 anaconda upload ../bstore-build/win-32/bstore-0.2.1-py35_0.tar.bz2
+<<<<<<< HEAD
 anaconda upload ../bstore-build/osx-64/bstore-0.2.1-py35_0.tar.bz2 
+=======
+anaconda upload ../bstore-build/osx-64/bstore-0.2.1-py35_0.tar.bz2
+>>>>>>> issue44

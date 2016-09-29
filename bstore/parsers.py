@@ -41,7 +41,11 @@ class Parser(metaclass = ABCMeta):
     
     @property
     def dataset(self):
-        return self._dataset
+        if self._dataset:
+            return self._dataset
+        else:
+            raise ParserNotInitializedError('Error: There is currently no'
+                                            'parsed dataset to return.')
         
     @dataset.setter
     def dataset(self, ds):
@@ -367,68 +371,11 @@ class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
     
     The SimpleParser converts files of the format prefix_acqID.* into
-    DatabaseAtoms for insertion into a database. * may represent .csv files
-    (for locResults), .json (for locMetadata), and .tif (for widefieldImages).
+    DatabaseAtoms for insertion into a database. * represents filename
+    extensions like .csv, .json, and .tif.
     
-    """
-    def __init__(self):
-        self._initialized = False
-
-    @property
-    def data(self):
-        """Returns the data stored in the current file.
-        
-        Only one of many possible returns is actually returned by this
-        function, depending on the datasetType.
-        
-        Returns
-        -------
-        df       : Pandas DataFrame
-            The localizations if datasetType == 'locResults'.
-        metadata : dict
-            Dictionary of JSON strings containing the localization metadata.
-        img      : NumPy array
-            2D NumPy array containing the image.
-            
-        """
-        if self.datasetType == 'locResults':
-            # Loading the csv file when data() is called reduces the
-            # chance that large DataFrames do not needlessly
-            # remain in memory.
-            with open(str(self._fullPath), 'r') as file:            
-                df = pd.read_csv(file)
-                return df
-                
-        elif self.datasetType == 'locMetadata':
-            # Read the txt file and convert it to a JSON string.
-            with open(str(self._fullPath), 'r') as file:
-                metadata = json.load(file)
-                return metadata
-            
-        elif self.datasetType == 'widefieldImage':
-            # Load the image data only when called
-            return imread(str(self._fullPath))
-    
-    def getDatabaseAtom(self):
-        """Returns an object capable of insertion into a SMLM database.
-        
-        Returns 
-        -------
-        dba : Dataset
-            One atomic dataset for insertion into the database.
-        
-        """
-        if not self._initialized:
-            raise ParserNotInitializedError('Parser not initialized.')
-        
-        ids = self.getBasicInfo()
-        dba = database.Dataset(ids['prefix'], ids['acqID'], ids['datasetType'],
-                               self.data, channelID = ids['channelID'],
-                               dateID = ids['dateID'], posID = ids['posID'], 
-                               sliceID = ids['sliceID'])
-        return dba    
-    
-    def parseFilename(self, filename, datasetType = 'locResults'):
+    """            
+    def parseFilename(self, filename, datasetType = 'Localizations'):
         """Converts a filename into a DatabaseAtom.
         
         Parameters
@@ -440,14 +387,13 @@ class SimpleParser(Parser):
             how to interpret the data.
             
         """
+        # Resets the parser
+        self.dataset = None        
+        
         # Check for a valid datasetType
-        if datasetType not in database.typesOfAtoms:
+        if datasetType not in config.__Registered_DatasetTypes__:
             raise DatasetTypeError(('{} is not a registered '
-                                    'type.').format(datasetType))    
-            
-        # Don't parse generics
-        if datasetType == 'generic':
-            raise ValueError('Error: Simple Parser cannot parse generics.')
+                                    'type.').format(datasetType))     
         
         try:
             # Save the full path to the file for later.
@@ -466,11 +412,17 @@ class SimpleParser(Parser):
             prefix, acqID = rootName.rsplit('_', 1)
             acqID = int(acqID)
             
-            # Initialize the Parser
-            super(SimpleParser, self).__init__(prefix, acqID, datasetType)
-            self._initialized = True
+            # Build the return dataset
+            idDict = {'prefix' : prefix, 'acqID' : acqID,
+                      'channelID' : None, 'dateID' : None,
+                      'posID' : None, 'sliceID' : None}
+        
+            mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+            dType             = getattr(mod, datasetType)
+            self.dataset      = dType(datasetIDs = idDict)
+            self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
-            self._initialized = False
             print('Error: File could not be parsed.', sys.exc_info()[0])
             raise
 
