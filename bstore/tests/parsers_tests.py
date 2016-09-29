@@ -422,7 +422,7 @@ def test_SimpleParser_ParseFilename_WidefieldImage():
     
     """
     # File number 1
-    f = 'HeLaL_Control_1.txt'
+    f = 'HeLaL_Control_1.tif'
     inputFile = testDataRoot / Path('parsers_test_files') \
                              / Path('SimpleParser/') / Path(f)
                              
@@ -436,7 +436,7 @@ def test_SimpleParser_ParseFilename_WidefieldImage():
     assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,           'WidefieldImage')
     
-    f = 'HeLaS_Control_2.txt'
+    f = 'HeLaS_Control_2.tif'
     inputFile = testDataRoot / Path('parsers_test_files') \
                              / Path('SimpleParser/') / Path(f)
     parser = parsers.SimpleParser()
@@ -449,8 +449,7 @@ def test_SimpleParser_ParseFilename_WidefieldImage():
     assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,           'WidefieldImage')
 
-'''    
-def test_SimpleParser_Read_LocResults():
+def test_SimpleParser_Read_Localizations():
     """SimpleParser correctly reads localization results.
     
     """
@@ -459,14 +458,15 @@ def test_SimpleParser_Read_LocResults():
                              / Path('SimpleParser/') / Path(f)
                              
     parser = parsers.SimpleParser()
-    parser.parseFilename(inputFile, datasetType = 'locResults')
+    parser.parseFilename(inputFile, datasetType = 'Localizations')
+    parser.dataset.data = parser.dataset.readFromFile(inputFile)
     
     # Test a couple of the localization results
-    assert_equal(parser.data['x'].iloc[0], 6770)
-    assert_equal(parser.data['intensity'].iloc[0],4386.6)
-    assert_equal(parser.data['x'].iloc[1], 7958.1)
-    
-def test_SimpleParser_Read_Metadata():
+    assert_equal(parser.dataset.data['x'].iloc[0], 6770)
+    assert_equal(parser.dataset.data['intensity'].iloc[0],4386.6)
+    assert_equal(parser.dataset.data['x'].iloc[1], 7958.1)
+  
+def test_SimpleParser_Read_LocMetadata():
     """SimpleParser correctly reads metadata.
     
     """
@@ -475,11 +475,12 @@ def test_SimpleParser_Read_Metadata():
                              / Path('SimpleParser/') / Path(f)
                              
     parser = parsers.SimpleParser()
-    parser.parseFilename(inputFile, datasetType = 'locMetadata')
+    parser.parseFilename(inputFile, datasetType = 'LocMetadata')
+    parser.dataset.data = parser.dataset.readFromFile(inputFile)
     
     # Test a couple of the metadata fields
-    assert_equal(parser.data['StartFrame_sCMOS'], 50)
-    assert_equal(parser.data['Width'], 927)
+    assert_equal(parser.dataset.data['StartFrame_sCMOS'], 50)
+    assert_equal(parser.dataset.data['Width'], 927)
     
 def test_SimpleParser_Read_WidefieldImage():
     """SimpleParser correctly reads metadata.
@@ -490,14 +491,15 @@ def test_SimpleParser_Read_WidefieldImage():
                              / Path('SimpleParser/') / Path(f)
                              
     parser = parsers.SimpleParser()
-    parser.parseFilename(inputFile, datasetType = 'widefieldImage')
+    parser.parseFilename(inputFile, datasetType = 'WidefieldImage')
+    parser.dataset.data = parser.dataset.readFromFile(inputFile)
     
     # Test the size of the widefield image and its first value
-    assert_equal(parser.data.shape, (927, 927))
-    assert_equal(parser.data[0, 0], 102)
+    assert_equal(parser.dataset.data.shape, (927, 927))
+    assert_equal(parser.dataset.data[0, 0], 102)
     
-def test_SimpleParser_GetDatabaseAtom():
-    """SimpleParser returns a correct DatabaseAtom.
+def test_SimpleParser_GetDataset():
+    """SimpleParser returns the correct Dataset.
     
     """
     f = 'HeLaL_Control_1.tif'
@@ -505,12 +507,12 @@ def test_SimpleParser_GetDatabaseAtom():
                              / Path('SimpleParser/') / Path(f)
                              
     parser = parsers.SimpleParser()
-    parser.parseFilename(inputFile, datasetType = 'widefieldImage')
+    parser.parseFilename(inputFile, datasetType = 'WidefieldImage')
+    parser.dataset.data = parser.dataset.readFromFile(inputFile)
     
     # Test the size of the widefield image and its first value
-    ds = parser.getDatabaseAtom()
-    assert_equal(ds.prefix, 'HeLaL_Control')
-    assert_equal(ds.data.shape, (927, 927))
+    assert_equal(parser.dataset.datasetIDs['prefix'], 'HeLaL_Control')
+    assert_equal(parser.dataset.data.shape, (927, 927))
 
 @raises(parsers.ParserNotInitializedError) 
 def test_SimpleParser_GetDatabaseAtom_NotInitialized():
@@ -518,8 +520,8 @@ def test_SimpleParser_GetDatabaseAtom_NotInitialized():
     
     """                             
     parser = parsers.SimpleParser()
-    parser.getDatabaseAtom()
-    
+    parser.dataset
+  
 @raises(Exception)
 def test_SimpleParser_BadParse():
     """SimpleParser correctly catches errors during parsing.
@@ -528,13 +530,4 @@ def test_SimpleParser_BadParse():
     f = 'HeLaL.tif' # No acqID; file shouldn't parse
                              
     parser = parsers.SimpleParser()
-    parser.parseFilename(f, datasetType = 'widefieldImage')
-    
-@raises(ValueError)
-def test_Simple_Parser_No_Generics():
-    """Simple Parser will not parse generics.
-    
-    """
-    parser = parsers.SimpleParser()
-    parser.parseFilename('File', datasetType = 'generic')
-'''
+    parser.parseFilename(f, datasetType = 'WidefieldImage')

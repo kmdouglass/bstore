@@ -41,7 +41,11 @@ class Parser(metaclass = ABCMeta):
     
     @property
     def dataset(self):
-        return self._dataset
+        if self._dataset:
+            return self._dataset
+        else:
+            raise ParserNotInitializedError('Error: There is currently no'
+                                            'parsed dataset to return.')
         
     @dataset.setter
     def dataset(self, ds):
@@ -367,11 +371,10 @@ class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
     
     The SimpleParser converts files of the format prefix_acqID.* into
-    DatabaseAtoms for insertion into a database. * may represent .csv files
-    (for Localizations), .json (for LocMetadata), and .tif
-    (for WidefieldImages).
+    DatabaseAtoms for insertion into a database. * represents filename
+    extensions like .csv, .json, and .tif.
     
-    """ 
+    """            
     def parseFilename(self, filename, datasetType = 'Localizations'):
         """Converts a filename into a DatabaseAtom.
         
@@ -384,6 +387,9 @@ class SimpleParser(Parser):
             how to interpret the data.
             
         """
+        # Resets the parser
+        self.dataset = None        
+        
         # Check for a valid datasetType
         if datasetType not in config.__Registered_DatasetTypes__:
             raise DatasetTypeError(('{} is not a registered '
@@ -415,7 +421,7 @@ class SimpleParser(Parser):
                                                                   datasetType))
             dType             = getattr(mod, datasetType)
             self.dataset      = dType(datasetIDs = idDict)
-            self.dataset.data = self.dataset.readFromFile(filename)
+            self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
             print('Error: File could not be parsed.', sys.exc_info()[0])
             raise
