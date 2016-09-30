@@ -313,6 +313,16 @@ def test_MMParser_ConvertsSpacesToUnderscores():
     assert_equal(parser.dataset.datasetIDs['prefix'],      'my_dataset')
     assert_equal(parser.dataset.datasetType,                 'TestType')
 
+@raises(parsers.ParseFilenameFailure)    
+def test_MMParser_ParseFailure():
+    """MMParser raises a ParseFilenameFailure error when the filename is bad.
+    
+    """
+    f = 'blablabla 214'
+    
+    parser = parsers.MMParser()
+    parser.parseFilename(f, 'TestType')
+
 def test_FormatMap():
     """FormatMap provides a basic two-way hash table.
     
@@ -522,7 +532,7 @@ def test_SimpleParser_GetDatabaseAtom_NotInitialized():
     parser = parsers.SimpleParser()
     parser.dataset
   
-@raises(Exception)
+@raises(parsers.ParseFilenameFailure)
 def test_SimpleParser_BadParse():
     """SimpleParser correctly catches errors during parsing.
     

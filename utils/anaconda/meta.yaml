@@ -33,11 +33,7 @@ requirements:
     - pytables
     - h5py
     - pandas
-<<<<<<< HEAD
-    - trackpy >= 0.3.2
-=======
     - trackpy 0.3.2
->>>>>>> issue44
     - tifffile 0.9.0
     - nb_conda
 

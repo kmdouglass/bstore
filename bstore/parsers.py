@@ -2,14 +2,11 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-import json
 import pathlib
 import re
 import warnings
-from bstore import database, config
-import pandas as pd
+from bstore import config
 from abc import ABCMeta, abstractmethod
-from matplotlib.pyplot import imread
 from os.path import splitext
 import importlib
 import sys
@@ -220,11 +217,15 @@ class MMParser(Parser):
         self._filename = filename
         self._fullPath = fullPath
         
-        # Do parsing for particular types here
-        if datasetType   == 'WidefieldImage':
-            parsedData = self._parseWidefieldImage(filename)
-        else:
-            parsedData = self._parse(filename)
+        try:
+            # Do parsing for particular types here
+            if datasetType   == 'WidefieldImage':
+                parsedData = self._parseWidefieldImage(filename)
+            else:
+                parsedData = self._parse(filename)
+        except:
+            raise ParseFilenameFailure(('Error: File could not be parsed.',
+                                        sys.exc_info()[0]))
         
         # Build the return dataset
         prefix, acqID, channelID, dateID, posID, sliceID = parsedData
@@ -423,8 +424,8 @@ class SimpleParser(Parser):
             self.dataset      = dType(datasetIDs = idDict)
             self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
-            print('Error: File could not be parsed.', sys.exc_info()[0])
-            raise
+            raise ParseFilenameFailure(('Error: File could not be parsed.',
+                                        sys.exc_info()[0]))
 
 """
 Exceptions
@@ -432,6 +433,15 @@ Exceptions
 """    
 class DatasetTypeError(Exception):
     """Error raised when a bad datasetTypeName is passed to Parser.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class ParseFilenameFailure(Exception):
+    """Raised when Parser fails to parser a filename.
     
     """
     def __init__(self, value):
