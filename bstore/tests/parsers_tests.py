@@ -375,11 +375,7 @@ def test_SimpleParser_ParseFilename_Localizations():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile)
     assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaL_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,            'Localizations')
     
     f = 'HeLaS_Control_2.csv'
@@ -388,11 +384,7 @@ def test_SimpleParser_ParseFilename_Localizations():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile)
     assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaS_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,            'Localizations')
     
 def test_SimpleParser_ParseFilename_LocMetadata():
@@ -407,11 +399,7 @@ def test_SimpleParser_ParseFilename_LocMetadata():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile, datasetType = 'LocMetadata')
     assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaL_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,              'LocMetadata')
     
     f = 'HeLaS_Control_2.txt'
@@ -420,11 +408,7 @@ def test_SimpleParser_ParseFilename_LocMetadata():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile, datasetType = 'LocMetadata')
     assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaS_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,              'LocMetadata')
     
 def test_SimpleParser_ParseFilename_WidefieldImage():
@@ -439,11 +423,7 @@ def test_SimpleParser_ParseFilename_WidefieldImage():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile, datasetType = 'WidefieldImage')
     assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaL_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,           'WidefieldImage')
     
     f = 'HeLaS_Control_2.tif'
@@ -452,11 +432,7 @@ def test_SimpleParser_ParseFilename_WidefieldImage():
     parser = parsers.SimpleParser()
     parser.parseFilename(inputFile, datasetType = 'WidefieldImage')
     assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
-    assert_equal(parser.dataset.datasetIDs['channelID'],           None)
-    assert_equal(parser.dataset.datasetIDs['dateID'],              None)
-    assert_equal(parser.dataset.datasetIDs['posID'],               None)
     assert_equal(parser.dataset.datasetIDs['prefix'],   'HeLaS_Control')
-    assert_equal(parser.dataset.datasetIDs['sliceID'],             None)
     assert_equal(parser.dataset.datasetType,           'WidefieldImage')
 
 def test_SimpleParser_Read_Localizations():
@@ -541,3 +517,30 @@ def test_SimpleParser_BadParse():
                              
     parser = parsers.SimpleParser()
     parser.parseFilename(f, datasetType = 'WidefieldImage')
+    
+def test_PositionParser_parse():
+    """PositionParser correctly parses a number of different example filenames.
+    
+    """
+    # filename, position ids, expected result
+    f = [('HeLa_2',
+          {0 : 'prefix', 1 : 'acqID'},
+          {'prefix' : 'HeLa', 'acqID' : 2}),
+         ('HeLa_A647_2',
+          {0 : 'prefix', 1 : 'channelID', 2 : 'acqID'},
+          {'prefix' : 'HeLa', 'channelID' : 'A647', 'acqID' : 2}),
+         ('2016-12-11_Cos7_A647_5_4_3',
+          {0 : 'dateID', 1 : 'prefix', 2 : 'channelID', 3 : 'posID',
+           4 : 'sliceID', 5 : 'acqID'},
+          {'dateID' : '2016-12-11', 'prefix' : 'Cos7', 'channelID' : 'A647',
+          'posID' : 5, 'sliceID' : 4, 'acqID' : 3}),
+         ('HeLa_1_MMStack_0',
+          {0 : 'prefix', 1 : 'acqID', 2 : None, 3 : 'posID'},
+          {'prefix' : 'HeLa', 'acqID' : 1, 'posID' : 0})]
+          
+    parser = parsers.PositionParser()
+    for currExample in f:
+        idDict = parser._parse(currExample[0], '_', currExample[1])
+                             
+        for key, value in idDict.items():
+            assert_equal(value, currExample[2][key])

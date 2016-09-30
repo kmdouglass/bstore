@@ -182,7 +182,7 @@ class MMParser(Parser):
         else:
             raise ValueError('Error: initialized must be a bool.')
 
-    def parseFilename(self, filename, datasetType = 'LocResults'):
+    def parseFilename(self, filename, datasetType = 'LocResults', **kwargs):
         """Parse the filename to extract the acquisition information.
         
         Running this method will reset the parser to an uninitialized state
@@ -368,6 +368,95 @@ class MMParser(Parser):
             
         return prefix, acqID, channelID, dateID, posID, sliceID
         
+class PositionParser(Parser):
+    """Reads a filename whose dataset IDs are determined by their positions.
+    
+    """
+    def parseFilename(self, filename, datasetType = 'Localizations',
+                      sep = '_', positionIDs = {}, **kwargs):
+        """Converts a filename into a Dataset.
+        
+        Parameters
+        ----------
+        filename      : str or Path
+            A string or pathlib Path object containing the dataset's filename.
+        datasetType   : str
+            The type of the dataset being parsed. This tells the Parser
+            how to interpret the data.
+        sep           : str
+            The character (or characters) that separate the different fields
+            in the filename.
+        positionIDs   : dict
+            Integer/string pairs denoting the position in the filename
+            (starting from zero on the left) and the ID field at that
+            position. If a position should be skipped, set its value to None.
+        
+        """
+        self.dataset = None
+        
+        # Check for a valid datasetType
+        if datasetType not in config.__Registered_DatasetTypes__:
+            raise DatasetTypeError(('{} is not a registered '
+                                    'type.').format(datasetType))
+                                    
+        try:
+            # Save the full path to the file for later.
+            # If filename is already a Path object, this does nothing.
+            self._fullPath = pathlib.Path(filename)        
+            
+            # Convert Path objects to strings if Path is supplied
+            if isinstance(filename, pathlib.PurePath):
+                filename = str(filename.name)
+    
+            # Remove file type ending and any parent folders
+            # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
+            rootName = splitext(filename)[0].split('/')[-1]
+            
+            # Extract the ids
+            idDict = self._parse(rootName, sep, positionIDs)
+        
+            mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                                                                  datasetType))
+            dType             = getattr(mod, datasetType)
+            self.dataset      = dType(datasetIDs = idDict)
+            #self.dataset.data = self.dataset.readFromFile(self._fullPath)
+        except:
+            raise ParseFilenameFailure(('Error: File could not be parsed.',
+                                        sys.exc_info()[0]))
+                                        
+    def _parse(self, rootName, sep, positionIDs):
+        """Actually does the work of splitting the name and finding IDs.
+        
+        rootName : str
+            The actual string to parse.
+        sep           : str
+            The character (or characters) that separate the different
+            fields in the filename.
+        positionIDs   : dict
+            Integer/string pairs denoting the position in the filename
+            (starting from zero on the left) and the ID field at that
+            position. If a position should be skipped, set its value to
+            None.
+        
+        Returns
+        -------
+        idDict : dict
+            The Dataset ids extracted from the filename.          
+        
+        """
+        idDict = {}
+        for pos, field in enumerate(rootName.split(sep)):
+            if positionIDs[pos] is None:
+                continue
+            else:
+                try:
+                    # Convert numeric fields to numeric types
+                    idDict[positionIDs[pos]] = int(field)
+                except ValueError:
+                    idDict[positionIDs[pos]] = field
+        
+        return idDict
+        
 class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
     
@@ -376,8 +465,8 @@ class SimpleParser(Parser):
     extensions like .csv, .json, and .tif.
     
     """            
-    def parseFilename(self, filename, datasetType = 'Localizations'):
-        """Converts a filename into a DatabaseAtom.
+    def parseFilename(self, filename, datasetType = 'Localizations', **kwargs):
+        """Converts a filename into a Dataset.
         
         Parameters
         ----------
@@ -414,9 +503,7 @@ class SimpleParser(Parser):
             acqID = int(acqID)
             
             # Build the return dataset
-            idDict = {'prefix' : prefix, 'acqID' : acqID,
-                      'channelID' : None, 'dateID' : None,
-                      'posID' : None, 'sliceID' : None}
+            idDict = {'prefix' : prefix, 'acqID' : acqID}
         
             mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                                   datasetType))
