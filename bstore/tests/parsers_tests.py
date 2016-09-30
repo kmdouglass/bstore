@@ -501,7 +501,7 @@ def test_SimpleParser_GetDataset():
     assert_equal(parser.dataset.data.shape, (927, 927))
 
 @raises(parsers.ParserNotInitializedError) 
-def test_SimpleParser_GetDatabaseAtom_NotInitialized():
+def test_SimpleParser_GetDataset_NotInitialized():
     """SimpleParser returns raises a not-initialized error.
     
     """                             
@@ -517,6 +517,34 @@ def test_SimpleParser_BadParse():
                              
     parser = parsers.SimpleParser()
     parser.parseFilename(f, datasetType = 'WidefieldImage')
+    
+def test_PositionParser_ParseFilename():
+    """PositionParser's full parseFilename() function works as expected.
+    
+    """
+    f = 'HeLaL_Control_1.csv'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+                             
+    parser = parsers.PositionParser()
+
+    # Note: 'Control' will be dropped because it's surrounded by underscores
+    parser.parseFilename(inputFile,
+                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+    
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
+    assert_equal(parser.dataset.datasetIDs['prefix'],           'HeLaL')
+    assert_equal(parser.dataset.datasetType,            'Localizations')
+    
+    f = 'HeLaS_Control_2.csv'
+    inputFile = testDataRoot / Path('parsers_test_files') \
+                             / Path('SimpleParser/') / Path(f)
+    parser.parseFilename(inputFile,
+                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+    
+    assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
+    assert_equal(parser.dataset.datasetIDs['prefix'],           'HeLaS')
+    assert_equal(parser.dataset.datasetType,            'Localizations')
     
 def test_PositionParser_parse():
     """PositionParser correctly parses a number of different example filenames.
@@ -544,3 +572,23 @@ def test_PositionParser_parse():
                              
         for key, value in idDict.items():
             assert_equal(value, currExample[2][key])
+
+@raises(parsers.ParseFilenameFailure)
+def test_PositionParser_BadParse():
+    """PositionParser correctly catches errors during parsing.
+    
+    """
+    f = 'HeLaL.tif' # No acqID; file shouldn't parse
+                             
+    parser = parsers.PositionParser()
+    # Note: There are more position IDs than there are actual positions in f
+    parser.parseFilename(f,
+                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+                         
+@raises(parsers.ParserNotInitializedError) 
+def test_PositionParser_GetDataset_NotInitialized():
+    """SimpleParser returns raises a not-initialized error.
+    
+    """                             
+    parser = parsers.PositionParser()
+    parser.dataset

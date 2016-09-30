@@ -419,7 +419,7 @@ class PositionParser(Parser):
                                                                   datasetType))
             dType             = getattr(mod, datasetType)
             self.dataset      = dType(datasetIDs = idDict)
-            #self.dataset.data = self.dataset.readFromFile(self._fullPath)
+            self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
             raise ParseFilenameFailure(('Error: File could not be parsed.',
                                         sys.exc_info()[0]))
