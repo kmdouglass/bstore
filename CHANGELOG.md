@@ -2,11 +2,18 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- PositionParser was added for parsing files whose names contain
+  fields spaced by string separators and whose positions correspond to
+  different dataset IDs. For example, the filename `HeLa_1_A647_0.csv`
+  may be split at each underscore and possess four fields that would
+  serve as possible IDs: `HeLa`, `1`, `A647`, and `0`.
+
 ### Changed
-- Datasets were simplified into a parent class child classes. Child
-  classes were previously generics; now each child class represents
-  its own type of dataset. This effectively decouples dataset
-  information from the Database and Parser classes.
+- Datasets were simplified into a parent class and child
+  classes. Child classes were previously generics; now each child
+  class represents its own type of dataset. This effectively decouples
+  dataset information from the Database and Parser classes.
 - get() and put() behaviors were decoupled from the HDFDatabase. Now,
   each Dataset knows how to get and put its down data from the
   Database. HDFDatabase now only manages the identification and
