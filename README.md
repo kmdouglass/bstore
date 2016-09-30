@@ -1,6 +1,6 @@
 # B-Store
 [![Build Status](https://travis-ci.org/kmdouglass/bstore.svg?branch=master)](https://travis-ci.org/kmdouglass/bstore)
-[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/installer/conda.svg)](https://conda.anaconda.org/kmdouglass)
+[![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/version.svg)](https://anaconda.org/kmdouglass/bstore)
 
 Lightweight data management and analysis tools for single-molecule microscopy.
 
@@ -13,6 +13,7 @@ Lightweight data management and analysis tools for single-molecule microscopy.
 - [Installation](#installation)
   - [Linux / OSX](#linux--osx)
   - [Windows](#windows)
+  - [Source Installs](#source-installs)
 - [What is B-Store?](#what-is-b-store)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -53,6 +54,18 @@ conda create --name bstore jupyter
 activate bstore
 conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 ```
+
+## Source Installs
+
+To install from source, simply clone this repository and install using
+B-Store using pip:
+
+```
+pip install <B-STORE DIRECTORY>
+```
+
+The most up-to-date code may be found on the development branch,
+though it may not be as thoroughly tested as code on the master.
 
 # What is B-Store?
 
