@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+# © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Switzerland, Laboratory of Experimental Biophysics, 2016
+# See the LICENSE.txt file for more details.
+
+from tkinter import Button, Menu, Message, Tk, Toplevel
+import bstore.config as cfg
+import webbrowser
+
+aboutMessage = '''B-Store
+Version {:s}
+by Kyle M. Douglass
+
+Laboratory of Experimental Biophysics
+ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE
+© 2016 All rights reserved.'''.format(cfg.__bstore_Version__)
+
+docsURL = 'http://b-store.readthedocs.io/en/latest/'
+
+def about():
+    top = Toplevel()
+    top.title('About B-Store')
+    
+    msg = Message(top, text = aboutMessage, width = 400)
+    msg.pack()
+    
+    button = Button(top, text='Dismiss', command=top.destroy)
+    button.pack()
+
+def newDatabase():
+    raise NotImplementedError()
+
+def openDatabase():
+    raise NotImplementedError()
+
+def openDocs():
+    webbrowser.open_new(docsURL)
+
+if __name__ == '__main__':
+    root = Tk()
+    
+    menubar = Menu(root)
+    
+    filemenu = Menu(menubar, tearoff = 0)
+    filemenu.add_command(label = 'New...',  command = newDatabase)
+    filemenu.add_command(label = 'Open...', command = openDatabase)
+    filemenu.add_separator()
+    filemenu.add_command(label = 'Quit',    command = root.quit)
+    menubar.add_cascade(label ='File', menu=filemenu)
+    
+    helpmenu = Menu(menubar, tearoff = 0)
+    helpmenu.add_command(label = 'Documentation', command = openDocs)
+    helpmenu.add_separator()
+    helpmenu.add_command(label = 'About...', command = about)
+    menubar.add_cascade(label = 'Help', menu = helpmenu)
+    
+    root.config(menu = menubar)
+    root.mainloop()
