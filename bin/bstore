@@ -5,13 +5,16 @@
 # See the LICENSE.txt file for more details.
 
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
-from tkinter import Checkbutton, Grid, IntVar, Scrollbar, Text
+from tkinter import Checkbutton, Grid, IntVar, Radiobutton,Scrollbar, Text
+from tkinter import StringVar
 from tkinter import N, S, E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
 
 import bstore.config as cfg
 import bstore.datasetTypes as dsTypes
+import bstore.parsers as parsers
 import webbrowser
+import inspect
 
 aboutMessage = '''B-Store
 Version {:s}
@@ -44,17 +47,19 @@ def newDatabase():
     top.title('Create a New B-Store Database')
     frames = {'DatabaseFilename'   : 0,
               'SelectDatasetTypes' : 1,
-              'BuildButton'        : 3,
-              'SearchDir'         :  2}
-    Grid.rowconfigure(top, frames['DatabaseFilename'], weight=2)
-    Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight=1)
-    Grid.rowconfigure(top, frames['BuildButton'], weight = 0)
-    Grid.rowconfigure(top, frames['SearchDir'], weight = 2)
+              'BuildButton'        : 4,
+              'SearchDir'          : 2,
+              'SelectParser'       : 3}
+    Grid.rowconfigure(top, frames['DatabaseFilename'],   weight = 2)
+    Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
+    Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
+    Grid.rowconfigure(top, frames['SearchDir'],          weight = 2)
+    Grid.rowconfigure(top, frames['SelectParser'],       weight = 2)
     Grid.columnconfigure(top, 0, weight=1)
 
     # Filename and path    
     f = Frame_DatabaseFilename(master = top, padx = 5, pady = 5,
-                               text = 'Path and filename to new database')
+                               text = 'Path and filename for the new database')
     f.grid(row = frames['DatabaseFilename'])
     
     # Select dataset types
@@ -64,8 +69,13 @@ def newDatabase():
     
     # Select search path
     s = Frame_SearchDirectory(master = top, padx = 5, pady = 5,
-                              text = 'Directory containing data files')
+                              text = 'Directory containing input data files')
     s.grid(row = frames['SearchDir'])
+    
+    # Select parser
+    p = Frame_SelectParser(master = top, padx = 5, pady = 5,
+                           text = 'Select and configure the filename parser')
+    p.grid(row = frames['SelectParser'], sticky = E+W)
     
     build = Button(master = top, text = 'Build',
                    command=lambda: _buildDatabase(selectTypes.get()))
@@ -198,7 +208,31 @@ class Frame_SelectDatasetTypes(LabelFrame):
                           }
         return filenameStrings
         
-
+class Frame_SelectParser(LabelFrame):
+    """Selects the parser to use during the database build.
+    
+    Attributes
+    ----------
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        # Get a list of all available parsers
+        pList = [(name, parser) for name, parser
+                 in inspect.getmembers(parsers, inspect.isclass)
+                 if issubclass(parser, parsers.Parser) and name != 'Parser']
+    
+        v = IntVar(value = 0)
+    
+        for index, (text, _) in enumerate(pList):
+            b = Radiobutton(self, text=text,
+                            variable = v, value=index)
+            b.pack(anchor=W)
+    
+    def get():
+        pass
+        
 """Main loop
 -------------------------------------------------------------------------------
 """
