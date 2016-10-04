@@ -4,7 +4,11 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-from tkinter import Button, Menu, Message, Tk, Toplevel
+from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
+from tkinter import Grid, Scrollbar, Text
+from tkinter import N, S, E, W, END
+from tkinter.filedialog import asksaveasfilename
+from tkinter.messagebox import showerror
 import bstore.config as cfg
 import webbrowser
 
@@ -18,6 +22,9 @@ ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE
 
 docsURL = 'http://b-store.readthedocs.io/en/latest/'
 
+"""Menu methods
+-------------------------------------------------------------------------------
+"""
 def about():
     top = Toplevel()
     top.title('About B-Store')
@@ -29,14 +36,87 @@ def about():
     button.pack()
 
 def newDatabase():
-    raise NotImplementedError()
+    top = Toplevel()
+    top.title('Create a New B-Store Database')
+    frames = {'DatabaseFilename' : 0, 'SelectDatasetTypes' : 1}
+    Grid.rowconfigure(top, frames['DatabaseFilename'], weight=2)
+    Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight=1)
+    Grid.columnconfigure(top, 0, weight=1)
 
+    # Filename and path    
+    f = Frame_DatabaseFilename(master = top, text = 'Path and filename',
+                               padx = 5, pady = 5)
+    f.grid(row = frames['DatabaseFilename'])
+    
+    # Select dataset types
+    selectTypes = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
+                                           text = 'Select dataset types')
+    selectTypes.grid(row = frames['SelectDatasetTypes'])
+    
 def openDatabase():
     raise NotImplementedError()
 
 def openDocs():
     webbrowser.open_new(docsURL)
 
+"""Frames
+-------------------------------------------------------------------------------
+"""
+class Frame_DatabaseFilename(LabelFrame):
+    """Select a filename and path for the new Database file.
+    
+    Attributes
+    ----------
+    filename : str
+        The full path and filename to the database file.
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.filename = None
+        
+        self.grid(sticky=W+E+N+S)
+        
+        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
+        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        
+        self.entry = Entry(self, width = 50)
+        self.entry.delete(0, END)
+        self.entry.insert(0, 'Enter a path to a new database file...')
+        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+
+    def loadFile(self):
+        fname = asksaveasfilename(filetypes=(('HDF5 files', '*.h5'),
+                                             ('All files', '*.*')),
+                                  title       = 'Select a new file...',
+                                  initialfile = 'database.h5')
+        if fname:
+            self.filename = fname
+            self.entry.delete(0, END)
+            self.entry.insert(0, fname)
+            
+class Frame_SelectDatasetTypes(LabelFrame):
+    """Select the dataset types to include in the database.
+    
+    References
+    ----------
+    [1] http://stackoverflow.com/questions/5860675/variable-size-list-of-checkboxes-in-tkinter
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        
+        self.vsb = Scrollbar(self, orient="vertical")
+        self.text = Text(self, height = 10,
+                         yscrollcommand=self.vsb.set)
+        self.vsb.config(command=self.text.yview)
+        self.vsb.pack(side="right", fill="y")
+        self.text.pack(side="left", fill="both", expand=True)
+
+"""Main loop
+-------------------------------------------------------------------------------
+"""
 if __name__ == '__main__':
     root = Tk()
     
