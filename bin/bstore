@@ -5,11 +5,12 @@
 # See the LICENSE.txt file for more details.
 
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
-from tkinter import Grid, Scrollbar, Text
-from tkinter import N, S, E, W, END
+from tkinter import Checkbutton, Grid, IntVar, Scrollbar, Text
+from tkinter import N, S, E, W, DISABLED, END
 from tkinter.filedialog import asksaveasfilename
-from tkinter.messagebox import showerror
+
 import bstore.config as cfg
+import bstore.datasetTypes as dsTypes
 import webbrowser
 
 aboutMessage = '''B-Store
@@ -32,15 +33,21 @@ def about():
     msg = Message(top, text = aboutMessage, width = 400)
     msg.pack()
     
-    button = Button(top, text='Dismiss', command=top.destroy)
+    button = Button(top, text='Close', command=top.destroy)
     button.pack()
+
+def _buildDatabase(filenameStrings):
+    print(filenameStrings)
 
 def newDatabase():
     top = Toplevel()
     top.title('Create a New B-Store Database')
-    frames = {'DatabaseFilename' : 0, 'SelectDatasetTypes' : 1}
+    frames = {'DatabaseFilename'   : 0,
+              'SelectDatasetTypes' : 1,
+              'BuildButton'        : 2}
     Grid.rowconfigure(top, frames['DatabaseFilename'], weight=2)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight=1)
+    Grid.rowconfigure(top, frames['BuildButton'], weight = 0)
     Grid.columnconfigure(top, 0, weight=1)
 
     # Filename and path    
@@ -52,6 +59,10 @@ def newDatabase():
     selectTypes = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
                                            text = 'Select dataset types')
     selectTypes.grid(row = frames['SelectDatasetTypes'])
+    
+    build = Button(master = top, text = 'Build',
+                   command=lambda: _buildDatabase(selectTypes.get()))
+    build.grid(row = frames['BuildButton'])
     
 def openDatabase():
     raise NotImplementedError()
@@ -109,10 +120,47 @@ class Frame_SelectDatasetTypes(LabelFrame):
         
         self.vsb = Scrollbar(self, orient="vertical")
         self.text = Text(self, height = 10,
-                         yscrollcommand=self.vsb.set)
+                         yscrollcommand=self.vsb.set,
+                         bg = self.master.cget('bg'))
         self.vsb.config(command=self.text.yview)
         self.vsb.pack(side="right", fill="y")
         self.text.pack(side="left", fill="both", expand=True)
+        
+        # Create the list of checkboxes
+        self._listOfTypes = []
+        for currType in dsTypes.__all__:
+            v = IntVar(value = 1)
+            cb = Checkbutton(self, text = '%s' % currType, anchor = W,
+                             width = 15, variable = v)
+            cb.var = v # Easy access to checkbox's current value
+            
+            e  = Entry(self)
+            e.delete(0, END)
+            e.insert(0, '<suffix>.<file_extension>')
+            
+            self._listOfTypes.append((cb, e))
+            self.text.window_create('end', window=cb)
+            self.text.window_create('end', window=e)
+            self.text.insert("end", "\n") # Forces one checkbox per line
+        
+        # This MUST follow insertion and positioning of the checkboxes/entries
+        self.text.config(state = DISABLED)
+    
+    def get(self):
+        """Returns information about the frame.
+        
+        Returns
+        -------
+        filenameStrings : dict
+            Key-value pairs of the dataset types and their filename suffixes.
+            
+        """
+        filenameStrings = {k.cget('text') : v.get()
+                               for k, v in self._listOfTypes
+                               if k.var and v.get()
+                          }
+        return filenameStrings
+        
 
 """Main loop
 -------------------------------------------------------------------------------
