@@ -7,7 +7,7 @@
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
 from tkinter import Checkbutton, Grid, IntVar, Scrollbar, Text
 from tkinter import N, S, E, W, DISABLED, END
-from tkinter.filedialog import asksaveasfilename
+from tkinter.filedialog import askdirectory, asksaveasfilename
 
 import bstore.config as cfg
 import bstore.datasetTypes as dsTypes
@@ -44,21 +44,28 @@ def newDatabase():
     top.title('Create a New B-Store Database')
     frames = {'DatabaseFilename'   : 0,
               'SelectDatasetTypes' : 1,
-              'BuildButton'        : 2}
+              'BuildButton'        : 3,
+              'SearchDir'         :  2}
     Grid.rowconfigure(top, frames['DatabaseFilename'], weight=2)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight=1)
     Grid.rowconfigure(top, frames['BuildButton'], weight = 0)
+    Grid.rowconfigure(top, frames['SearchDir'], weight = 2)
     Grid.columnconfigure(top, 0, weight=1)
 
     # Filename and path    
-    f = Frame_DatabaseFilename(master = top, text = 'Path and filename',
-                               padx = 5, pady = 5)
+    f = Frame_DatabaseFilename(master = top, padx = 5, pady = 5,
+                               text = 'Path and filename to new database')
     f.grid(row = frames['DatabaseFilename'])
     
     # Select dataset types
     selectTypes = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
                                            text = 'Select dataset types')
     selectTypes.grid(row = frames['SelectDatasetTypes'])
+    
+    # Select search path
+    s = Frame_SearchDirectory(master = top, padx = 5, pady = 5,
+                              text = 'Directory containing data files')
+    s.grid(row = frames['SearchDir'])
     
     build = Button(master = top, text = 'Build',
                    command=lambda: _buildDatabase(selectTypes.get()))
@@ -103,6 +110,36 @@ class Frame_DatabaseFilename(LabelFrame):
                                   initialfile = 'database.h5')
         if fname:
             self.filename = fname
+            self.entry.delete(0, END)
+            self.entry.insert(0, fname)
+            
+class Frame_SearchDirectory(LabelFrame):
+    """Select a path to search for files to build the database with.
+    
+    Attributes
+    ----------
+    searchPath : str
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.searchPath = None
+        
+        self.grid(sticky=W+E+N+S)
+        
+        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
+        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        
+        self.entry = Entry(self, width = 50)
+        self.entry.delete(0, END)
+        self.entry.insert(0, 'Enter the search path for the database build...')
+        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+
+    def loadFile(self):
+        fname = askdirectory(title = 'Select a search directory...',
+                             mustexist = True)
+        if fname:
+            self.searchPath = fname
             self.entry.delete(0, END)
             self.entry.insert(0, fname)
             
