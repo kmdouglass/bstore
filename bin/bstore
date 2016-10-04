@@ -6,7 +6,6 @@
 
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
 from tkinter import Checkbutton, Grid, IntVar, Radiobutton,Scrollbar, Text
-from tkinter import StringVar
 from tkinter import N, S, E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
 
