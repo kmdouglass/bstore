@@ -10,6 +10,8 @@ from abc import ABCMeta, abstractmethod
 from os.path import splitext
 import importlib
 import sys
+import tkinter as tk
+import bstore.database as db
 
 __version__ = config.__bstore_Version__
 
@@ -371,9 +373,109 @@ class MMParser(Parser):
 class PositionParser(Parser):
     """Reads a filename whose dataset IDs are determined by their positions.
     
+    Parameters
+    ----------
+    positionIDs   : dict
+        Integer/string pairs denoting the position in the filename
+        (starting from zero on the left) and the ID field at that
+        position. If a position should be skipped, set its value to None.
+    sep           : str
+        The character (or characters) that separate the different fields
+        in the filename.
+        
+    Attributes
+    ----------
+    positionIDs   : dict
+        Integer/string pairs denoting the position in the filename
+        (starting from zero on the left) and the ID field at that
+        position. If a position should be skipped, set its value to None.
+    sep           : str
+        The character (or characters) that separate the different fields
+        in the filename.
+    
     """
-    def parseFilename(self, filename, datasetType = 'Localizations',
-                      sep = '_', positionIDs = {}, **kwargs):
+    def __init__(self, positionIDs = {}, sep = '_'):
+        super().__init__()
+        self.positionIDs = positionIDs
+        self.sep         = sep
+        
+    def guiConfig(self):
+        """Configure the parser for the GUI interface.
+        
+        """
+        dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+        options = [x for x in dsIDs
+                     if x != 'datasetType' and x != 'attributeOf']
+        options.append('field separator')   
+        
+        root = tk.Tk()
+        root.title('PositionParser Configuration')
+        tk.Grid.rowconfigure(root, 0, weight = 1)
+        tk.Grid.columnconfigure(root, 0, weight = 1)
+
+        fields = self._GUI_Frame_PositionIDs(master = root, padx = 5, pady = 5,
+                                             text = 'Dataset IDs')
+        fields.grid(row = 0)
+        
+        sep = self._GUI_Frame_Separator(master = root, padx = 5, pady = 5,
+                                        text = 'Fields separator')
+        sep.grid(row = 1)
+        
+        root.mainloop()
+        
+    class _GUI_Frame_PositionIDs(tk.LabelFrame):
+        """Defines the frame of the GUI configuration for dataset IDs.
+        
+        """
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            
+            dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+            options = [x for x in dsIDs
+                         if x != 'datasetType' and x != 'attributeOf']
+            
+            directions = ('Enter an integer starting from zero that '
+                          'corresponds to the position of each ID field '
+                          'in the file name.\n\nExample: If prefix is 0, '
+                          'acqID is 2, and the separator is \'_\', then '
+                          'the filename HeLa_Cells_2.csv will be understood '
+                          'to have \'HeLa\' as its prefix and \'2\' as its '
+                          'acqID. \'Cells\' will not be used.\n\nLeave '
+                          'fields empty if they should not be assigned '
+                          'any values. (\'prefix\' and \'acqID\' must be '
+                          'assigned.)')
+            d = tk.Label(self, text = directions,
+                         wraplength = 300, justify = tk.LEFT)
+            d.grid(row = 0, column = 0, columnspan = 2)            
+            
+            self._fields = {}
+            for index, name in enumerate(options):
+                l = tk.Label(self, text = name).grid(row = index+1, column = 0,
+                                                 sticky = tk.W)
+                e = tk.Entry(self).grid(row = index+1, column = 1,
+                                        sticky = tk.E)
+                self._fields[name] = e
+                
+    class _GUI_Frame_Separator(tk.LabelFrame):
+        """Defines the frame of the GUI configuration for the field separator.
+        
+        """
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            
+            directions = ('Enter a character that separates the fields in '
+                          'the filename. This will typically be an underscore '
+                          '\'_\' or a hyphen \'-\', but may also be a '
+                          'combination of characters, such as \'_-\'.')
+            d = tk.Label(self, text = directions,
+                         wraplength = 300, justify = tk.LEFT)
+            d.grid(row = 0, column = 0, columnspan = 2)            
+            
+            l = tk.Label(self, text = 'separator').grid(row = 1, column = 0,
+                                                        sticky = tk.W)
+            e = tk.Entry(self).grid(row = 1, column = 1, sticky = tk.E)
+    
+    def parseFilename(self, filename, datasetType = 'Localizations', **kwargs):
         """Converts a filename into a Dataset.
         
         Parameters
@@ -383,13 +485,6 @@ class PositionParser(Parser):
         datasetType   : str
             The type of the dataset being parsed. This tells the Parser
             how to interpret the data.
-        sep           : str
-            The character (or characters) that separate the different fields
-            in the filename.
-        positionIDs   : dict
-            Integer/string pairs denoting the position in the filename
-            (starting from zero on the left) and the ID field at that
-            position. If a position should be skipped, set its value to None.
         
         """
         self.dataset = None
@@ -413,7 +508,7 @@ class PositionParser(Parser):
             rootName = splitext(filename)[0].split('/')[-1]
             
             # Extract the ids
-            idDict = self._parse(rootName, sep, positionIDs)
+            idDict = self._parse(rootName)
         
             mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
                                                                   datasetType))
@@ -424,19 +519,11 @@ class PositionParser(Parser):
             raise ParseFilenameFailure(('Error: File could not be parsed.',
                                         sys.exc_info()[0]))
                                         
-    def _parse(self, rootName, sep, positionIDs):
+    def _parse(self, rootName):
         """Actually does the work of splitting the name and finding IDs.
         
         rootName : str
             The actual string to parse.
-        sep           : str
-            The character (or characters) that separate the different
-            fields in the filename.
-        positionIDs   : dict
-            Integer/string pairs denoting the position in the filename
-            (starting from zero on the left) and the ID field at that
-            position. If a position should be skipped, set its value to
-            None.
         
         Returns
         -------
@@ -445,15 +532,15 @@ class PositionParser(Parser):
         
         """
         idDict = {}
-        for pos, field in enumerate(rootName.split(sep)):
-            if positionIDs[pos] is None:
+        for pos, field in enumerate(rootName.split(self.sep)):
+            if self.positionIDs[pos] is None:
                 continue
             else:
                 try:
                     # Convert numeric fields to numeric types
-                    idDict[positionIDs[pos]] = int(field)
+                    idDict[self.positionIDs[pos]] = int(field)
                 except ValueError:
-                    idDict[positionIDs[pos]] = field
+                    idDict[self.positionIDs[pos]] = field
         
         return idDict
         

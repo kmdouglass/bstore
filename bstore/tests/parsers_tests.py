@@ -526,11 +526,10 @@ def test_PositionParser_ParseFilename():
     inputFile = testDataRoot / Path('parsers_test_files') \
                              / Path('SimpleParser/') / Path(f)
                              
-    parser = parsers.PositionParser()
-
+    parser = parsers.PositionParser(positionIDs = {0 : 'prefix',
+                                                   1 : None, 2: 'acqID'})
     # Note: 'Control' will be dropped because it's surrounded by underscores
-    parser.parseFilename(inputFile,
-                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+    parser.parseFilename(inputFile)
     
     assert_equal(parser.dataset.datasetIDs['acqID'],                  1)
     assert_equal(parser.dataset.datasetIDs['prefix'],           'HeLaL')
@@ -539,8 +538,7 @@ def test_PositionParser_ParseFilename():
     f = 'HeLaS_Control_2.csv'
     inputFile = testDataRoot / Path('parsers_test_files') \
                              / Path('SimpleParser/') / Path(f)
-    parser.parseFilename(inputFile,
-                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+    parser.parseFilename(inputFile)
     
     assert_equal(parser.dataset.datasetIDs['acqID'],                  2)
     assert_equal(parser.dataset.datasetIDs['prefix'],           'HeLaS')
@@ -566,9 +564,9 @@ def test_PositionParser_parse():
           {0 : 'prefix', 1 : 'acqID', 2 : None, 3 : 'posID'},
           {'prefix' : 'HeLa', 'acqID' : 1, 'posID' : 0})]
           
-    parser = parsers.PositionParser()
     for currExample in f:
-        idDict = parser._parse(currExample[0], '_', currExample[1])
+        parser = parsers.PositionParser(positionIDs = currExample[1])
+        idDict = parser._parse(currExample[0])
                              
         for key, value in idDict.items():
             assert_equal(value, currExample[2][key])
@@ -580,14 +578,14 @@ def test_PositionParser_BadParse():
     """
     f = 'HeLaL.tif' # No acqID; file shouldn't parse
                              
-    parser = parsers.PositionParser()
+    parser = parsers.PositionParser(positionIDs = {0 : 'prefix',
+                                                   1 : None, 2: 'acqID'})
     # Note: There are more position IDs than there are actual positions in f
-    parser.parseFilename(f,
-                         positionIDs = {0 : 'prefix', 1 : None, 2: 'acqID'})
+    parser.parseFilename(f)
                          
 @raises(parsers.ParserNotInitializedError) 
 def test_PositionParser_GetDataset_NotInitialized():
-    """SimpleParser returns raises a not-initialized error.
+    """PositionParser returns raises a not-initialized error.
     
     """                             
     parser = parsers.PositionParser()
