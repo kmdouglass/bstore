@@ -128,7 +128,7 @@ def newDatabase():
     # Select dataset types
     t = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
                                  text = 'Select dataset types')
-    t.grid(row = frames['SelectDatasetTypes'])
+    t.grid(row = frames['SelectDatasetTypes'], sticky = E+W)
     
     # Select search path
     s = Frame_SelectSearchPath(master = top, padx = 5, pady = 5,
@@ -395,4 +395,5 @@ if __name__ == '__main__':
     menubar.add_cascade(label = 'Help', menu = helpmenu)
     
     root.config(menu = menubar)
+    root.wm_title('B-Store')
     root.mainloop()
