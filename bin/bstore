@@ -6,8 +6,10 @@
 
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
 from tkinter import Checkbutton, Grid, IntVar, Radiobutton,Scrollbar, Text
+from tkinter import BooleanVar
 from tkinter import N, S, E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
+from tkinter.messagebox import showerror
 
 import bstore.config as cfg
 import bstore.datasetTypes as dsTypes
@@ -25,6 +27,22 @@ ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE
 
 docsURL = 'http://b-store.readthedocs.io/en/latest/'
 
+class CatchExceptions:
+    """Decorator for catching exceptions in GUI functions.
+    
+    """
+    def __init__(self, function):
+        self.function = function
+
+    def __call__(self, *args):
+        try:
+            print('hello!')
+            return self.function(*args)
+        except Exception as e:
+            showerror(title = 'B-Store Error',
+                      message = 'An error occurred in B-Store\n\n%s' % e)    
+            print("Error: %s" % e)
+
 """Menu methods
 -------------------------------------------------------------------------------
 """
@@ -38,48 +56,64 @@ def about():
     button = Button(top, text='Close', command=top.destroy)
     button.pack()
 
-def _buildDatabase(filename, filenameStrings, searchPath,
-                   parser, readTiffTags):
-    print(filename)    
-    print(filenameStrings)
-    print(searchPath)
-    print(parser.positionIDs)
-    print(parser.sep)
-    print(parser._configuredByGUI)
-    print(readTiffTags.var.get())
+@CatchExceptions
+def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
+                   o_parser, o_options):
+    """Build the database by taking data from the GUI frames.
     
-    # TODO: Build database
+    The o_ preceding the argument names refers to the fact that the arguments
+    are Frame OBJECTS and thus their data is contained in their attributes.
+    
+    Parameters
+    ----------
+    o_filename     : tkinter LabelFrame
+    o_datasetTypes : tkinter LabelFrame
+    o_searchPath   : tkinter LabelFrame
+    o_parser       : tkinter LabelFrame
+    o_options      : tkinter LabelFrame
+    
+    """
+
+    print(o_filename.filename)    
+    print(o_datasetTypes.get())
+    print(o_searchPath.searchPath)
+    print(o_parser.parser.positionIDs)
+    print(o_parser.parser.sep)
+    print(o_parser.parser._configuredByGUI)
+    print(o_options.readTiffTags.var.get())
+    
+    
 
 def newDatabase():
     top = Toplevel()
     top.title('Create a New B-Store Database')
-    frames = {'DatabaseFilename'   : 0,
+    frames = {'SelectFilename'     : 0,
               'SelectDatasetTypes' : 1,
               'BuildButton'        : 5,
-              'SearchDir'          : 2,
+              'SelectSearchPath'   : 2,
               'SelectParser'       : 3,
               'Options'            : 4}
-    Grid.rowconfigure(top, frames['DatabaseFilename'],   weight = 2)
+    Grid.rowconfigure(top, frames['SelectFilename'],   weight = 2)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
     Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
-    Grid.rowconfigure(top, frames['SearchDir'],          weight = 2)
+    Grid.rowconfigure(top, frames['SelectSearchPath'],          weight = 2)
     Grid.rowconfigure(top, frames['SelectParser'],       weight = 2)
     Grid.columnconfigure(top, 0, weight=1)
 
-    # Filename and path    
-    f = Frame_DatabaseFilename(master = top, padx = 5, pady = 5,
+    # Select filename and path    
+    f = Frame_SelectFilename(master = top, padx = 5, pady = 5,
                                text = 'Path and filename for the new database')
-    f.grid(row = frames['DatabaseFilename'])
+    f.grid(row = frames['SelectFilename'])
     
     # Select dataset types
-    selectTypes = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
-                                           text = 'Select dataset types')
-    selectTypes.grid(row = frames['SelectDatasetTypes'])
+    t = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
+                                 text = 'Select dataset types')
+    t.grid(row = frames['SelectDatasetTypes'])
     
     # Select search path
-    s = Frame_SearchDirectory(master = top, padx = 5, pady = 5,
-                              text = 'Directory containing input data files')
-    s.grid(row = frames['SearchDir'])
+    s = Frame_SelectSearchPath(master = top, padx = 5, pady = 5,
+                               text = 'Directory containing input data files')
+    s.grid(row = frames['SelectSearchPath'])
     
     # Select parser
     p = Frame_SelectParser(master = top, padx = 5, pady = 5,
@@ -92,10 +126,7 @@ def newDatabase():
     o.grid(row = frames['Options'], sticky = E+W)
     
     build = Button(master = top, text = 'Build',
-                   command=lambda: _buildDatabase(f.filename,
-                                                  selectTypes.get(),
-                                                  s.searchPath, p.parser,
-                                                  o.readTiffTags))
+                   command=lambda: _buildDatabase(f, t, s, p, o))
     build.grid(row = frames['BuildButton'])
     
 def openDatabase():
@@ -107,7 +138,7 @@ def openDocs():
 """Frames
 -------------------------------------------------------------------------------
 """
-class Frame_DatabaseFilename(LabelFrame):
+class Frame_SelectFilename(LabelFrame):
     """Select a filename and path for the new Database file.
     
     Attributes
@@ -118,6 +149,7 @@ class Frame_DatabaseFilename(LabelFrame):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._isReady = False
         self.filename = None
         
         self.grid(sticky=W+E+N+S)
@@ -129,6 +161,11 @@ class Frame_DatabaseFilename(LabelFrame):
         self.entry.delete(0, END)
         self.entry.insert(0, 'Enter a path to a new database file...')
         self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.configure(state = 'readonly')
+        
+    @property
+    def isReady(self):
+        return self._isReady
 
     def loadFile(self):
         fname = asksaveasfilename(filetypes=(('HDF5 files', '*.h5'),
@@ -137,10 +174,13 @@ class Frame_DatabaseFilename(LabelFrame):
                                   initialfile = 'database.h5')
         if fname:
             self.filename = fname
+            self.entry.configure(state = 'normal')
             self.entry.delete(0, END)
             self.entry.insert(0, fname)
+            self.entry.configure(state = 'readonly')
+            self._isReady = True
             
-class Frame_SearchDirectory(LabelFrame):
+class Frame_SelectSearchPath(LabelFrame):
     """Select a path to search for files to build the database with.
     
     Attributes
@@ -150,6 +190,7 @@ class Frame_SearchDirectory(LabelFrame):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._isReady   = False
         self.searchPath = None
         
         self.grid(sticky=W+E+N+S)
@@ -161,14 +202,22 @@ class Frame_SearchDirectory(LabelFrame):
         self.entry.delete(0, END)
         self.entry.insert(0, 'Enter the search path for the database build...')
         self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.configure(state = 'readonly')
+        
+    @property
+    def isReady(self):
+        return self._isReady
 
     def loadFile(self):
         fname = askdirectory(title = 'Select a search directory...',
                              mustexist = True)
         if fname:
-            self.searchPath = fname
+            self.filename = fname
+            self.entry.configure(state = 'normal')
             self.entry.delete(0, END)
             self.entry.insert(0, fname)
+            self.entry.configure(state = 'readonly')
+            self._isReady = True
             
 class Frame_SelectDatasetTypes(LabelFrame):
     """Select the dataset types to include in the database.
@@ -180,7 +229,7 @@ class Frame_SelectDatasetTypes(LabelFrame):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+        self._isReady = True
         
         self.vsb = Scrollbar(self, orient="vertical")
         self.text = Text(self, height = 10,
@@ -209,6 +258,10 @@ class Frame_SelectDatasetTypes(LabelFrame):
         
         # This MUST follow insertion and positioning of the checkboxes/entries
         self.text.config(state = DISABLED)
+        
+    @property
+    def isReady(self):
+        return self._isReady
     
     def get(self):
         """Returns information about the frame.
@@ -230,20 +283,25 @@ class Frame_SelectOptions(LabelFrame):
     
     Attributes
     ----------
-    # TODO: Write this
+    readTiffTags : tkinter
     
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._isReady = True
         
         Grid.rowconfigure(self, 0, weight = 1)
         Grid.columnconfigure(self, 0, weight = 1)
     
-        v = IntVar(value = 0)
+        v = BooleanVar(value = 0)
         self.readTiffTags = Checkbutton(self, text = 'Read Tiff Tags (stores image metadata if images are tif files)',
                                         variable = v)
         self.readTiffTags.var = v
         self.readTiffTags.pack(side = 'left')
+    
+    @property
+    def isReady(self):
+        return self._isReady
         
 class Frame_SelectParser(LabelFrame):
     """Selects the parser to use during the database build.
@@ -255,12 +313,13 @@ class Frame_SelectParser(LabelFrame):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._isReady = False
         
         Grid.rowconfigure(self, 0, weight = 1)
         Grid.columnconfigure(self, 0, weight = 1)
         
-        # Get a list of all available parsers
-        self._pList = [(name, parser) for name, parser
+        # Create a list of all available parsers and their class objects
+        self._pList = [(name, parser()) for name, parser
                        in inspect.getmembers(parsers, inspect.isclass)
                        if issubclass(parser, parsers.Parser)
                           and name != 'Parser']
@@ -269,14 +328,19 @@ class Frame_SelectParser(LabelFrame):
     
         for index, (text, _) in enumerate(self._pList):
             b = Radiobutton(self, text=text,
-                            variable = v, value=index)
+                            variable = v, value=index,
+                            command = lambda: self._configureParser(v))
             b.grid(row = index, column = 0, sticky = W)
-            
-        cb = Button(self, text="Configure",
-                    command=lambda: self._getActiveButton(v))
-        cb.grid(row = 0, column = 1, sticky = E)
+        
+        # Intialize the parser contained by the LabelFrame
+        self._configureParser(v)
+        self._isReady = True
     
-    def _getActiveButton(self, radioButtonValue):
+    @property
+    def isReady(self):
+        return self._isReady
+    
+    def _configureParser(self, radioButtonValue):
         """Determines the active parser radio button.
         
         radioButtonValue : IntVar
@@ -284,8 +348,10 @@ class Frame_SelectParser(LabelFrame):
         """
         # Create the parser instance and launch its GUI configuration.
         index = radioButtonValue.get()
-        self.parser = self._pList[index][1]()
-        self.parser.gui()
+        self.parser = self._pList[index][1]
+        
+        if self.parser.requiresConfig:
+            self.parser.gui()
         
 """Main loop
 -------------------------------------------------------------------------------

@@ -29,7 +29,11 @@ from pathlib import Path
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
 class TestParser(parsers.Parser):
-    def parseFilename():
+    @property
+    def requiresConfig(self):
+        return False
+        
+    def parseFilename(self):
         pass
 
 def test_Parser_Attributes():

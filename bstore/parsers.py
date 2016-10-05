@@ -6,7 +6,7 @@ import pathlib
 import re
 import warnings
 from bstore import config
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from os.path import splitext
 import importlib
 import sys
@@ -21,17 +21,14 @@ __version__ = config.__bstore_Version__
 class Parser(metaclass = ABCMeta):
     """Translates SMLM files to machine-readable data structures.
     
-    Parameters
-    ----------
-    datasetIDs : dict
-        The ID fields and their values that identify the datset inside the
-        database.
-    
     Attributes
     ----------
-    datasetIDs : dict
-        The ID fields and their values that identify the datset inside the
-        database.   
+    dataset  : Dataset
+        A Dataset object for insertion into a B-Store Datastore.
+    requiresConfig : bool
+        Does parser require configuration before use? This is primarily
+        used by the GUI to determine whether the parser has attributes that
+        are set by its __init__() method or must be set before parsing files.
        
     """
     def __init__(self):
@@ -49,6 +46,11 @@ class Parser(metaclass = ABCMeta):
     @dataset.setter
     def dataset(self, ds):
         self._dataset = ds
+    
+        
+    @abstractproperty
+    def requiresConfig(self):
+        pass    
     
     @abstractmethod
     def parseFilename(self):
@@ -137,6 +139,8 @@ class MMParser(Parser):
         All of the channel identifiers that the MMParser recognizes.
     initialized         : bool
         Indicates whether the Parser currently possesses parsed information.
+    requiresConfig      : bool
+        Does parser require configuration before use?
     widefieldIdentifier : str
         The string identifying the widefield image number.
     
@@ -183,6 +187,10 @@ class MMParser(Parser):
                 self.dataset = None
         else:
             raise ValueError('Error: initialized must be a bool.')
+            
+    @property
+    def requiresConfig(self):
+        return False
 
     def parseFilename(self, filename, datasetType = 'LocResults', **kwargs):
         """Parse the filename to extract the acquisition information.
@@ -385,19 +393,25 @@ class PositionParser(Parser):
         
     Attributes
     ----------
-    positionIDs   : dict
+    requiresConfig : bool
+        Does parser require configuration before use?
+    positionIDs    : dict
         Integer/string pairs denoting the position in the filename
         (starting from zero on the left) and the ID field at that
         position. If a position should be skipped, set its value to None.
-    sep           : str
+    sep            : str
         The character (or characters) that separate the different fields
         in the filename.
-    
-    """
-    def __init__(self, positionIDs = {}, sep = '_'):
+
+    """       
+    def __init__(self, positionIDs = {0 : 'prefix', 1 : 'acqID'}, sep = '_'):
         super().__init__()
         self.positionIDs      = positionIDs
         self.sep              = sep
+    
+    @property
+    def requiresConfig(self):
+        return True    
     
     def parseFilename(self, filename, datasetType = 'Localizations', **kwargs):
         """Converts a filename into a Dataset.
@@ -492,14 +506,18 @@ class PositionParser(Parser):
         
         # Set the field positions in the filename
         fields = self._GUI_Frame_PositionIDs(master = root, padx = 5, pady = 5,
-                                             text = 'Dataset IDs')
+                                             text = 'Dataset IDs',
+                                             positionIDs = self.positionIDs)
         fields.grid(row = 0, columnspan = 2)
         
         # Set the field separator character
         sep = self._GUI_Frame_Separator(master = root, padx = 5, pady = 5,
-                                        text = 'Fields separator')
+                                        text = 'Fields separator',
+                                        separator = self.sep)
         sep.grid(row = 1, columnspan = 2)
         
+        # Exit this window by clicking OK or Cancel;
+        # OK updates the parser's state whereas Cancel does not
         ok     = tk.Button(master = root, text = 'OK',
                            command = lambda: self._guiSet(fields.fields,
                                                           sep.sep, root))
@@ -535,8 +553,9 @@ class PositionParser(Parser):
         fields : dict of str:tk.Entry
         
         """
-        def __init__(self, **kwargs):
+        def __init__(self, positionIDs = {}, **kwargs):
             super().__init__(**kwargs)
+            self.positionIDs = positionIDs
             
             dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
             options = [x for x in dsIDs
@@ -556,12 +575,21 @@ class PositionParser(Parser):
                          wraplength = 300, justify = tk.LEFT)
             d.grid(row = 0, column = 0, columnspan = 2)            
             
+            # Add the labels and entries for each field ID integer
             self.fields = {}
             for index, name in enumerate(options):
                 tk.Label(self, text = name).grid(row = index+1, column = 0,
                                                  sticky = tk.W)
                 e = tk.Entry(self)
                 e.grid(row = index+1, column = 1, sticky = tk.E)
+                
+                # Set the values of the text fields to the current state of
+                # the instance.
+                if name in self.positionIDs.values():
+                    td     = self.positionIDs
+                    # Gets the keys corresponding to a particular value
+                    posNum = list(td.keys())[list(td.values()).index(name)]
+                    e.insert(0, str(posNum))
                 self.fields[name] = e
                 
     class _GUI_Frame_Separator(tk.LabelFrame):
@@ -572,7 +600,7 @@ class PositionParser(Parser):
         sep : tk.Entry
         
         """
-        def __init__(self, **kwargs):
+        def __init__(self, separator = '', **kwargs):
             super().__init__(**kwargs)
             
             directions = ('Enter a character that separates the fields in '
@@ -587,6 +615,7 @@ class PositionParser(Parser):
                                                     sticky = tk.W)
             self.sep = tk.Entry(self)
             self.sep.grid(row = 1, column = 1, sticky = tk.E)
+            self.sep.insert(0, separator)
         
 class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
@@ -595,7 +624,16 @@ class SimpleParser(Parser):
     DatabaseAtoms for insertion into a database. * represents filename
     extensions like .csv, .json, and .tif.
     
-    """            
+    Attributes
+    ----------
+    requiresConfig : bool
+        Does parser require configuration before use?
+    
+    """
+    @property
+    def requiresConfig(self):
+        return False
+        
     def parseFilename(self, filename, datasetType = 'Localizations', **kwargs):
         """Converts a filename into a Dataset.
         
