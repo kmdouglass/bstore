@@ -38,8 +38,15 @@ def about():
     button = Button(top, text='Close', command=top.destroy)
     button.pack()
 
-def _buildDatabase(filenameStrings):
+def _buildDatabase(filename, filenameStrings, searchPath, parser):
+    print(filename)    
     print(filenameStrings)
+    print(searchPath)
+    print(parser.positionIDs)
+    print(parser.sep)
+    print(parser._configuredByGUI)
+    
+    # TODO: Build database
 
 def newDatabase():
     top = Toplevel()
@@ -77,7 +84,7 @@ def newDatabase():
     p.grid(row = frames['SelectParser'], sticky = E+W)
     
     build = Button(master = top, text = 'Build',
-                   command=lambda: _buildDatabase(selectTypes.get()))
+                   command=lambda: _buildDatabase(f.filename, selectTypes.get(), s.searchPath, p.parser))
     build.grid(row = frames['BuildButton'])
     
 def openDatabase():
@@ -217,20 +224,36 @@ class Frame_SelectParser(LabelFrame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
+        Grid.rowconfigure(self, 0, weight = 1)
+        Grid.columnconfigure(self, 0, weight = 1)
+        
         # Get a list of all available parsers
-        pList = [(name, parser) for name, parser
-                 in inspect.getmembers(parsers, inspect.isclass)
-                 if issubclass(parser, parsers.Parser) and name != 'Parser']
+        self._pList = [(name, parser) for name, parser
+                       in inspect.getmembers(parsers, inspect.isclass)
+                       if issubclass(parser, parsers.Parser)
+                          and name != 'Parser']
     
         v = IntVar(value = 0)
     
-        for index, (text, _) in enumerate(pList):
+        for index, (text, _) in enumerate(self._pList):
             b = Radiobutton(self, text=text,
                             variable = v, value=index)
-            b.pack(anchor=W)
+            b.grid(row = index, column = 0, sticky = W)
+            
+        cb = Button(self, text="Configure",
+                    command=lambda: self._getActiveButton(v))
+        cb.grid(row = 0, column = 1, sticky = E)
     
-    def get():
-        pass
+    def _getActiveButton(self, radioButtonValue):
+        """Determines the active parser radio button.
+        
+        radioButtonValue : IntVar
+        
+        """
+        # Create the parser instance and launch its GUI configuration.
+        index = radioButtonValue.get()
+        self.parser = self._pList[index][1]()
+        self.parser.gui()
         
 """Main loop
 -------------------------------------------------------------------------------

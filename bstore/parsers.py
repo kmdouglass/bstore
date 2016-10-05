@@ -396,115 +396,8 @@ class PositionParser(Parser):
     """
     def __init__(self, positionIDs = {}, sep = '_'):
         super().__init__()
-        self.positionIDs = positionIDs
-        self.sep         = sep
-        
-    def gui(self):
-        """Configure the parser for the GUI interface.
-        
-        """
-        dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
-        options = [x for x in dsIDs
-                     if x != 'datasetType' and x != 'attributeOf']
-        options.append('field separator')   
-        
-        root = tk.Tk()
-        root.title('PositionParser Configuration')
-        tk.Grid.rowconfigure(root, 0, weight = 1)
-        tk.Grid.columnconfigure(root, 0, weight = 1)
-
-        fields = self._GUI_Frame_PositionIDs(master = root, padx = 5, pady = 5,
-                                             text = 'Dataset IDs')
-        fields.grid(row = 0, columnspan = 2)
-        
-        sep = self._GUI_Frame_Separator(master = root, padx = 5, pady = 5,
-                                        text = 'Fields separator')
-        sep.grid(row = 1, columnspan = 2)
-        
-        ok     = tk.Button(master = root, text = 'OK',
-                           command = lambda: self._guiSet(fields.fields,
-                                                          sep.sep))
-        cancel = tk.Button(master = root, text = 'Cancel',
-                           command = root.destroy)
-        ok.grid(row = 2, column = 0, sticky = tk.E)
-        cancel.grid(row = 2,column = 1, sticky = tk.W)
-        
-        root.mainloop()
-    
-    def _guiSet(self, fields, sep):
-        """Sets the Parser attributes based on the GUI inputs.
-        
-        Parameters
-        ----------
-        fields : dict of str:tk.Entry
-        sep    : tk.Entry 
-        
-        """
-        self.positionIDs = {int(entry.get()) : fieldname 
-                            for fieldname, entry in fields.items()
-                            if entry.get()}
-        self.sep = sep.get()
-        
-    class _GUI_Frame_PositionIDs(tk.LabelFrame):
-        """Defines the frame of the GUI configuration for dataset IDs.
-        
-        Attributes
-        ----------
-        fields : dict of str:tk.Entry
-        
-        """
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-            
-            dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
-            options = [x for x in dsIDs
-                         if x != 'datasetType' and x != 'attributeOf']
-            
-            directions = ('Enter an integer starting from zero that '
-                          'corresponds to the position of each ID field '
-                          'in the filename.\n\nExample: If prefix is 0, '
-                          'acqID is 2, and the separator is \'_\', then '
-                          'the filename HeLa_Cells_2.csv will be understood '
-                          'to have \'HeLa\' as its prefix and \'2\' as its '
-                          'acqID. \'Cells\' will not be used.\n\nLeave '
-                          'fields empty if they should not be assigned '
-                          'any values. (\'prefix\' and \'acqID\' must be '
-                          'assigned.)')
-            d = tk.Label(self, text = directions,
-                         wraplength = 300, justify = tk.LEFT)
-            d.grid(row = 0, column = 0, columnspan = 2)            
-            
-            self.fields = {}
-            for index, name in enumerate(options):
-                tk.Label(self, text = name).grid(row = index+1, column = 0,
-                                                 sticky = tk.W)
-                e = tk.Entry(self)
-                e.grid(row = index+1, column = 1, sticky = tk.E)
-                self.fields[name] = e
-                
-    class _GUI_Frame_Separator(tk.LabelFrame):
-        """Defines the frame of the GUI configuration for the field separator.
-        
-        Attributes
-        ----------
-        sep : tk.Entry
-        
-        """
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-            
-            directions = ('Enter a character that separates the fields in '
-                          'the filename. This will typically be an underscore '
-                          '\'_\' or a hyphen \'-\', but may also be a '
-                          'combination of characters, such as \'_-\'.')
-            d = tk.Label(self, text = directions,
-                         wraplength = 300, justify = tk.LEFT)
-            d.grid(row = 0, column = 0, columnspan = 2)            
-            
-            tk.Label(self, text = 'separator').grid(row = 1, column = 0,
-                                                    sticky = tk.W)
-            self.sep = tk.Entry(self)
-            self.sep.grid(row = 1, column = 1, sticky = tk.E)
+        self.positionIDs      = positionIDs
+        self.sep              = sep
     
     def parseFilename(self, filename, datasetType = 'Localizations', **kwargs):
         """Converts a filename into a Dataset.
@@ -574,6 +467,126 @@ class PositionParser(Parser):
                     idDict[self.positionIDs[pos]] = field
         
         return idDict
+        
+    """
+    Parser GUI functionality
+    ------------------------
+    """
+    def gui(self):
+        """Configure the parser for the GUI interface.
+        
+        """
+        # Used to determine what to return when OK or Cancel
+        # buttons are clicked.
+        self._configuredByGUI = False        
+        
+        dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+        options = [x for x in dsIDs
+                     if x != 'datasetType' and x != 'attributeOf']
+        options.append('field separator')   
+        
+        root = tk.Tk()
+        root.title('PositionParser Configuration')
+        tk.Grid.rowconfigure(root, 0, weight = 1)
+        tk.Grid.columnconfigure(root, 0, weight = 1)
+        
+        # Set the field positions in the filename
+        fields = self._GUI_Frame_PositionIDs(master = root, padx = 5, pady = 5,
+                                             text = 'Dataset IDs')
+        fields.grid(row = 0, columnspan = 2)
+        
+        # Set the field separator character
+        sep = self._GUI_Frame_Separator(master = root, padx = 5, pady = 5,
+                                        text = 'Fields separator')
+        sep.grid(row = 1, columnspan = 2)
+        
+        ok     = tk.Button(master = root, text = 'OK',
+                           command = lambda: self._guiSet(fields.fields,
+                                                          sep.sep, root))
+        cancel = tk.Button(master = root, text = 'Cancel',
+                           command = root.destroy)
+        ok.grid(row = 2, column = 0, sticky = tk.E)
+        cancel.grid(row = 2,column = 1, sticky = tk.W)
+        
+        root.mainloop()
+    
+    def _guiSet(self, fields, sep, root):
+        """Sets the Parser attributes based on the GUI inputs.
+        
+        Parameters
+        ----------
+        fields : dict of str:tk.Entry
+        sep    : tk.Entry
+        root   : tk.Tkinter object
+        
+        """
+        self.positionIDs = {int(entry.get()) : fieldname 
+                            for fieldname, entry in fields.items()
+                            if entry.get()}
+        self.sep = sep.get()
+        self._configuredByGUI = True
+        root.destroy()
+        
+    class _GUI_Frame_PositionIDs(tk.LabelFrame):
+        """Defines the frame of the GUI configuration for dataset IDs.
+        
+        Attributes
+        ----------
+        fields : dict of str:tk.Entry
+        
+        """
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            
+            dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+            options = [x for x in dsIDs
+                         if x != 'datasetType' and x != 'attributeOf']
+            
+            directions = ('Enter an integer starting from zero that '
+                          'corresponds to the position of each ID field '
+                          'in the filename.\n\nExample: If prefix is at '
+                          'position 0, acqID is at position 2, and the '
+                          'separator is \'_\', then the filename '
+                          'HeLa_Cells_35.csv will be understood to have '
+                          '\'HeLa\' as its prefix and \'35\' as its acqID. '
+                          '\'Cells\' will not be used.\n\nLeave fields empty '
+                          'if they should not be assigned any values. '
+                          '(\'prefix\' and \'acqID\' must be assigned.)')
+            d = tk.Label(self, text = directions,
+                         wraplength = 300, justify = tk.LEFT)
+            d.grid(row = 0, column = 0, columnspan = 2)            
+            
+            self.fields = {}
+            for index, name in enumerate(options):
+                tk.Label(self, text = name).grid(row = index+1, column = 0,
+                                                 sticky = tk.W)
+                e = tk.Entry(self)
+                e.grid(row = index+1, column = 1, sticky = tk.E)
+                self.fields[name] = e
+                
+    class _GUI_Frame_Separator(tk.LabelFrame):
+        """Defines the frame of the GUI configuration for the field separator.
+        
+        Attributes
+        ----------
+        sep : tk.Entry
+        
+        """
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            
+            directions = ('Enter a character that separates the fields in '
+                          'the filename. This will typically be an underscore '
+                          '\'_\' or a hyphen \'-\', but may also be a '
+                          'combination of characters, such as \'_-\'.')
+            d = tk.Label(self, text = directions,
+                         wraplength = 300, justify = tk.LEFT)
+            d.grid(row = 0, column = 0, columnspan = 2)            
+            
+            tk.Label(self, text = 'separator').grid(row = 1, column = 0,
+                                                    sticky = tk.W)
+            self.sep = tk.Entry(self)
+            self.sep.grid(row = 1, column = 1, sticky = tk.E)
         
 class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
