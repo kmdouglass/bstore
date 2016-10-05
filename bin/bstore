@@ -9,7 +9,7 @@ from tkinter import Checkbutton, Grid, IntVar, Radiobutton,Scrollbar, Text
 from tkinter import BooleanVar
 from tkinter import N, S, E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showerror, showinfo
 
 import bstore.config as cfg
 import bstore.database as db
@@ -73,27 +73,40 @@ def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
     o_options      : tkinter LabelFrame
     
     """
-
-    #print(o_filename.filename)    
-    #print(o_datasetTypes.get())
-    #print(o_searchPath.searchPath)
-    #print(o_parser.parser.positionIDs)
-    #print(o_parser.parser.sep)
-    #print(o_parser.parser._configuredByGUI)
-    #print(o_options.readTiffTags.var.get())
+    
+    if cfg.__Verbose__:
+        print('Filename: ' + str(o_filename.filename))
+        print('Dataset Types: ' + str(o_datasetTypes.get()))
+        print('Search Path: ' + str(o_searchPath.searchPath))
+        print('Parser: ' + str(o_parser.parser))
+        print('Options/ReadTiffTags: ' + str(o_options.readTiffTags.var.get()))
+        
+        try:        
+            print('Configured by GUI?' + str(o_parser.parser._configuredByGUI))
+            print('Position IDs' + str(o_parser.parser.positionIDs))
+            print('Separator' + str(o_parser.parser.sep))
+        except:
+            pass
+        
+    assert o_filename.isReady, 'Error: Path to new Datastore is not set.'
+    assert o_searchPath.isReady, 'Error: Raw file search path is not set.'
     
     # Register the dataset types
     cfg.__Registered_DatasetTypes__ = [x for x in o_datasetTypes.get().keys()]
     
     # Create and build the Datastore
     dstore = db.HDFDatabase(o_filename.filename)
-    dstore.build(o_parser.parser, o_searchPath.searchPath,
-                 o_datasetTypes.get(),
-                 readTiffTags = o_options.readTiffTags.var.get())
+    results = dstore.build(o_parser.parser, o_searchPath.searchPath,
+                           o_datasetTypes.get(),
+                           readTiffTags = o_options.readTiffTags.var.get())
+                 
+    showinfo(title   = 'Build Complete',
+             message = ('{:d} files were successfully added to '
+                        'the HDF datastore.').format(len(results)))
 
 def newDatabase():
     top = Toplevel()
-    top.title('Create a New B-Store Database')
+    top.title('Create a new HDF Datastore')
     frames = {'SelectFilename'     : 0,
               'SelectDatasetTypes' : 1,
               'BuildButton'        : 5,
@@ -144,88 +157,7 @@ def openDocs():
 
 """Frames
 -------------------------------------------------------------------------------
-"""
-class Frame_SelectFilename(LabelFrame):
-    """Select a filename and path for the new Database file.
-    
-    Attributes
-    ----------
-    filename : str
-        The full path and filename to the database file.
-    
-    """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._isReady = False
-        self.filename = None
-        
-        self.grid(sticky=W+E+N+S)
-        
-        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
-        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
-        
-        self.entry = Entry(self, width = 50)
-        self.entry.delete(0, END)
-        self.entry.insert(0, 'Enter a path to a new database file...')
-        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
-        self.entry.configure(state = 'readonly')
-        
-    @property
-    def isReady(self):
-        return self._isReady
-
-    def loadFile(self):
-        fname = asksaveasfilename(filetypes=(('HDF5 files', '*.h5'),
-                                             ('All files', '*.*')),
-                                  title       = 'Select a new file...',
-                                  initialfile = 'database.h5')
-        if fname:
-            self.filename = fname
-            self.entry.configure(state = 'normal')
-            self.entry.delete(0, END)
-            self.entry.insert(0, fname)
-            self.entry.configure(state = 'readonly')
-            self._isReady = True
-            
-class Frame_SelectSearchPath(LabelFrame):
-    """Select a path to search for files to build the database with.
-    
-    Attributes
-    ----------
-    searchPath : str
-    
-    """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._isReady   = False
-        self.searchPath = None
-        
-        self.grid(sticky=W+E+N+S)
-        
-        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
-        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
-        
-        self.entry = Entry(self, width = 50)
-        self.entry.delete(0, END)
-        self.entry.insert(0, 'Enter the search path for the database build...')
-        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
-        self.entry.configure(state = 'readonly')
-        
-    @property
-    def isReady(self):
-        return self._isReady
-
-    def loadFile(self):
-        fname = askdirectory(title = 'Select a search directory...',
-                             mustexist = True)
-        if fname:
-            self.searchPath = fname
-            self.entry.configure(state = 'normal')
-            self.entry.delete(0, END)
-            self.entry.insert(0, fname)
-            self.entry.configure(state = 'readonly')
-            self._isReady = True
-            
+"""            
 class Frame_SelectDatasetTypes(LabelFrame):
     """Select the dataset types to include in the database.
     
@@ -284,6 +216,48 @@ class Frame_SelectDatasetTypes(LabelFrame):
                                if k.var.get() and v.get()
                           }
         return filenameStrings
+        
+class Frame_SelectFilename(LabelFrame):
+    """Select a filename and path for the new Database file.
+    
+    Attributes
+    ----------
+    filename : str
+        The full path and filename to the database file.
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._isReady = False
+        self.filename = None
+        
+        self.grid(sticky=W+E+N+S)
+        
+        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
+        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        
+        self.entry = Entry(self, width = 50)
+        self.entry.delete(0, END)
+        self.entry.insert(0, 'Enter a path to a new database file...')
+        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.configure(state = 'readonly')
+        
+    @property
+    def isReady(self):
+        return self._isReady
+
+    def loadFile(self):
+        fname = asksaveasfilename(filetypes=(('HDF5 files', '*.h5'),
+                                             ('All files', '*.*')),
+                                  title       = 'Select a new file...',
+                                  initialfile = 'database.h5')
+        if fname:
+            self.filename = fname
+            self.entry.configure(state = 'normal')
+            self.entry.delete(0, END)
+            self.entry.insert(0, fname)
+            self.entry.configure(state = 'readonly')
+            self._isReady = True
         
 class Frame_SelectOptions(LabelFrame):
     """Selects the optional arguments for the build.
@@ -359,6 +333,45 @@ class Frame_SelectParser(LabelFrame):
         
         if self.parser.requiresConfig:
             self.parser.gui()
+            
+class Frame_SelectSearchPath(LabelFrame):
+    """Select a path to search for files to build the database with.
+    
+    Attributes
+    ----------
+    searchPath : str
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._isReady   = False
+        self.searchPath = None
+        
+        self.grid(sticky=W+E+N+S)
+        
+        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
+        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        
+        self.entry = Entry(self, width = 50)
+        self.entry.delete(0, END)
+        self.entry.insert(0, 'Enter the search path for the database build...')
+        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.configure(state = 'readonly')
+        
+    @property
+    def isReady(self):
+        return self._isReady
+
+    def loadFile(self):
+        fname = askdirectory(title = 'Select a search directory...',
+                             mustexist = True)
+        if fname:
+            self.searchPath = fname
+            self.entry.configure(state = 'normal')
+            self.entry.delete(0, END)
+            self.entry.insert(0, fname)
+            self.entry.configure(state = 'readonly')
+            self._isReady = True
         
 """Main loop
 -------------------------------------------------------------------------------
@@ -369,8 +382,8 @@ if __name__ == '__main__':
     menubar = Menu(root)
     
     filemenu = Menu(menubar, tearoff = 0)
-    filemenu.add_command(label = 'New...',  command = newDatabase)
-    filemenu.add_command(label = 'Open...', command = openDatabase)
+    filemenu.add_command(label = 'New HDF Datastore...', command = newDatabase)
+    #filemenu.add_command(label = 'Open...', command = openDatabase)
     filemenu.add_separator()
     filemenu.add_command(label = 'Quit',    command = root.quit)
     menubar.add_cascade(label ='File', menu=filemenu)
