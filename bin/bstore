@@ -100,10 +100,10 @@ def newDatabase():
               'SelectSearchPath'   : 2,
               'SelectParser'       : 3,
               'Options'            : 4}
-    Grid.rowconfigure(top, frames['SelectFilename'],   weight = 2)
+    Grid.rowconfigure(top, frames['SelectFilename'],     weight = 2)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
     Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
-    Grid.rowconfigure(top, frames['SelectSearchPath'],          weight = 2)
+    Grid.rowconfigure(top, frames['SelectSearchPath'],   weight = 2)
     Grid.rowconfigure(top, frames['SelectParser'],       weight = 2)
     Grid.columnconfigure(top, 0, weight=1)
 

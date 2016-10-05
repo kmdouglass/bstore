@@ -12,6 +12,7 @@ import importlib
 import sys
 import tkinter as tk
 import bstore.database as db
+import traceback
 
 __version__ = config.__bstore_Version__
 
@@ -454,8 +455,9 @@ class PositionParser(Parser):
             self.dataset      = dType(datasetIDs = idDict)
             self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
-            raise ParseFilenameFailure(('Error: File could not be parsed.',
-                                        sys.exc_info()[0]))
+            if config.__Verbose__:
+                print(traceback.format_exc())
+            raise ParseFilenameFailure('ParseFilenameError')
                                         
     def _parse(self, rootName):
         """Actually does the work of splitting the name and finding IDs.
@@ -471,7 +473,8 @@ class PositionParser(Parser):
         """
         idDict = {}
         for pos, field in enumerate(rootName.split(self.sep)):
-            if self.positionIDs[pos] is None:
+            # Skip empty or positions or those marked None
+            if pos not in self.positionIDs or self.positionIDs[pos] is None:
                 continue
             else:
                 try:

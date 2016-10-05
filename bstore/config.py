@@ -62,3 +62,8 @@ __MM_PixelSize__ = 'PixelSize_um'
 
 """
 __Registered_DatasetTypes__ = []
+
+"""__Verbose__ : bool
+    Controls how much detail is provided when errors occur.
+"""
+__Verbose__ = False

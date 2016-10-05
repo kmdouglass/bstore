@@ -15,6 +15,7 @@ from dateutil.parser import parse
 from tifffile import TiffFile
 import importlib
 from collections import namedtuple, OrderedDict
+import traceback
 
 __version__ = config.__bstore_Version__
 
@@ -392,6 +393,9 @@ class HDFDatabase(Database):
                     print(("Unexpected error in build():"),
                     sys.exc_info()[0])
                     print(err)
+                    
+                    if config.__Verbose__:
+                        print(traceback.format_exc())
 
         # Report on all the datasets that were parsed
         buildResults = self._sortDatasets(datasets)
