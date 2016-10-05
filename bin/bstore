@@ -38,13 +38,15 @@ def about():
     button = Button(top, text='Close', command=top.destroy)
     button.pack()
 
-def _buildDatabase(filename, filenameStrings, searchPath, parser):
+def _buildDatabase(filename, filenameStrings, searchPath,
+                   parser, readTiffTags):
     print(filename)    
     print(filenameStrings)
     print(searchPath)
     print(parser.positionIDs)
     print(parser.sep)
     print(parser._configuredByGUI)
+    print(readTiffTags.var.get())
     
     # TODO: Build database
 
@@ -53,9 +55,10 @@ def newDatabase():
     top.title('Create a New B-Store Database')
     frames = {'DatabaseFilename'   : 0,
               'SelectDatasetTypes' : 1,
-              'BuildButton'        : 4,
+              'BuildButton'        : 5,
               'SearchDir'          : 2,
-              'SelectParser'       : 3}
+              'SelectParser'       : 3,
+              'Options'            : 4}
     Grid.rowconfigure(top, frames['DatabaseFilename'],   weight = 2)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
     Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
@@ -83,8 +86,16 @@ def newDatabase():
                            text = 'Select and configure the filename parser')
     p.grid(row = frames['SelectParser'], sticky = E+W)
     
+    # Optional arguments for readingFromFiles
+    o = Frame_SelectOptions(master = top, padx = 5, pady = 5,
+                            text = 'Miscellaneous build options')
+    o.grid(row = frames['Options'], sticky = E+W)
+    
     build = Button(master = top, text = 'Build',
-                   command=lambda: _buildDatabase(f.filename, selectTypes.get(), s.searchPath, p.parser))
+                   command=lambda: _buildDatabase(f.filename,
+                                                  selectTypes.get(),
+                                                  s.searchPath, p.parser,
+                                                  o.readTiffTags))
     build.grid(row = frames['BuildButton'])
     
 def openDatabase():
@@ -176,8 +187,8 @@ class Frame_SelectDatasetTypes(LabelFrame):
                          yscrollcommand=self.vsb.set,
                          bg = self.master.cget('bg'))
         self.vsb.config(command=self.text.yview)
-        self.vsb.pack(side="right", fill="y")
-        self.text.pack(side="left", fill="both", expand=True)
+        self.vsb.pack(side='right', fill='y')
+        self.text.pack(side='left', fill='both', expand=True)
         
         # Create the list of checkboxes
         self._listOfTypes = []
@@ -214,12 +225,33 @@ class Frame_SelectDatasetTypes(LabelFrame):
                           }
         return filenameStrings
         
+class Frame_SelectOptions(LabelFrame):
+    """Selects the optional arguments for the build.
+    
+    Attributes
+    ----------
+    # TODO: Write this
+    
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        Grid.rowconfigure(self, 0, weight = 1)
+        Grid.columnconfigure(self, 0, weight = 1)
+    
+        v = IntVar(value = 0)
+        self.readTiffTags = Checkbutton(self, text = 'Read Tiff Tags (stores image metadata if images are tif files)',
+                                        variable = v)
+        self.readTiffTags.var = v
+        self.readTiffTags.pack(side = 'left')
+        
 class Frame_SelectParser(LabelFrame):
     """Selects the parser to use during the database build.
     
     Attributes
     ----------
-    
+    parser : bstore.parsers.Parser
+
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
