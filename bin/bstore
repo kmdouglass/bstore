@@ -12,6 +12,7 @@ from tkinter.filedialog import askdirectory, asksaveasfilename
 from tkinter.messagebox import showerror
 
 import bstore.config as cfg
+import bstore.database as db
 import bstore.datasetTypes as dsTypes
 import bstore.parsers as parsers
 import webbrowser
@@ -36,7 +37,6 @@ class CatchExceptions:
 
     def __call__(self, *args):
         try:
-            print('hello!')
             return self.function(*args)
         except Exception as e:
             showerror(title = 'B-Store Error',
@@ -74,15 +74,22 @@ def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
     
     """
 
-    print(o_filename.filename)    
-    print(o_datasetTypes.get())
-    print(o_searchPath.searchPath)
-    print(o_parser.parser.positionIDs)
-    print(o_parser.parser.sep)
-    print(o_parser.parser._configuredByGUI)
-    print(o_options.readTiffTags.var.get())
+    #print(o_filename.filename)    
+    #print(o_datasetTypes.get())
+    #print(o_searchPath.searchPath)
+    #print(o_parser.parser.positionIDs)
+    #print(o_parser.parser.sep)
+    #print(o_parser.parser._configuredByGUI)
+    #print(o_options.readTiffTags.var.get())
     
+    # Register the dataset types
+    cfg.__Registered_DatasetTypes__ = [x for x in o_datasetTypes.get().keys()]
     
+    # Create and build the Datastore
+    dstore = db.HDFDatabase(o_filename.filename)
+    dstore.build(o_parser.parser, o_searchPath.searchPath,
+                 o_datasetTypes.get(),
+                 readTiffTags = o_options.readTiffTags.var.get())
 
 def newDatabase():
     top = Toplevel()
@@ -212,7 +219,7 @@ class Frame_SelectSearchPath(LabelFrame):
         fname = askdirectory(title = 'Select a search directory...',
                              mustexist = True)
         if fname:
-            self.filename = fname
+            self.searchPath = fname
             self.entry.configure(state = 'normal')
             self.entry.delete(0, END)
             self.entry.insert(0, fname)
@@ -242,7 +249,7 @@ class Frame_SelectDatasetTypes(LabelFrame):
         # Create the list of checkboxes
         self._listOfTypes = []
         for currType in dsTypes.__all__:
-            v = IntVar(value = 1)
+            v = BooleanVar(value = 1)
             cb = Checkbutton(self, text = '%s' % currType, anchor = W,
                              width = 15, variable = v)
             cb.var = v # Easy access to checkbox's current value
@@ -274,7 +281,7 @@ class Frame_SelectDatasetTypes(LabelFrame):
         """
         filenameStrings = {k.cget('text') : v.get()
                                for k, v in self._listOfTypes
-                               if k.var and v.get()
+                               if k.var.get() and v.get()
                           }
         return filenameStrings
         
