@@ -10,6 +10,7 @@ from tkinter import BooleanVar
 from tkinter import E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
 from tkinter.messagebox import showerror, showinfo
+from tkinter import ttk
 
 import bstore.config as cfg
 import bstore.database as db
@@ -79,7 +80,8 @@ class CreateHDFDatastore():
                   'SelectSearchPath'   : 2,
                   'SelectParser'       : 3,
                   'Options'            : 4,
-                  'BuildButton'        : 5,}
+                  'BuildButton'        : 5,
+                  'ProgressBar'        : 6}
         Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
         Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
         Grid.columnconfigure(top, 0, weight=1)
@@ -113,9 +115,14 @@ class CreateHDFDatastore():
             text = 'Miscellaneous build options')
         o.grid(row = frames['Options'], sticky = E+W)
         
+        pb = ttk.Progressbar(
+            master = top, orient = 'horizontal',
+            mode = 'determinate')
+        pb.grid(row = frames['ProgressBar'], sticky = E+W)
+        
         build = Button(
             master = top, text = 'Build',
-            command=lambda: self._buildDatabase(self, f, t, s, p, o))
+            command=lambda: self._buildDatabase(self, f, t, s, p, o, pb))
         build.grid(row = frames['BuildButton'])
         
         # Make this window modal
@@ -125,7 +132,8 @@ class CreateHDFDatastore():
         
     @CatchExceptions
     def _buildDatabase(self, o_filename, o_datasetTypes,
-                       o_searchPath, o_parser, o_options):
+                       o_searchPath, o_parser, o_options,
+                       o_progressBar):
         """Build the database by taking data from the GUI frames.
         
         The o_ preceding the argument names refers to the fact that the
@@ -171,7 +179,6 @@ class CreateHDFDatastore():
         results = dstore.build(o_parser.parser, o_searchPath.searchPath,
                                o_datasetTypes.get(),
                                readTiffTags = o_options.readTiffTags.var.get())
-                     
         showinfo(title   = 'Build Complete',
                  message = ('{:d} files were successfully added to '
                             'the HDF datastore.').format(len(results)))
