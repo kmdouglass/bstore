@@ -489,8 +489,13 @@ class PositionParser(Parser):
     Parser GUI functionality
     ------------------------
     """
-    def gui(self):
+    def gui(self, parent):
         """Configure the parser for the GUI interface.
+        
+        Parameters
+        ----------
+        parent : tkinter.Tk object
+            The parent window for this dialog.
         
         """
         # Used to determine what to return when OK or Cancel
@@ -502,43 +507,41 @@ class PositionParser(Parser):
                      if x != 'datasetType' and x != 'attributeOf']
         options.append('field separator')   
         
-        root = tk.Tk()
-        root.title('PositionParser Configuration')
-        tk.Grid.rowconfigure(root, 0, weight = 1)
-        tk.Grid.columnconfigure(root, 0, weight = 1)
+        top = tk.Toplevel(master = parent)
+        top.title('PositionParser Configuration')
+        tk.Grid.rowconfigure(top, 0, weight = 1)
+        tk.Grid.columnconfigure(top, 0, weight = 1)
         
         # Set the field positions in the filename
-        fields = self._GUI_Frame_PositionIDs(master = root, padx = 5, pady = 5,
+        fields = self._GUI_Frame_PositionIDs(master = top, padx = 5, pady = 5,
                                              text = 'Dataset IDs',
                                              positionIDs = self.positionIDs)
         fields.grid(row = 0, columnspan = 2)
         
         # Set the field separator character
-        sep = self._GUI_Frame_Separator(master = root, padx = 5, pady = 5,
+        sep = self._GUI_Frame_Separator(master = top, padx = 5, pady = 5,
                                         text = 'Fields separator',
                                         separator = self.sep)
         sep.grid(row = 1, columnspan = 2)
         
         # Exit this window by clicking OK or Cancel;
         # OK updates the parser's state whereas Cancel does not
-        ok     = tk.Button(master = root, text = 'OK',
+        ok     = tk.Button(master = top, text = 'OK',
                            command = lambda: self._guiSet(fields.fields,
-                                                          sep.sep, root))
-        cancel = tk.Button(master = root, text = 'Cancel',
-                           command = root.destroy)
+                                                          sep.sep, top))
+        cancel = tk.Button(master = top, text = 'Cancel',
+                           command = top.destroy)
         ok.grid(row = 2, column = 0, sticky = tk.E)
         cancel.grid(row = 2,column = 1, sticky = tk.W)
-        
-        root.mainloop()
     
-    def _guiSet(self, fields, sep, root):
+    def _guiSet(self, fields, sep, top):
         """Sets the Parser attributes based on the GUI inputs.
         
         Parameters
         ----------
         fields : dict of str:tk.Entry
         sep    : tk.Entry
-        root   : tk.Tkinter object
+        top    : tk.Tkinter object
         
         """
         self.positionIDs = {int(entry.get()) : fieldname 
@@ -546,7 +549,7 @@ class PositionParser(Parser):
                             if entry.get()}
         self.sep = sep.get()
         self._configuredByGUI = True
-        root.destroy()
+        top.destroy()
         
     class _GUI_Frame_PositionIDs(tk.LabelFrame):
         """Defines the frame of the GUI configuration for dataset IDs.

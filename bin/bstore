@@ -82,9 +82,9 @@ def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
         print('Options/ReadTiffTags: ' + str(o_options.readTiffTags.var.get()))
         
         try:        
-            print('Configured by GUI?' + str(o_parser.parser._configuredByGUI))
-            print('Position IDs' + str(o_parser.parser.positionIDs))
-            print('Separator' + str(o_parser.parser.sep))
+            print('Configured by GUI? '+ str(o_parser.parser._configuredByGUI))
+            print('Position IDs: ' + str(o_parser.parser.positionIDs))
+            print('Separator: ' + str(o_parser.parser.sep))
         except:
             pass
         
@@ -104,8 +104,14 @@ def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
              message = ('{:d} files were successfully added to '
                         'the HDF datastore.').format(len(results)))
 
-def newDatabase():
-    top = Toplevel()
+def newDatabase(root):
+    """
+    Parameters
+    ----------
+    root : tkinter.Tk() object
+    
+    """
+    top = Toplevel(master = root)
     top.title('Create a new HDF Datastore')
     frames = {'SelectFilename'     : 0,
               'SelectDatasetTypes' : 1,
@@ -113,17 +119,17 @@ def newDatabase():
               'SelectSearchPath'   : 2,
               'SelectParser'       : 3,
               'Options'            : 4}
-    Grid.rowconfigure(top, frames['SelectFilename'],     weight = 2)
+    Grid.rowconfigure(top, frames['SelectFilename'],     weight = 1)
     Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
     Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
-    Grid.rowconfigure(top, frames['SelectSearchPath'],   weight = 2)
-    Grid.rowconfigure(top, frames['SelectParser'],       weight = 2)
+    Grid.rowconfigure(top, frames['SelectSearchPath'],   weight = 1)
+    Grid.rowconfigure(top, frames['SelectParser'],       weight = 1)
     Grid.columnconfigure(top, 0, weight=1)
 
     # Select filename and path    
     f = Frame_SelectFilename(master = top, padx = 5, pady = 5,
-                               text = 'Path and filename for the new database')
-    f.grid(row = frames['SelectFilename'])
+                             text = 'Path and filename for the new database')
+    f.grid(row = frames['SelectFilename'], sticky = E+W)
     
     # Select dataset types
     t = Frame_SelectDatasetTypes(master = top, padx = 5, pady = 5,
@@ -133,7 +139,7 @@ def newDatabase():
     # Select search path
     s = Frame_SelectSearchPath(master = top, padx = 5, pady = 5,
                                text = 'Directory containing input data files')
-    s.grid(row = frames['SelectSearchPath'])
+    s.grid(row = frames['SelectSearchPath'], sticky = E+W)
     
     # Select parser
     p = Frame_SelectParser(master = top, padx = 5, pady = 5,
@@ -148,6 +154,11 @@ def newDatabase():
     build = Button(master = top, text = 'Build',
                    command=lambda: _buildDatabase(f, t, s, p, o))
     build.grid(row = frames['BuildButton'])
+    
+    # Make this window modal
+    top.transient(root)
+    top.grab_set()
+    root.wait_window(top)
     
 def openDatabase():
     raise NotImplementedError()
@@ -231,15 +242,16 @@ class Frame_SelectFilename(LabelFrame):
         self._isReady = False
         self.filename = None
         
-        self.grid(sticky=W+E+N+S)
+        Grid.columnconfigure(self, 1, weight = 1)
         
-        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
-        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        self.button = Button(self, text="Browse",
+                             command=self.loadFile, width=10)
+        self.button.grid(row = 0, column=1, padx = 5, pady = 5, sticky = E)        
         
-        self.entry = Entry(self, width = 50)
+        self.entry = Entry(self, width = 65)
         self.entry.delete(0, END)
         self.entry.insert(0, 'Enter a path to a new database file...')
-        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = W)
         self.entry.configure(state = 'readonly')
         
     @property
@@ -289,7 +301,7 @@ class Frame_SelectParser(LabelFrame):
     
     Attributes
     ----------
-    parser : bstore.parsers.Parser
+    parser  : bstore.parsers.Parser
 
     """
     def __init__(self, **kwargs):
@@ -306,33 +318,34 @@ class Frame_SelectParser(LabelFrame):
                           and name != 'Parser']
     
         v = IntVar(value = 0)
-    
+        parent = self.master
         for index, (text, _) in enumerate(self._pList):
             b = Radiobutton(self, text=text,
                             variable = v, value=index,
-                            command = lambda: self._configureParser(v))
+                            command = lambda: self._configureParser(v, parent))
             b.grid(row = index, column = 0, sticky = W)
         
         # Intialize the parser contained by the LabelFrame
-        self._configureParser(v)
+        self._configureParser(v, parent)
         self._isReady = True
     
     @property
     def isReady(self):
         return self._isReady
     
-    def _configureParser(self, radioButtonValue):
+    def _configureParser(self, radioButtonValue, parent):
         """Determines the active parser radio button.
         
         radioButtonValue : IntVar
+        parent           : tkinter.Tk object
         
         """
-        # Create the parser instance and launch its GUI configuration.
-        index = radioButtonValue.get()
+        # Set the parser instance and launch its GUI configuration.
+        index       = radioButtonValue.get()
         self.parser = self._pList[index][1]
         
         if self.parser.requiresConfig:
-            self.parser.gui()
+            self.parser.gui(parent)
             
 class Frame_SelectSearchPath(LabelFrame):
     """Select a path to search for files to build the database with.
@@ -347,15 +360,16 @@ class Frame_SelectSearchPath(LabelFrame):
         self._isReady   = False
         self.searchPath = None
         
-        self.grid(sticky=W+E+N+S)
+        Grid.columnconfigure(self, 1, weight = 1)
         
-        self.button = Button(self, text="Browse", command=self.loadFile, width=10)
-        self.button.grid(row=1, column=1, padx = 5, pady = 5, sticky = W)        
+        self.button = Button(self, text="Browse",
+                             command=self.loadFile, width=10)
+        self.button.grid(row=0, column=1, padx = 5, pady = 5, sticky = E)        
         
-        self.entry = Entry(self, width = 50)
+        self.entry = Entry(self, width = 65)
         self.entry.delete(0, END)
         self.entry.insert(0, 'Enter the search path for the database build...')
-        self.entry.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = W)
+        self.entry.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = W)
         self.entry.configure(state = 'readonly')
         
     @property
@@ -382,7 +396,8 @@ if __name__ == '__main__':
     menubar = Menu(root)
     
     filemenu = Menu(menubar, tearoff = 0)
-    filemenu.add_command(label = 'New HDF Datastore...', command = newDatabase)
+    filemenu.add_command(label = 'New HDF Datastore...',
+                         command = lambda: newDatabase(root))
     #filemenu.add_command(label = 'Open...', command = openDatabase)
     filemenu.add_separator()
     filemenu.add_command(label = 'Quit',    command = root.quit)
