@@ -55,54 +55,6 @@ def about():
     
     button = Button(top, text='Close', command=top.destroy)
     button.pack()
-
-@CatchExceptions
-def _buildDatabase(o_filename, o_datasetTypes, o_searchPath,
-                   o_parser, o_options):
-    """Build the database by taking data from the GUI frames.
-    
-    The o_ preceding the argument names refers to the fact that the arguments
-    are Frame OBJECTS and thus their data is contained in their attributes.
-    
-    Parameters
-    ----------
-    o_filename     : tkinter LabelFrame
-    o_datasetTypes : tkinter LabelFrame
-    o_searchPath   : tkinter LabelFrame
-    o_parser       : tkinter LabelFrame
-    o_options      : tkinter LabelFrame
-    
-    """
-    
-    if cfg.__Verbose__:
-        print('Filename: ' + str(o_filename.filename))
-        print('Dataset Types: ' + str(o_datasetTypes.get()))
-        print('Search Path: ' + str(o_searchPath.searchPath))
-        print('Parser: ' + str(o_parser.parser))
-        print('Options/ReadTiffTags: ' + str(o_options.readTiffTags.var.get()))
-        
-        try:        
-            print('Configured by GUI? '+ str(o_parser.parser._configuredByGUI))
-            print('Position IDs: ' + str(o_parser.parser.positionIDs))
-            print('Separator: ' + str(o_parser.parser.sep))
-        except:
-            pass
-        
-    assert o_filename.isReady, 'Error: Path to new Datastore is not set.'
-    assert o_searchPath.isReady, 'Error: Raw file search path is not set.'
-    
-    # Register the dataset types
-    cfg.__Registered_DatasetTypes__ = [x for x in o_datasetTypes.get().keys()]
-    
-    # Create and build the Datastore
-    dstore = db.HDFDatabase(o_filename.filename)
-    results = dstore.build(o_parser.parser, o_searchPath.searchPath,
-                           o_datasetTypes.get(),
-                           readTiffTags = o_options.readTiffTags.var.get())
-                 
-    showinfo(title   = 'Build Complete',
-             message = ('{:d} files were successfully added to '
-                        'the HDF datastore.').format(len(results)))
     
 def openDatabase():
     raise NotImplementedError()
@@ -163,13 +115,66 @@ class CreateHDFDatastore():
         
         build = Button(
             master = top, text = 'Build',
-            command=lambda: _buildDatabase(f, t, s, p, o))
+            command=lambda: self._buildDatabase(self, f, t, s, p, o))
         build.grid(row = frames['BuildButton'])
         
         # Make this window modal
         top.transient(root)
         top.grab_set()
         root.wait_window(top)
+        
+    @CatchExceptions
+    def _buildDatabase(self, o_filename, o_datasetTypes,
+                       o_searchPath, o_parser, o_options):
+        """Build the database by taking data from the GUI frames.
+        
+        The o_ preceding the argument names refers to the fact that the
+        arguments are Frame OBJECTS and thus their data is contained in
+        their attributes.
+        
+        Parameters
+        ----------
+        o_filename     : tkinter LabelFrame
+        o_datasetTypes : tkinter LabelFrame
+        o_searchPath   : tkinter LabelFrame
+        o_parser       : tkinter LabelFrame
+        o_options      : tkinter LabelFrame
+        
+        """
+        if cfg.__Verbose__:
+            print('Filename: ' + str(o_filename.filename))
+            print('Dataset Types: ' + str(o_datasetTypes.get()))
+            print('Search Path: ' + str(o_searchPath.searchPath))
+            print('Parser: ' + str(o_parser.parser))
+            print(('Options/ReadTiffTags: ' +
+                   str(o_options.readTiffTags.var.get())))
+            
+            try:        
+                print(('Configured by GUI? '+ 
+                       str(o_parser.parser._configuredByGUI)))
+                print('Position IDs: ' + str(o_parser.parser.positionIDs))
+                print(('Separator: ' + 
+                       str(o_parser.parser.sep)))
+            except:
+                pass
+            
+        assert o_filename.isReady, 'Error: Path to new Datastore is not set.'
+        assert o_searchPath.isReady, 'Error: Raw file search path is not set.'
+        
+        # Register the dataset types
+        cfg.__Registered_DatasetTypes__ = [
+            x for x in o_datasetTypes.get().keys()
+            ]
+        
+        # Create and build the Datastore
+        dstore = db.HDFDatabase(o_filename.filename)
+        results = dstore.build(o_parser.parser, o_searchPath.searchPath,
+                               o_datasetTypes.get(),
+                               readTiffTags = o_options.readTiffTags.var.get())
+                     
+        showinfo(title   = 'Build Complete',
+                 message = ('{:d} files were successfully added to '
+                            'the HDF datastore.').format(len(results)))
 
     """CreateHDFDatastore Frames
     ---------------------------------------------------------------------------
