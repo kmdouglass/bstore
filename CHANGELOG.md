@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
   different dataset IDs. For example, the filename `HeLa_1_A647_0.csv`
   may be split at each underscore and possess four fields that would
   serve as possible IDs: `HeLa`, `1`, `A647`, and `0`.
+- There is now a GUI interface for building HDF datatstores.
+- The `__Verbose__` flag was added to config.py. Setting this flag to
+  true will print more information to the console to assist with
+  debugging.
 
 ### Changed
 - Datasets were simplified into a parent class and child
