@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- PositionParser was added for parsing files whose names contain
+- `PositionParser` was added for parsing files whose names contain
   fields spaced by string separators and whose positions correspond to
   different dataset IDs. For example, the filename `HeLa_1_A647_0.csv`
   may be split at each underscore and possess four fields that would
@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 - The `__Verbose__` flag was added to config.py. Setting this flag to
   true will print more information to the console to assist with
   debugging.
+- `HDFDatastore` now supports iteration via the `__iter__()` magic
+  method and direct inspection of the number of datasets using `len()`
+  via the `__len__()` magic method. Furthermore, it supports
+  integer-based indexing via `__getitem__()`. This means that one may
+  loop over and filter datasets using standard Python operations on
+  iterables and sequences.
 
 ### Changed
 - `Database` and `HDFDatabase` were renamed to `Datastore` and

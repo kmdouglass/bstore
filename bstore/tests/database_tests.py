@@ -13,7 +13,7 @@ nosetests should be run in the directory just above the `tests` folder.
 __author__ = 'Kyle M. Douglass'
 __email__ = 'kyle.m.douglass@gmail.com'
 
-from nose.tools   import *
+from nose.tools   import assert_equal, assert_true, raises, ok_
 
 # Register the TestType DatasetType
 from bstore  import config
@@ -25,7 +25,6 @@ from pandas       import DataFrame
 from numpy.random import rand
 from numpy        import array_equal
 from os           import remove
-from os.path      import exists
 import h5py
 import bstore.datasetTypes.TestType as TestType
 
@@ -320,7 +319,46 @@ def test_HDFDatastore_GetWithDate():
     # Get the data from the datastore and compare it to the input data
     retrievedDataset = myDB.get(myDS)
     ok_(array_equal(retrievedDataset.data, data))
+    
+def test_HDFDatastore_Iterable():
+    """HDFDatastore acts as an interable over dataset IDs.
+    
+    """
+    dsName = testDataRoot / Path('test_experiment/test_id_collection_temp.h5')
+    if dsName.exists():
+        remove(str(dsName))
+    myDS = database.HDFDatastore(dsName)
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+    
+    # Create ground-truth IDs
+    gt = [myDS.dsID(name, acqID, dsType, attr, 'A647', None, (0,), None)
+          for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
+          for dsType, attr in [('Localizations', None),
+                               ('LocMetadata', 'Localizations'),
+                               ('WidefieldImage', None)]]
+        
+    parser = parsers.MMParser()
+    filenameStrings = {
+        'Localizations'  : '_locResults.dat',
+        'LocMetadata'    : '_locMetadata.json',
+        'WidefieldImage' : 'WF*ome.tif'}
+    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = True)
 
+    assert_equal(len(myDS), 6)
+    for ds in myDS:
+        ok_(ds in gt, 'Error: DatasetID not found in Datastore')
+        
+    # Indexing works
+    ok_(myDS[0] != myDS[1])
+        
+    # Clean-up the file and reset the registered types
+    config.__Registered_DatasetTypes__ = temp
+    if dsName.exists():
+        remove(str(dsName))
+        
 '''    
 @raises(database.HDF5KeyExists)
 def test_HDF_Datastore_Check_Key_Existence():

@@ -270,7 +270,7 @@ class HDFDatastore(Datastore):
     
     Parameters
     ----------
-    dsName : str or Path
+    dsName               : str or Path
         The name of the datastore file.
     widefieldPixelSize   : 2-tuple of float or None
         The x- and y-size of a widefield pixel in microns. This
@@ -287,7 +287,8 @@ class HDFDatastore(Datastore):
     
     Notes
     -----
-    The only HDF attribute currently written directly to the image data is::
+    The only HDF attribute currently written directly to the image data, i.e.
+    to the HDF dataset (not group) is::
     
     element_size_um
     
@@ -303,6 +304,17 @@ class HDFDatastore(Datastore):
         self.widefieldPixelSize = widefieldPixelSize
         super(HDFDatastore, self).__init__(dsName)
         
+        self._datasets = []
+        
+    def __getitem__(self, key):
+        return self._datasets[key]
+        
+    def __len__(self):
+        return len(self._datasets)
+        
+    def __iter__(self):
+        return (x for x in self._datasets)
+        
     def __repr__(self):
         if self.widefieldPixelSize is None:
             pxSizeStr = 'None'
@@ -311,14 +323,13 @@ class HDFDatastore(Datastore):
             pxSizeStr = '({0:.4f}, {1:.4f})'.format(x,y)
         
         return 'HDFDatastore(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
-                                                                  self._dsName,
-                                                                  pxSizeStr)
-    
+                   self._dsName,
+                   pxSizeStr)
     @property
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
         
-    dsID = namedtuple('datasetID', ['prefix', 'acqID', 'datasetType',
+    dsID = namedtuple('DatasetID', ['prefix', 'acqID', 'datasetType',
                                     'attributeOf', 'channelID', 'dateID',
                                     'posID', 'sliceID'])
     """Dataset IDs used by this datastore.
@@ -369,7 +380,7 @@ class HDFDatastore(Datastore):
             
         self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
-        # Obtain a list of all the files
+        # Obtain a list of all the files, with non-attribute files first
         files = self._buildFileList(searchDirectory, filenameStrings)
         
         # Keep a running record of what datasets were parsed
@@ -581,11 +592,11 @@ class HDFDatastore(Datastore):
         return returnDS
         
     def _genDataset(self, dsID):
-        """Generate a dataset with an empty data attribute from a datasetID.
+        """Generate a dataset with an empty data attribute from a DatasetID.
         
         Parameters
         ----------
-        dsID : datasetID
+        dsID : DatasetID
             Namedtuple representing a dataset in the datastore.
             
         Returns
@@ -612,14 +623,14 @@ class HDFDatastore(Datastore):
         
         Parameters
         ----------
-        ds : Dataset or datasetID
+        ds : Dataset or DatasetID
         
         Returns
         -------
         str
         
         """
-        # Account for whether a Dataset or a datasetIDs namedtuple was given.
+        # Account for whether a Dataset or a DatasetID namedtuple was given.
         if isinstance(ds, Dataset):
             ids = self._unpackDatasetIDs(ds)
         else:
@@ -660,7 +671,7 @@ class HDFDatastore(Datastore):
         
         Parameters
         ----------
-        dsID : datasetID
+        dsID : DatasetID
             A namedtuple belonging to the HDFDatastore class.
             
         Returns
@@ -702,6 +713,7 @@ class HDFDatastore(Datastore):
         key = self._checkKeyExistence(dataset)
             
         dataset.put(self._dsName, key, **kwargs)
+        self._datasets.append(self._unpackDatasetIDs(dataset))
             
         # Don't write IDs for attributes
         if not dataset.attributeOf:            
@@ -812,7 +824,7 @@ class HDFDatastore(Datastore):
         
         Returns
         -------
-        ids : datasetID
+        ids : DatasetID
             The ids for the dataset; a namedtuple of the HDFDatastore class.
         
         """
@@ -844,7 +856,7 @@ class HDFDatastore(Datastore):
             if field not in idDict:            
                 idDict[field] = None
         
-        # Create the datasetID        
+        # Create the DatasetID        
         ids = self.dsID(prefix      = idDict['prefix'],
                         acqID       = idDict['acqID'],
                         datasetType = ds.datasetType,

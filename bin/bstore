@@ -239,7 +239,7 @@ class CreateHDFDatastore():
         
         References
         ----------
-        [1] http://stackoverflow.com/questions/5860675/variable-size-list-of-checkboxes-in-tkinter
+        .. [1] http://stackoverflow.com/questions/5860675/variable-size-list-of-checkboxes-in-tkinter
         
         """        
         def __init__(self, **kwargs):
