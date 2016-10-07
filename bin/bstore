@@ -6,10 +6,11 @@
 
 from tkinter import Button, Entry, LabelFrame, Menu, Message, Tk, Toplevel
 from tkinter import Checkbutton, Grid, IntVar, Radiobutton,Scrollbar, Text
-from tkinter import BooleanVar
+from tkinter import BooleanVar, Label
 from tkinter import E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
 from tkinter.messagebox import showerror, showinfo
+from time import sleep
 
 import bstore.config as cfg
 import bstore.database as db
@@ -167,13 +168,14 @@ class CreateHDFDatastore():
         
         # Register the dataset types
         cfg.__Registered_DatasetTypes__ = [
-            x for x in o_datasetTypes.get().keys()
-            ]
+            x for x in o_datasetTypes.get().keys()]
         
         # Open a dialog indicating the build is occurring
-        showinfo(title = 'Building...',
-                 message = 'Building the HDF datastore...',
-                 parent = top)     
+        showinfo(
+            title = 'Build datastore',
+            message = ('Starting datastore build...\nThis may take a '
+                       'few minutes for large datasets (> 10 GB).'),
+            parent = top)     
                  
         # Start the build thread that creates the Datastore
         dstore = db.HDFDatabase(o_filename.filename)
@@ -187,6 +189,7 @@ class CreateHDFDatastore():
             
         bd = self.BuildDialog(top, t)
         bd.start()
+        bd.destroy()
         
         showinfo(title   = 'Build Complete',
                  message = ('The build has finished.'))
@@ -199,27 +202,35 @@ class CreateHDFDatastore():
         
         Parameters
         ----------
-        parent
-        buildThread
+        parent : tkinter.Toplevel
+        thread : threading.Thread
         
         """
         def __init__(self, parent, thread):
             win = Toplevel(master = parent)
+            win.title('Please wait...')
             
             self._parent = parent
             self._thread = thread
             self._win = win
             
-            msg  = Message(master = win, text = 'In progress...')
+            msg  = Label(
+                master = win,
+                text = ('Building datastore... Please wait until '
+                        'build is complete.'))
+                
             msg.pack()
             
         def start(self):
-            # Don't start unless the progress window is visible
-            self._parent.wait_visibility(self._win)            
+            # Don't start unless the "Please wait" window is visible
+            self._parent.wait_visibility(self._win)
             
             # Start build thread
             self._thread.start()
             self._thread.join()
+            
+        def destroy(self):
+            self._win.destroy()
 
     """CreateHDFDatastore Frames
     ---------------------------------------------------------------------------
