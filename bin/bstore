@@ -10,7 +10,6 @@ from tkinter import BooleanVar, Label
 from tkinter import E, W, DISABLED, END
 from tkinter.filedialog import askdirectory, asksaveasfilename
 from tkinter.messagebox import showerror, showinfo
-from time import sleep
 
 import bstore.config as cfg
 import bstore.database as db
@@ -89,7 +88,7 @@ class CreateHDFDatastore():
         # Select filename and path    
         f = self.Frame_SelectFilename(
             master = top, padx = 5, pady = 5,
-            text = 'Path and filename for the new database')
+            text = 'Path and filename for the new datastore')
         f.grid(row = frames['SelectFilename'], sticky = E+W)
         
         # Select dataset types
@@ -242,15 +241,17 @@ class CreateHDFDatastore():
         ----------
         [1] http://stackoverflow.com/questions/5860675/variable-size-list-of-checkboxes-in-tkinter
         
-        """
+        """        
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self._isReady = True
             
             self.vsb  = Scrollbar(self, orient="vertical")
-            self.text = Text(self, height = 10,
-                             yscrollcommand=self.vsb.set,
-                             bg = self.master.cget('bg'))
+            self.text = Text(
+                self, height = 10,
+                yscrollcommand=self.vsb.set,
+                bg = self.master.cget('bg'),
+                wrap = 'word')
             self.vsb.config(command=self.text.yview)
             self.vsb.pack(side='right', fill='y')
             self.text.pack(side='left', fill='both', expand=True)
@@ -272,10 +273,28 @@ class CreateHDFDatastore():
                 self.text.window_create('end', window=e)
                 self.text.insert("end", "\n") # Forces one checkbox per line
             
+            # Insert help message
+            self.text.insert('end', self.__doc__)
+            
             # This MUST follow insertion and positioning of
             # the checkboxes/entries
             self.text.config(state = DISABLED)
-            
+        
+        @property
+        def __doc__(self):
+            doc = ('\nSelect the types of datasets to include and specify '
+                   'the corresponding naming patterns for their input files. '
+                   'For example, if your localization files follow the '
+                   'naming convention <condition>_<fov_num>_locs.csv, then '
+                   'enter \'_locs.csv\' (without the quotes) in the text '
+                   'box next to Localizations.\n\nYou may use the asterik '
+                   'symbol (*) as a wildcard. For example, if the convention '
+                   'for localization files was instead <condition>_locs_<fov'
+                   '_num>.csv, then enter _locs*.csv in the text box next to '
+                   'Localizations. Everything after the \'*\' will be '
+                   'included in the search pattern.')
+            return doc
+        
         @property
         def isReady(self):
             return self._isReady
@@ -297,7 +316,7 @@ class CreateHDFDatastore():
             return filenameStrings
             
     class Frame_SelectFilename(LabelFrame):
-        """Select a filename and path for the new Database file.
+        """Select a filename and path for the new Datastore file.
         
         Attributes
         ----------
@@ -319,7 +338,7 @@ class CreateHDFDatastore():
             
             self.entry = Entry(self, width = 65)
             self.entry.delete(0, END)
-            self.entry.insert(0, 'Enter a path to a new database file...')
+            self.entry.insert(0, 'Enter a path to a new datastore file...')
             self.entry.grid(row = 0, column = 0,
                             padx = 5, pady = 5, sticky = W)
             self.entry.configure(state = 'readonly')
@@ -332,7 +351,7 @@ class CreateHDFDatastore():
             fname = asksaveasfilename(filetypes=(('HDF5 files', '*.h5'),
                                                  ('All files', '*.*')),
                                       title       = 'Select a new file...',
-                                      initialfile = 'database.h5')
+                                      initialfile = 'datastore.h5')
             if fname:
                 self.filename = fname
                 self.entry.configure(state = 'normal')
@@ -358,8 +377,8 @@ class CreateHDFDatastore():
         
             v = BooleanVar(value = 0)
             self.readTiffTags = Checkbutton(
-                self, text = ('Read Tiff Tags (stores image '
-                              'metadata if images are tif files)'),
+                self, text = ('Read Tiff Tags (may not work if image files '
+                              'were previously renamed/modified)'),
                 variable = v)
             self.readTiffTags.var = v
             self.readTiffTags.pack(side = 'left')
