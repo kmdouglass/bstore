@@ -66,10 +66,10 @@ def test_DatasetIDs_Initialize_With_IDs():
     assert_equal(t.datasetIDs['acqID'],       1)
     
 def test_UnpackDatasetIDs():
-    """DatasetIDs are successfully interpreted by the Database.
+    """DatasetIDs are successfully interpreted by the Datastore.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1})
     t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
@@ -93,40 +93,40 @@ def test_UnpackDatasetIDs():
     
 @raises(AssertionError)
 def test_UnpackDatasetIDs_AcqIDIsNone():
-    """HDFDatabase correctly detects an acqID of None.
+    """HDFDatastore correctly detects an acqID of None.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : None})
     myDB._unpackDatasetIDs(t1)
     
 @raises(AssertionError)
 def test_UnpackDatasetIDs_PrefixIsNone():
-    """HDFDatabase correctly detects an acqID of None.
+    """HDFDatastore correctly detects an acqID of None.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : None, 'acqID' : 1})
     myDB._unpackDatasetIDs(t1)
     
 @raises(database.DatasetIDError)
 def test_UnpackDatasetIDs_AcqIDIsMissing():
-    """HDFDatabase correctly detects an acqID of None.
+    """HDFDatastore correctly detects an acqID of None.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa'})
     myDB._unpackDatasetIDs(t1)
     
 @raises(database.DatasetIDError)
 def test_UnpackDatasetIDs_PrefixIsMissing():
-    """HDFDatabase correctly detects an acqID of None.
+    """HDFDatastore correctly detects an acqID of None.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t1   = TestType.TestType(datasetIDs = {'acqID' : 1})
     myDB._unpackDatasetIDs(t1)
@@ -136,7 +136,7 @@ def test_UnpackDatasetIDs_BadDateFormat():
     """The dataset raises an error when a bad date string is supplied.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
                                            'channelID' : 'A647',
@@ -150,7 +150,7 @@ def test_UnpackDatasetIDs_DateIsNone():
     """A dateID of None will not raise an error in _unpackDatasetIDs
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     
     t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
                                            'channelID' : 'A647',
@@ -159,22 +159,22 @@ def test_UnpackDatasetIDs_DateIsNone():
                                            'sliceID'   : 1})
     myDB._unpackDatasetIDs(t2)
                                 
-def test_HDFDatabase__repr__():
+def test_HDFDatastore__repr__():
     """__repr__() returns the correct string representation.
     
     """
-    myDB = database.HDFDatabase('the_name', widefieldPixelSize=(0.108, 0.108))
+    myDB = database.HDFDatastore('the_name', widefieldPixelSize=(0.108, 0.108))
     assert_equal(myDB.__repr__(),
-                 ('HDFDatabase(\'the_name\', '
+                 ('HDFDatastore(\'the_name\', '
                   'widefieldPixelSize = (0.1080, 0.1080))'))
                   
-    myDB = database.HDFDatabase('the_name')
+    myDB = database.HDFDatastore('the_name')
     assert_equal(myDB.__repr__(),
-                 ('HDFDatabase(\'the_name\', '
+                 ('HDFDatastore(\'the_name\', '
                   'widefieldPixelSize = None)'))
   
-def test_HDFDatabase_KeyGeneration():
-    """Key names are generated correctly from DatabaseAtoms.
+def test_HDFDatastore_KeyGeneration():
+    """Key names are generated correctly from DatastoreAtoms.
     
     """
     myDatasetIDs = [
@@ -222,18 +222,18 @@ def test_HDFDatabase_KeyGeneration():
                  ]
     
     dbName = 'myDB.h5'
-    myDatabase = database.HDFDatabase(dbName)
+    myDatastore = database.HDFDatastore(dbName)
     
     for currID, key in zip(myDatasetIDs, keys):
         ds = TestType.TestType(datasetIDs = currID)
-        keyString = myDatabase._genKey(ds)
+        keyString = myDatastore._genKey(ds)
         assert_equal(keyString, key)
 
-def test_HDFDatabase_genDataset():
+def test_HDFDatastore_genDataset():
     """Empty datasets are generated properly from id tuples.
     
     """
-    myDB = database.HDFDatabase('test_db.h5')
+    myDB = database.HDFDatastore('test_db.h5')
     ids  = myDB.dsID('test_prefix', 2, 'TestType', None,
                      'A647', None, (0,), 3)
     
@@ -248,15 +248,15 @@ def test_HDFDatabase_genDataset():
     assert_equal(ds.attributeOf,                   None)
     ok_(isinstance(ds,               TestType.TestType))
              
-def test_HDFDatabase_Put_Keys_DatabaseMetadata():
-    """Database creates an HDF file with the right keys and database metadata.
+def test_HDFDatastore_Put_Keys_DatastoreMetadata():
+    """Datastore creates an HDF file with the right keys and metadata.
     
     """
     dbName = testDataRoot / Path('database_test_files/myDB.h5')
     if dbName.exists():
         remove(str(dbName))
     
-    myDB  = database.HDFDatabase(dbName)
+    myDB  = database.HDFDatastore(dbName)
     myDS  = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1,
                                    'channelID' : 'A647', 'posID' : (0,)})
     myDS2 = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1, 
@@ -305,33 +305,33 @@ def test_HDFDatabase_Put_Keys_DatabaseMetadata():
         assert_equal(f[keyString2].attrs[atomPre + 'sliceID'],          'None')
         assert_equal(f[keyString2].attrs[atomPre + 'datasetType'],  'TestType')
 
-def test_HDFDatabase_GetWithDate():
-    """HDFDatabase.get() returns the correct Dataset with a dateID.
+def test_HDFDatastore_GetWithDate():
+    """HDFDatastore.get() returns the correct Dataset with a dateID.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
-    # Created in test_HDFDatabase_Put_Keys_AtomicMetadata()  
-    myDB     = database.HDFDatabase(dbName)
+    # Created in test_HDFDatastore_Put_Keys_AtomicMetadata()  
+    myDB     = database.HDFDatastore(dbName)
      
     # Create an ID with empty data for retrieving the dataset     
     myDS = myDB.dsID('Cos7', 1, 'TestType', None,
                      'A647', '2016-05-05', (1,2), None)
     
-    # Get the data from the database and compare it to the input data
+    # Get the data from the datastore and compare it to the input data
     retrievedDataset = myDB.get(myDS)
     ok_(array_equal(retrievedDataset.data, data))
 
-'''     
+'''    
 @raises(database.HDF5KeyExists)
-def test_HDF_Database_Check_Key_Existence():
+def test_HDF_Datastore_Check_Key_Existence():
     """An error is raised if using a key that already exists for locResults.
     
     """
-    # Remake the database
+    # Remake the datastore
     dbName = testDataRoot / Path('database_test_files/myDB_DoubleKey.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = database.HDFDatabase(dbName)
+    myDB     = database.HDFDatastore(dbName)
     
     myDS  = database.Dataset('Cos7', 1, 'locResults', data,
                              channelID = 'A647',
@@ -340,105 +340,4 @@ def test_HDF_Database_Check_Key_Existence():
     # Raises error on the second put because the key already exists.
     myDB.put(myDS)
     myDB.put(myDS)
-
-def test_HDF_Database_Build():
-    """The database build is performed successfully.
-    
-    """
-    dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDB = database.HDFDatabase(dbName)
-    myParser = parsers.MMParser()    
-    
-    # Directory to traverse for acquisition files
-    searchDirectory = testDataRoot / Path('test_experiment')
-    
-    # Build database
-    myDB.build(myParser, searchDirectory, dryRun = False)
-    
-    # Test for existence of the data
-    with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = 'HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0'
-        ok_('HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0' in hdf)
-        ok_('HeLaL_Control/HeLaL_Control_1/widefieldImage_A647_Pos0' in hdf)
-        ok_(hdf[key1].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key1].attrs.__contains__('SMLM_Metadata_Height'))
-        
-        key2 = 'HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0'
-        ok_('HeLaS_Control/HeLaS_Control_2/locResults_A647_Pos0' in hdf)
-        ok_('HeLaS_Control/HeLaS_Control_2/widefieldImage_A647_Pos0' in hdf)
-        ok_(hdf[key2].attrs.__contains__('SMLM_acqID'))
-        ok_(hdf[key2].attrs.__contains__('SMLM_Metadata_Height'))
-    
-    # Remove test database file
-    remove(str(dbName))
-    
-def test_HDF_Database_GenAtomicID():
-    """The database can generate the proper atomic IDs from input keys.
-    
-    """
-    myDB = database.HDFDatabase('')
-    
-    testKey1 = 'HeLaL_Control/HeLaL_Control_1/locResults_A647_Pos0'
-    id1      = myDB._genAtomicID(testKey1)
-    assert_equal(id1.acqID,                  1)
-    assert_equal(id1.channelID,         'A647')
-    assert_equal(id1.posID,               (0,))
-    assert_equal(id1.prefix,   'HeLaL_Control')
-    assert_equal(id1.sliceID,             None)
-    assert_equal(id1.datasetType, 'locResults')
-    
-    testKey2 = ('HeLaL_Control_WT/HeLaL_Control_WT_1/'
-                'locResults_A750_Pos_001_021_Slice23')
-    id2      = myDB._genAtomicID(testKey2)
-    assert_equal(id2.acqID,                   1)
-    assert_equal(id2.channelID,          'A750')
-    assert_equal(id2.posID,              (1,21))
-    assert_equal(id2.prefix, 'HeLaL_Control_WT')
-    assert_equal(id2.sliceID,                23)
-    assert_equal(id2.datasetType,  'locResults')
-    
-    testKey3 = 'HeLa/HeLaL_14/locResults_Slice5'
-    id3      = myDB._genAtomicID(testKey3)
-    assert_equal(id3.acqID,                 14)
-    assert_equal(id3.channelID,           None)
-    assert_equal(id3.posID,               None)
-    assert_equal(id3.prefix,            'HeLa')
-    assert_equal(id3.sliceID,                5)
-    assert_equal(id3.datasetType, 'locResults')
-    
-def test_HDF_Database_Generic_GenAtomicID():
-    """Generate atomic ID works for generic datasets.
-    
-    """
-    hdfKey = 'prefix/prefix_1/TestType_A647_Pos0'
-    
-    myDB= database.HDFDatabase('test')
-    myDS = myDB._genAtomicID(hdfKey)
-    
-    ok_(isinstance(myDS, bstore.datasetTypes.TestType.TestType))
-    assert_equal(myDS.prefix,            'prefix')
-    assert_equal(myDS.acqID,                    1)
-    assert_equal(myDS.datasetType,      'generic')
-    assert_equal(myDS.channelID,           'A647')
-    assert_equal(myDS.dateID,                None)
-    assert_equal(myDS.posID,                 (0,))
-    assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.datasetType, 'TestType')
-    
-    # Does it work a second time?
-    hdfKey = 'prefix2/prefix2_2/TestType_A750_Pos0'
-    
-    myDS = myDB._genAtomicID(hdfKey)
-    
-    ok_(isinstance(myDS, bstore.datasetTypes.TestType.TestType))
-    assert_equal(myDS.prefix,           'prefix2')
-    assert_equal(myDS.acqID,                    2)
-    assert_equal(myDS.datasetType,      'generic')
-    assert_equal(myDS.channelID,           'A750')
-    assert_equal(myDS.dateID,                None)
-    assert_equal(myDS.posID,                 (0,))
-    assert_equal(myDS.sliceID,               None)
-    assert_equal(myDS.datasetType, 'TestType')
 '''

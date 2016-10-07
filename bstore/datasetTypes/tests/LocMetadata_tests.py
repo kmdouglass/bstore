@@ -62,11 +62,11 @@ def test_Put_Data():
         dsAttr.data = {'A' : 2, 'B' : 'hello'}
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         myDB.put(dsAttr)
         
@@ -82,12 +82,12 @@ def test_Put_Data():
         assert_equal(df.loc[0, 'B'], 3)
         assert_equal(df.loc[1, 'B'], 4)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
 
      
 @raises(LocResultsDoNotExist)
-def test_HDF_Database_Put_LocMetadata_Without_LocResults():
+def test_HDF_Datastore_Put_LocMetadata_Without_LocResults():
     """Metadata cannot be put if localization data doesn't exist.
     
     """
@@ -95,7 +95,7 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     if dbName.exists():
         remove(str(dbName))
         
-    myEmptyDB     = db.HDFDatabase(dbName)
+    myEmptyDB     = db.HDFDatastore(dbName)
 
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
@@ -105,7 +105,7 @@ def test_HDF_Database_Put_LocMetadata_Without_LocResults():
     mmParser.parseFilename(inputFile, datasetType)
     mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile)
                           
-    # Write the metadata into the database; should raise LocResultsDoNotExist
+    # Write the metadata into the datastore; should raise LocResultsDoNotExist
     myEmptyDB.put(mmParser.dataset)
 
       
@@ -126,11 +126,11 @@ def test_Get_Data():
         dsAttr.data = {'A' : 2, 'B' : 'hello'}
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         myDB.put(dsAttr)
         
@@ -149,24 +149,24 @@ def test_Get_Data():
         assert_equal(myNewDS.data['A'],                      2)
         assert_equal(myNewDS.data['B'],                'hello')
     finally:
-        # Remove the test database
+        # Remove the test datastore
         #remove(str(pathToDB / Path('test_db.h5')))
         pass
            
-def test_HDF_Database_Build():
-    """The database build is performed successfully.
+def test_HDF_Datastore_Build():
+    """The datastore build is performed successfully.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
@@ -210,23 +210,23 @@ def test_HDF_Database_Build():
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_Metadata_Height'))
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))
 
-def test_HDF_Database_Query():
-    """The database query is performed successfully with the datasetType.
+def test_HDF_Datastore_Query():
+    """The datastore query is performed successfully with the datasetType.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
@@ -239,5 +239,5 @@ def test_HDF_Database_Query():
         assert_equal(ds.datasetType, 'LocMetadata')
         assert_equal(ds.attributeOf, 'Localizations')
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))

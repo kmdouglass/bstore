@@ -49,7 +49,7 @@ if outputDirHDF.exists():
     shutil.rmtree(str(outputDirHDF))
     
 inputDB    = testDataRoot / Path('test_experiment/test_experiment_db.h5')
-myDB       = db.HDFDatabase(inputDB)
+myDB       = db.HDFDatastore(inputDB)
 locFilter1 = proc.Filter('loglikelihood', '<', 800)
 locFilter2 = proc.Filter('sigma',         '<', 200)
 pipeline   = [locFilter1, locFilter2]                               

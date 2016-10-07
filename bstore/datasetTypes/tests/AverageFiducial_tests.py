@@ -55,11 +55,11 @@ def test_averageFiducial_Put_Data():
         ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
         key = 'test_prefix/test_prefix_1/AverageFiducial'
@@ -72,7 +72,7 @@ def test_averageFiducial_Put_Data():
         assert_equal(df.loc[0, 'B'], 3)
         assert_equal(df.loc[1, 'B'], 4)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
         
 def test_averageFiducial_Get_Data():
@@ -88,11 +88,11 @@ def test_averageFiducial_Get_Data():
         ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
@@ -112,23 +112,23 @@ def test_averageFiducial_Get_Data():
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
         assert_equal(myNewDS.data.loc[1, 'B'], 4)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
         
-def test_HDF_Database_Build_with_AverageFiducial():
-    """The database build is performed successfully.
+def test_HDF_Datastore_Build_with_AverageFiducial():
+    """The datastore build is performed successfully.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
@@ -158,23 +158,23 @@ def test_HDF_Database_Build_with_AverageFiducial():
         ok_(key4 + name in hdf)
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))
   
-def test_HDF_Database_Query_with_AverageFiducial():
-    """The database query is performed successfully with AverageFiducial.
+def test_HDF_Datastore_Query_with_AverageFiducial():
+    """The datastore query is performed successfully with AverageFiducial.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
@@ -185,5 +185,5 @@ def test_HDF_Database_Query_with_AverageFiducial():
     for ds in results:
         assert_equal(ds.datasetType, 'AverageFiducial')
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))

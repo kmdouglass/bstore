@@ -20,14 +20,14 @@ from numpy import array
 def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
     """Decorator for writing OME-XML and Micro-Manager metadata + image data.
     
-    This decorator allows the Database to work with both NumPy arrays and
+    This decorator allows the Datastore to work with both NumPy arrays and
     TiffFile objects, the latter of which holds the Tiff metadata as well as
-    image data. It wraps Database._putWidefieldImage().
+    image data.
     
     Parameters
     ----------
     writeImageData        : function       
-        Used to write image data into the database.
+        Used to write image data into the datastore.
         
     Returns
     -------
@@ -39,15 +39,15 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
     1. https://pypi.python.org/pypi/tifffile
        
     """
-    def writeImageDataAndTags(self, database, key, **kwargs):
+    def writeImageDataAndTags(self, datastore, key, **kwargs):
         """Separates image data from Tiff tags and writes them separately.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
         
         """
         MM_PixelSize = bstore.config.__MM_PixelSize__
@@ -58,7 +58,7 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             # image in the Tiff file.
             tags = dict(self.data.pages[0].tags.items())
             widefieldPixelSize = None
-            with h5py.File(database, mode = 'a') as hdf:
+            with h5py.File(datastore, mode = 'a') as hdf:
                 dt      = h5py.special_dtype(vlen=str)
                 
                 # Start by writing just the OME-XML
@@ -127,7 +127,7 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             if widefieldPixelSize:
                 kwargs['widefieldPixelSize'] = widefieldPixelSize
             
-        writeImageData(self, database, key, **kwargs)
+        writeImageData(self, datastore, key, **kwargs)
         
     return writeImageDataAndTags
 
@@ -164,36 +164,36 @@ class WidefieldImage(bstore.database.Dataset):
         """
         return 'WidefieldImage'
     
-    def get(self, database, key, **kwargs):
-        """Returns a dataset from the database.
+    def get(self, datastore, key, **kwargs):
+        """Returns a dataset from the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
         
         Returns
         -------
         data : NumPy array
-            The image data contained in the database.
+            The image data contained in the datastore.
         """
         key += '/image_data'
-        with h5py.File(database, mode = 'r') as file:
+        with h5py.File(datastore, mode = 'r') as file:
             img  = array(file[key])
             return img
     
     @putWidefieldImageWithMicroscopyTiffTags 
-    def put(self, database, key, **kwargs):
-        """Puts the data into the database.
+    def put(self, datastore, key, **kwargs):
+        """Puts the data into the datastore.
         
         Parameters
         ----------
-        database           : str
-            String containing the path to a B-Store HDF database.
+        datastore           : str
+            String containing the path to a B-Store HDF datastore.
         key                : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
         widefieldPixelSize : 2-tuple of float or None
             The x- and y-size of a widefield pixel in microns. This
             informationis used to write attributes to the widefield image for
@@ -202,7 +202,7 @@ class WidefieldImage(bstore.database.Dataset):
         """
         key += '/image_data'
         
-        with h5py.File(database, mode = 'a') as hdf:
+        with h5py.File(datastore, mode = 'a') as hdf:
             hdf.create_dataset(key,
                                self.data.shape,
                                data = self.data)

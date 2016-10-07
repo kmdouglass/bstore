@@ -40,15 +40,15 @@ class LocMetadata(bstore.database.Dataset):
         """
         return 'LocMetadata'
     
-    def get(self, database, key, **kwargs):
-        """Returns a dataset from the database.
+    def get(self, datastore, key, **kwargs):
+        """Returns a dataset from the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
         
         Returns
         -------
@@ -56,7 +56,7 @@ class LocMetadata(bstore.database.Dataset):
             Metadata as key value pairs. All values are strings compatible
             with Python's JSON's dump.
         """
-        with h5py.File(database, mode = 'r') as hdf:
+        with h5py.File(datastore, mode = 'r') as hdf:
             # Open the HDF file and get the dataset's attributes
             attrKeys = hdf[key].attrs.keys()
             attrID   = config.__HDF_Metadata_Prefix__
@@ -68,8 +68,8 @@ class LocMetadata(bstore.database.Dataset):
             # with a filter over attrs.items() to get the metadata.
             for currAttr in attrKeys:
                 try:
-                    # Filter out attributes irrelevant to the database.
-                    # Also remove the database's attribute flag.
+                    # Filter out attributes irrelevant to the datastore.
+                    # Also remove the datastore's attribute flag.
                     if currAttr[:len(attrID)] == attrID:
                         data[currAttr[len(attrID):]] = \
                                         json.loads(hdf[key].attrs[currAttr])
@@ -80,21 +80,21 @@ class LocMetadata(bstore.database.Dataset):
                 
         return data
     
-    def put(self, database, key, **kwargs):
-        """Puts the data into the database.
+    def put(self, datastore, key, **kwargs):
+        """Puts the data into the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
             
         """
         attrFlag = config.__HDF_AtomID_Prefix__
         mdFlag   = config.__HDF_Metadata_Prefix__
         try:
-            hdf = h5py.File(database, mode = 'a')
+            hdf = h5py.File(datastore, mode = 'a')
                 
             # Loop through metadata and write each attribute to the key
             for currKey in self.data.keys():
@@ -102,13 +102,13 @@ class LocMetadata(bstore.database.Dataset):
                 attrVal = json.dumps(self.data[currKey])
                 hdf[key].attrs[attrKey] = attrVal
                 
-            # Used for identification during database queries
+            # Used for identification during datastore queries
             attrKey = ('{0:s}{1:s}datasetType').format(mdFlag, attrFlag)
             attrVal = json.dumps(self.datasetType)
             hdf[key].attrs[attrKey] = attrVal
             
         except KeyError:
-            # Raised when the hdf5 key does not exist in the database.
+            # Raised when the hdf5 key does not exist in the datastore.
             ids = json.dumps(self.datasetIDs)
             raise LocResultsDoNotExist(('Error: Cannot not append metadata. '
                                         'No localization results exist with '

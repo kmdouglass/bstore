@@ -40,39 +40,39 @@ class Localizations(bstore.database.Dataset):
         """
         return 'Localizations'
     
-    def get(self, database, key, **kwargs):
-        """Returns a dataset from the database.
+    def get(self, datastore, key, **kwargs):
+        """Returns a dataset from the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
         
         Returns
         -------
         data : Pandas DataFrame
             The data retrieved from the HDF file.
         """
-        data = pd.read_hdf(database, key = key)
+        data = pd.read_hdf(datastore, key = key)
             
         return data
     
-    def put(self, database, key, **kwargs):
-        """Puts the data into the database.
+    def put(self, datastore, key, **kwargs):
+        """Puts the data into the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset location in the HDF database.
+            The HDF key pointing to the dataset location in the HDF datastore.
             
         """
         # Writes the data in the dataset to the HDF file.
         try:
-            hdf = pd.HDFStore(database)
+            hdf = pd.HDFStore(datastore)
             hdf.put(key, self.data, format = 'table',
                     data_columns = True, index = False)
         except:

@@ -14,13 +14,16 @@ All notable changes to this project will be documented in this file.
   debugging.
 
 ### Changed
+- `Database` and `HDFDatabase` were renamed to `Datastore` and
+  `HDFDatastore`, respectively. The database module has not changed
+  names.
 - Datasets were simplified into a parent class and child
-  classes. Child classes were previously generics; now each child
-  class represents its own type of dataset. This effectively decouples
-  dataset information from the Database and Parser classes.
-- get() and put() behaviors were decoupled from the HDFDatabase. Now,
+  classes. Child classes were previously called generics; now each
+  child class represents its own type of dataset. This effectively
+  decouples dataset information from the Datastore and Parser classes.
+- get() and put() behaviors were decoupled from the HDFDatastore. Now,
   each Dataset knows how to get and put its down data from the
-  Database. HDFDatabase now only manages the identification and
+  Datastore. HDFDatastore now only manages the identification and
   sorting of Datasets.
 - readFromFile() behavior was decoupled from the Parser class. Each
   Dataset now knows how to read and write its own data from files.

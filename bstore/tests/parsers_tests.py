@@ -259,7 +259,7 @@ def test_MMParser_Dataset():
 
 @raises(parsers.ParserNotInitializedError)    
 def test_MMParser_Uninitialized():
-    """Will MMParser throw an error when getDatabaseAtom is prematurely run?
+    """Will MMParser throw an error when prematurely accessing the dataset?
     
     """
     mmParser = parsers.MMParser()
@@ -267,7 +267,7 @@ def test_MMParser_Uninitialized():
  
 @raises(parsers.ParserNotInitializedError)    
 def test_MMParser_Uninitialized_After_Use():
-    """Will MMParser throw an error if getDatabaseAtom is run after uninit'ing?
+    """Will MMParser throw an error if dataset is accessed after uninit'ing?
     
     """
     f = 'HeLa_Control_A750_1_MMStack_Pos0_locMetadata.json'

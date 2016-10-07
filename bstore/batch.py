@@ -167,23 +167,23 @@ class CSVBatchProcessor(BatchProcessor):
         return locResultFiles
         
 class HDFBatchProcessor(BatchProcessor):
-    """Automatic processing of localizations stored in a HDF database.
+    """Automatic processing of localizations stored in a HDF datastore.
     
     """
     def __init__(self,
-                 inputDatabase,
+                 inputDatastore,
                  pipeline,
                  outputDirectory = 'processed_data',
                  searchString    = 'Localizations'):
-        """Parse the input database by finding SMLM data files.
+        """Parse the input datastore by finding SMLM data files.
         
-        The constructor parses the HDF database and creates a list of Path
+        The constructor parses the HDF datastore and creates a list of Path
         objects all pointing to localization datasets.
         
         Parameters
         ----------
-        inputDatabase  : str or Path
-            A string or Path to an HDF database.
+        inputDatastore  : str or Path
+            A string or Path to an HDF datastore.
         pipeline        : list of Processors
             List of Processor objects to process the data.
         outputDirectory : str or Path
@@ -193,7 +193,7 @@ class HDFBatchProcessor(BatchProcessor):
         
         """
         # TODO: Check for file's existence
-        self._db = dsdb.HDFDatabase(inputDatabase)
+        self._db = dsdb.HDFDatastore(inputDatastore)
         try:        
             self.datasetList = self._db.query(searchString)
             self.pipeline = pipeline
@@ -300,7 +300,7 @@ class HDFBatchProcessor(BatchProcessor):
                       mode  = 'w',
                       index = False)
                       
-            # Write the database atomic IDs to the same folder
+            # Write the datastore atomic IDs to the same folder
             idFilename = str(outputFile) + '.json'
             self._writeAtomicIDs(idFilename, currDataset)
                       

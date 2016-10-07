@@ -57,11 +57,11 @@ def test_fiducialTracks_Put_Data():
         ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
         key = 'test_prefix/test_prefix_1/FiducialTracks'
@@ -74,7 +74,7 @@ def test_fiducialTracks_Put_Data():
         assert_equal(df.loc[0, 'B'], 3)
         assert_equal(df.loc[1, 'B'], 4)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
       
 def test_fiducialTracks_Get_Data():
@@ -90,11 +90,11 @@ def test_fiducialTracks_Get_Data():
         ds.data = pd.DataFrame({'A' : [1,2], 'B' : [3,4]})
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
@@ -114,23 +114,23 @@ def test_fiducialTracks_Get_Data():
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
         assert_equal(myNewDS.data.loc[1, 'B'], 4)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
     
-def test_HDF_Database_Build_with_fiducialTracks():
-    """The database build is performed successfully.
+def test_HDF_Datastore_Build_with_fiducialTracks():
+    """The datastore build is performed successfully.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                     'AverageFiducial' : '_AvgFid.dat'},
@@ -164,23 +164,23 @@ def test_HDF_Database_Build_with_fiducialTracks():
         ok_(key4 + name1 in hdf)
         ok_(key4 + name2 in hdf)
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))
 
-def test_HDF_Database_Query_with_FiducialTracks():
-    """The database query is performed successfully with the datasetType.
+def test_HDF_Datastore_Query_with_FiducialTracks():
+    """The datastore query is performed successfully with the datasetType.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatabase(dbName)
+    myDB = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                    'AverageFiducial' : '_AvgFid.dat'},
@@ -192,5 +192,5 @@ def test_HDF_Database_Query_with_FiducialTracks():
     for ds in results:
         assert_equal(ds.datasetType, 'FiducialTracks')
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))

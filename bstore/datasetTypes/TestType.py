@@ -40,15 +40,15 @@ class TestType(bstore.database.Dataset):
         """
         return 'TestType'
     
-    def get(self, database, key, **kwargs):
-        """Returns a testType dataset from the database.
+    def get(self, datastore, key, **kwargs):
+        """Returns a testType dataset from the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset locationin the HDF database.
+            The HDF key pointing to the dataset locationin the HDF datastore.
         
         Returns
         -------
@@ -56,24 +56,24 @@ class TestType(bstore.database.Dataset):
             The data retrieved from the HDF file.
             
         """
-        with h5py.File(database, 'r') as hdf:
+        with h5py.File(datastore, 'r') as hdf:
             data = array(hdf.get(key))
             
         return data
     
-    def put(self, database, key, **kwargs):
-        """Puts the data into the database.
+    def put(self, datastore, key, **kwargs):
+        """Puts the data into the datastore.
         
         Parameters
         ----------
-        database : str
-            String containing the path to a B-Store HDF database.
+        datastore : str
+            String containing the path to a B-Store HDF datastore.
         key      : str
-            The HDF key pointing to the dataset locationin the HDF database.
+            The HDF key pointing to the dataset locationin the HDF datastore.
             
         """
         # Writes the data in the dataset to the HDF file.
-        with h5py.File(database, 'a') as hdf:
+        with h5py.File(datastore, 'a') as hdf:
             hdf.create_dataset(key, self.data.shape,
                                dtype = 'float64', data = self.data)
                                

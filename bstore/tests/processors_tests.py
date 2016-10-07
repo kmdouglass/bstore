@@ -335,7 +335,7 @@ def test_ConvertHeader():
     # Pandas DataFrames with all scalars require an index; hence, index = [1]
     df = pd.DataFrame(test_data, index = [1])
     
-    # Create the header converter and convert the columns to database default
+    # Create the header converter and convert the columns to datastore default
     converter = proc.ConvertHeader()
     conv_df   = converter(df)
     
@@ -368,7 +368,7 @@ def test_ConvertHeader_Custom_Mapping():
     # Pandas DataFrames with all scalars require an index; hence, index = [1]
     df = pd.DataFrame(test_data, index = [1])
     
-    # Create the header converter and convert the columns to database default
+    # Create the header converter and convert the columns to datastore default
     # Note that a mapping for 'frame' is not supplied, so it should not change.
     from bstore.parsers import FormatMap
     testMap = FormatMap({'x [nm]' : 'x',

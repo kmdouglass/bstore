@@ -63,11 +63,11 @@ def test_Put_Data():
         ds.data = ds.readFromFile(str(imgPath), readTiffTags = True)
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
         key = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
@@ -84,7 +84,7 @@ def test_Put_Data():
     
         assert_equal(imgData.shape, (512, 512))
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
    
 def test_Put_Data_kwarg_WidefieldPixelSize():
@@ -104,11 +104,11 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
         ds.data = ds.readFromFile(str(imgPath), readTiffTags = False)
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds, widefieldPixelSize = (0.13, 0.14))
 
         # Note that pixel sizes are saved in zyx order.
@@ -125,14 +125,14 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][2],
                          0.13)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
               
 def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
     """
-     # Load the database
+     # Load the datastore
     imgPath = testDataRoot / Path('test_experiment_2/HeLaS_Control_IFFISH') \
               / Path('HeLaS_Control_IFFISH_A647_WF1') \
               / Path('HeLaS_Control_IFFISH_A647_WF1_MMStack_Pos0.ome.tif')
@@ -146,11 +146,11 @@ def test_Get_Data():
         ds.data = img
         
         pathToDB = testDataRoot
-        # Remove database if it exists
+        # Remove datastore if it exists
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds, widefieldPixelSize = (0.13, 0.13))
         
         myNewDSID = myDB.dsID('test_prefix', 1, 'WidefieldImage', None,
@@ -166,11 +166,11 @@ def test_Get_Data():
         assert_equal(ids['sliceID'],                      None)   
         assert_equal(imgDS.data.shape, img.shape)
     finally:
-        # Remove the test database
+        # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
 
-def test_HDF_Database_Build():
-    """The database build is performed successfully.
+def test_HDF_Datastore_Build():
+    """The datastore build is performed successfully.
     
     Notes
     -----
@@ -181,13 +181,13 @@ def test_HDF_Database_Build():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'WidefieldImage' : '.ome.tif',
                                    'Localizations'  : 'locResults.dat'},
@@ -214,24 +214,24 @@ def test_HDF_Database_Build():
         assert_equal(hdf[key2].attrs['element_size_um'][1], 0.108)
         assert_equal(hdf[key2].attrs['element_size_um'][2], 0.108)
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))
 
-def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
+def test_HDF_Datastore_WidefieldPixelSize_OMEXML_Only():
     """element_size_um is correct when only OME-XML metadata is present."
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot \
                     / Path('database_test_files/OME-TIFF_No_MM_Metadata')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'WidefieldImage' : '.ome.tif',
                                    'Localizations'  : 'locResults.dat'},
@@ -246,18 +246,18 @@ def test_HDF_Database_WidefieldPixelSize_OMEXML_Only():
         assert_equal(hdf[key1].attrs['element_size_um'][1], 0.1)
         assert_equal(hdf[key1].attrs['element_size_um'][2], 0.1)
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))
 
 def test_Put_WidefieldImage_TiffFile():
     """Insertion of widefield image data works when parsed as a TiffFile.
     
     """
-    # Remake the database
+    # Remake the datastore
     dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)    
+    myDB     = db.HDFDatastore(dbName)    
     
     # Load the widefield image and convert it to an atom
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
@@ -270,12 +270,12 @@ def test_Put_WidefieldImage_TiffFile():
     mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
                                                           readTiffTags = True)
     
-    # Put the widefield image into the database
+    # Put the widefield image into the datastore
     myDB.put(mmParser.dataset)
     
     # Check that the data was put correctly
     saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
-    with h5py.File(myDB._dbName, mode = 'r') as dbFile:
+    with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(saveKey + '/image_data' in dbFile,
             'Error: Could not find widefield image key.')
             
@@ -291,11 +291,11 @@ def test_WidefieldImage_DatasetID_Attributes():
     """Dataset IDs are written as attributes of the widefieldImage dataset.
     
     """
-    # Remake the database
+    # Remake the datastore
     dbName   = testDataRoot / Path('database_test_files/myDB_WF_Metadata.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)    
+    myDB     = db.HDFDatastore(dbName)    
     
     # Load the widefield image and convert it to an atom
     f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
@@ -308,12 +308,12 @@ def test_WidefieldImage_DatasetID_Attributes():
     mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
                                                           readTiffTags = True)
     
-    # Put the widefield image into the database
+    # Put the widefield image into the datastore
     myDB.put(mmParser.dataset)
     
     # Check that the dataset IDs were put correctly
     saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
-    with h5py.File(myDB._dbName, mode = 'r') as dbFile:
+    with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_prefix'))
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_acqID'))
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_datasetType'))
@@ -332,20 +332,20 @@ def test_WidefieldImage_DatasetID_Attributes():
         assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
         assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
 
-def test_WidefieldImage_Database_Query():
-    """The database query is performed successfully with the datasetType.
+def test_WidefieldImage_Datastore_Query():
+    """The datastore query is performed successfully with the datasetType.
     
     """
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatabase(dbName)
+    myDB     = db.HDFDatastore(dbName)
     myParser = parsers.MMParser()    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build database
+    # Build datastore
     myDB.build(myParser, searchDirectory,
                filenameStrings  = {'WidefieldImage'  : '.ome.tif'},
                dryRun = False)
@@ -359,5 +359,5 @@ def test_WidefieldImage_Database_Query():
     for ds in results:
         assert_equal(ds.datasetType, 'WidefieldImage')
     
-    # Remove test database file
+    # Remove test datastore file
     remove(str(dbName))

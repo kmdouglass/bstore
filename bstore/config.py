@@ -1,15 +1,15 @@
 __bstore_Version__ = 'v1.0.0-dev-28decba'
 
 """__HDF_AtomID_Prefix__ : str
-    String that precedes all attributes marking database atom
-    identifiers in an HDF database.
+    String that precedes all attributes marking dataset
+    identifiers in an HDF datastore.
 
 """
 __HDF_AtomID_Prefix__ = 'SMLM_'
 
 """___HDF_Metadata_Prefix : str
     String that precedes all attributes marking metadata elements in
-    an HDF database.
+    an HDF datastore.
 
 """
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'

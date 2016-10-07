@@ -502,7 +502,7 @@ class PositionParser(Parser):
         # buttons are clicked.
         self._configuredByGUI = False        
         
-        dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+        dsIDs = db.HDFDatastore.dsID._fields # Extract dataset ID names
         options = [x for x in dsIDs
                      if x != 'datasetType' and x != 'attributeOf']
         options.append('field separator')   
@@ -563,7 +563,7 @@ class PositionParser(Parser):
             super().__init__(**kwargs)
             self.positionIDs = positionIDs
             
-            dsIDs = db.HDFDatabase.dsID._fields # Extract dataset ID names
+            dsIDs = db.HDFDatastore.dsID._fields # Extract dataset ID names
             options = [x for x in dsIDs
                          if x != 'datasetType' and x != 'attributeOf']
             
@@ -627,7 +627,7 @@ class SimpleParser(Parser):
     """A simple parser for extracting acquisition information.
     
     The SimpleParser converts files of the format prefix_acqID.* into
-    DatabaseAtoms for insertion into a database. * represents filename
+    Datasets for insertion into a datastore. * represents filename
     extensions like .csv, .json, and .tif.
     
     Attributes

@@ -41,11 +41,11 @@ def test_testType_Put_Data():
     ds.data         = array([42])
     
     pathToDB = testDataRoot
-    # Remove database if it exists
+    # Remove datastore if it exists
     if exists(str(pathToDB / Path('test_db.h5'))):
         remove(str(pathToDB / Path('test_db.h5')))
     
-    myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+    myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
     myDB.put(ds)
     
     key = 'test_prefix/test_prefix_1/TestType'
@@ -55,7 +55,7 @@ def test_testType_Put_Data():
         assert_equal(hdf[key].attrs['SMLM_prefix'],   'test_prefix')
         assert_equal(hdf[key].attrs['SMLM_acqID'],                1)
 
-    # Remove the test database
+    # Remove the test datastore
     remove(str(pathToDB / Path('test_db.h5')))
 
   
@@ -88,11 +88,11 @@ def test_testType_Get_Data():
     ds.data         = array([42])
     
     pathToDB = testDataRoot
-    # Remove database if it exists
+    # Remove datastore if it exists
     if exists(str(pathToDB / Path('test_db.h5'))):
         remove(str(pathToDB / Path('test_db.h5')))
     
-    myDB = db.HDFDatabase(pathToDB / Path('test_db.h5'))
+    myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
     myDB.put(ds)
     
     # Create a new dataset containing only IDs to test getting of the data
@@ -111,5 +111,5 @@ def test_testType_Get_Data():
     assert_equal(myNewDS.attributeOf,          None)
     assert_equal(myNewDS.data,                   42)
     
-    # Remove the test database
+    # Remove the test datastore
     remove(str(pathToDB / Path('test_db.h5')))

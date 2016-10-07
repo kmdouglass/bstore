@@ -36,14 +36,14 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
     where widefieldImages were represented merely as NumPy arrays. No image
     metadata was included in these versions.
     
-    This decorator allows the Database to work with both NumPy arrays and
+    This decorator allows the Datastore to work with both NumPy arrays and
     TiffFile objects, the latter of which holds the Tiff metadata as well as
-    image data. It wraps Database._putWidefieldImage().
+    image data.
     
     Parameters
     ----------
     writeImageData        : function       
-        Used to write image data into the database.
+        Used to write image data into the datastore.
         
     Returns
     -------
@@ -60,8 +60,8 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
         
         Parameters
         ----------
-        atom : DatabaseAtom
-            The atom (or Dataset) to write into the database. If it's a
+        atom : Dataset
+            The atom (or Dataset) to write into the datastore. If it's a
             TiffFile, the image metadata will be saved as well.
         
         """
@@ -73,7 +73,7 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
             # image in the Tiff file.
             tags = dict(atom.data.pages[0].tags.items())
             
-            with h5py.File(self._dbName, mode = 'a') as hdf:
+            with h5py.File(self._dsName, mode = 'a') as hdf:
                 dt      = h5py.special_dtype(vlen=str)
                 
                 # Start by writing just the OME-XML
@@ -145,46 +145,46 @@ def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
 """Metaclasses
 -------------------------------------------------------------------------------
 """
-class Database(metaclass = ABCMeta):
-    """Metaclass representing the database structure.
+class Datastore(metaclass = ABCMeta):
+    """Metaclass representing the datastore structure.
     
     Parameters
     ----------
-    dbName : str or Path
-        The name of the database file.
+    dsName : str or Path
+        The name of the datastore file.
     
     """
-    def __init__(self, dbName):
+    def __init__(self, dsName):
         # Convert Path objects to strings
-        if isinstance(dbName, PurePath):
-            dbName = str(dbName)
+        if isinstance(dsName, PurePath):
+            dsName = str(dsName)
             
-        self._dbName = dbName
+        self._dsName = dsName
     
     @abstractmethod
     def build(self):
-        """Create new database from a list of atoms.
+        """Create new datastore from a list of datasets.
         
         """
         pass
     
     @abstractmethod
     def get(self):
-        """Retrieve database atom from the database.
+        """Retrieve dataset from the datastore.
         
         """
         pass    
     
     @abstractmethod
     def put(self):
-        """Place a database atom into the database.
+        """Place a dataset into the datastore.
         
         """
         pass
     
     @abstractmethod
     def query(self):
-        """Return a list of atoms in the database.
+        """Return a list of datasets in the datastore.
         
         """
         pass
@@ -198,7 +198,7 @@ class Dataset(metaclass = ABCMeta):
         The actual data held by the dataset.
     datasetIDs : dict
         The ID fields and their values that identify the datset inside the
-        database.
+        datastore.
         
         
     Attributes
@@ -207,7 +207,7 @@ class Dataset(metaclass = ABCMeta):
         The actual data held by the dataset.
     datasetIDs : dict
         The ID fields and their values that identify the datset inside the
-        database.
+        datastore.
     
     """
     def __init__(self, datasetIDs = {}):
@@ -232,7 +232,7 @@ class Dataset(metaclass = ABCMeta):
         
     @datasetIDs.setter
     def datasetIDs(self, ids):
-        """Assigns database IDs to this dataset.
+        """Assigns datastore IDs to this dataset.
         
         Parameters
         ----------
@@ -265,13 +265,13 @@ class Dataset(metaclass = ABCMeta):
 """Concrete classes
 -------------------------------------------------------------------------------
 """
-class HDFDatabase(Database):
-    """A HDFDatabase structure for managing SMLM data.
+class HDFDatastore(Datastore):
+    """A HDFDatastore structure for managing SMLM data.
     
     Parameters
     ----------
-    dbName : str or Path
-        The name of the database file.
+    dsName : str or Path
+        The name of the datastore file.
     widefieldPixelSize   : 2-tuple of float or None
         The x- and y-size of a widefield pixel in microns. This
         information is used to write attributes to the widefield image for
@@ -299,9 +299,9 @@ class HDFDatabase(Database):
     .. [1] http://lmb.informatik.uni-freiburg.de/resources/opensource/imagej_plugins/hdf5.html
         
     """
-    def __init__(self, dbName, widefieldPixelSize = None):
+    def __init__(self, dsName, widefieldPixelSize = None):
         self.widefieldPixelSize = widefieldPixelSize
-        super(HDFDatabase, self).__init__(dbName)
+        super(HDFDatastore, self).__init__(dsName)
         
     def __repr__(self):
         if self.widefieldPixelSize is None:
@@ -310,8 +310,8 @@ class HDFDatabase(Database):
             x, y = self.widefieldPixelSize[0], self.widefieldPixelSize[1]
             pxSizeStr = '({0:.4f}, {1:.4f})'.format(x,y)
         
-        return 'HDFDatabase(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
-                                                                  self._dbName,
+        return 'HDFDatastore(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
+                                                                  self._dsName,
                                                                   pxSizeStr)
     
     @property
@@ -321,7 +321,7 @@ class HDFDatabase(Database):
     dsID = namedtuple('datasetID', ['prefix', 'acqID', 'datasetType',
                                     'attributeOf', 'channelID', 'dateID',
                                     'posID', 'sliceID'])
-    """Dataset IDs used by this database.
+    """Dataset IDs used by this datastore.
     
     Notes
     -----
@@ -341,12 +341,12 @@ class HDFDatabase(Database):
     
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
               **kwargs):
-        """Builds a database by traversing a directory for experimental files.
+        """Builds a datastore by traversing a directory for experimental files.
         
         Parameters
         ----------
         parser               : Parser
-            Instance of a parser for converting files to DatabaseAtoms.
+            Instance of a parser for converting files to Datasets.
         searchDirectory      : str or Path
             This directory and all subdirectories will be traversed.
         filenameStrings      : dict
@@ -354,7 +354,7 @@ class HDFDatabase(Database):
             DataType and each value is a string contained by the end of the
             files corresponding to that DataType.
         dryRun               : bool
-            Test the database build without actually creating the database.
+            Test the datastore build without actually creating the datastore.
         **kwargs
             Keyword arguments to pass to the parser's readFromFile() method.
             
@@ -362,7 +362,7 @@ class HDFDatabase(Database):
         -------
         buildResults : DataFrame
             A sorted DataFrame for investigating what files were actually
-            added to the database.
+            added to the datastore.
             
         """ 
         searchDirectory = Path(searchDirectory)
@@ -483,9 +483,9 @@ class HDFDatabase(Database):
         """
         key = self._genKey(ds)        
         
-        # If Database file doesn't exist, return without checking
+        # If Datastore file doesn't exist, return without checking
         try:
-            with h5py.File(self._dbName, mode = 'r') as dbFile:
+            with h5py.File(self._dsName, mode = 'r') as dbFile:
                 # First check atoms that are not attributes
                 if key in dbFile and ds.attributeOf is None:
                     raise HDF5KeyExists(('Error: '
@@ -520,7 +520,7 @@ class HDFDatabase(Database):
         Returns
         -------
         returnDS : dsID
-            The ID's of one database atom. 
+            The ID's of one dataset. 
             
         """
         # Parse key for atomic IDs
@@ -586,7 +586,7 @@ class HDFDatabase(Database):
         Parameters
         ----------
         dsID : datasetID
-            Namedtuple representing a dataset in the database.
+            Namedtuple representing a dataset in the datastore.
             
         Returns
         -------
@@ -656,12 +656,12 @@ class HDFDatabase(Database):
             return acqKey + '/' + ds.datasetType + otherIDs
             
     def get(self, dsID):
-        """Returns a Dataset from the database.
+        """Returns a Dataset from the datastore.
         
         Parameters
         ----------
         dsID : datasetID
-            A namedtuple belonging to the HDFDatabase class.
+            A namedtuple belonging to the HDFDatastore class.
             
         Returns
         -------
@@ -680,12 +680,12 @@ class HDFDatabase(Database):
         
         # Generate the dataset and retrieve the data
         dataset       = self._genDataset(dsID)
-        dataset.data = dataset.get(self._dbName, hdfKey)
+        dataset.data = dataset.get(self._dsName, hdfKey)
             
         return dataset
             
     def put(self, dataset, **kwargs):
-        """Writes data from a single dataset into the database.
+        """Writes data from a single dataset into the datastore.
         
         Parameters
         ----------
@@ -701,14 +701,14 @@ class HDFDatabase(Database):
         # Key generation automatically handles datasets that are attributes
         key = self._checkKeyExistence(dataset)
             
-        dataset.put(self._dbName, key, **kwargs)
+        dataset.put(self._dsName, key, **kwargs)
             
         # Don't write IDs for attributes
         if not dataset.attributeOf:            
             self._writeDatasetIDs(dataset)
             
     def query(self, datasetType = 'Localizations'):
-        """Returns a list of datasets inside this database.
+        """Returns a list of datasets inside this datastore.
 
         Parameters
         ----------
@@ -730,7 +730,7 @@ class HDFDatabase(Database):
         tempDS = getattr(mod, datasetType)()
 
         # Open the hdf file
-        with h5py.File(self._dbName, 'r') as f:
+        with h5py.File(self._dsName, 'r') as f:
             # Extract all localization datasets from the HDF5 file by matching
             # each group to the search string.
             # ('table' not in name) excludes the subgroup inside every
@@ -773,12 +773,12 @@ class HDFDatabase(Database):
         return atomicIDs
         
     def _sortDatasets(self, dsInfo):
-        """Sorts and organizes all datasets before a Database build.
+        """Sorts and organizes all datasets before a Datastore build.
         
         _sortDatasets() accepts a list of dicts containing dataset
         information. It then sorts and organizes the information in a
         human-readable format, allowing both humans and computers to
-        locate possible errors before and after the database is built.
+        locate possible errors before and after the datastore is built.
         
         Parameters
         ----------
@@ -804,7 +804,7 @@ class HDFDatabase(Database):
             return None
             
     def _unpackDatasetIDs(self, ds):
-        """Unpack the dataset IDs into a format usable by this database.
+        """Unpack the dataset IDs into a format usable by this datastore.
         
         Parameters
         ----------
@@ -813,7 +813,7 @@ class HDFDatabase(Database):
         Returns
         -------
         ids : datasetID
-            The ids for the dataset; a namedtuple of the HDFDatabase class.
+            The ids for the dataset; a namedtuple of the HDFDatastore class.
         
         """
         idDict = ds.datasetIDs.copy()
@@ -867,7 +867,7 @@ class HDFDatabase(Database):
         key        = self._genKey(ds)
         attrPrefix = self.attrPrefix
         ids        = self._unpackDatasetIDs(ds)
-        with  h5py.File(self._dbName, mode = 'a') as hdf:
+        with  h5py.File(self._dsName, mode = 'a') as hdf:
             hdf[key].attrs[attrPrefix + 'acqID']       = ids.acqID
             hdf[key].attrs[attrPrefix + 'channelID']   = \
                 'None' if ids.channelID is None else ids.channelID
@@ -924,7 +924,7 @@ class LocResultsDoNotExist(Exception):
         return repr(self.value)
         
 class HDF5KeyExists(Exception):
-    """Attempting to write to an existing key in the database.
+    """Attempting to write to an existing key in the datastore.
     
     """
     def __init__(self, value):
