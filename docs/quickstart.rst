@@ -159,13 +159,12 @@ acquisition.
 
 The window should now look like this:
 
-.. image:: ../images/gui_screenshot_1.png
+.. image:: ../images/gui_screenshot_2.png
    :align: center
 
 Click the **Build** button and when it completes, you should have a
 nice, new HDF Datastore with your data files structured safely inside
 it.
-
 
 Parsing Files to assign Dataset IDs : Code Example
 ++++++++++++++++++++++++++++++++++++++++++++++++++
