@@ -58,7 +58,7 @@ The B-Store workflow is divided between these two tasks:
 1. Sort and place all the files from a single molecule localization
    microscopy (SMLM) acquisition into a single file known as a
    *Datastore*.
-2. Automatically access this database for batch analyses.
+2. Automatically access this datastore for batch analyses.
 
 B-Store uses popular scientific Python libraries for working with SMLM
 data. Most notably, it uses `Pandas DataFrames`_ for working with
@@ -75,15 +75,18 @@ Python library.
 .. _NumPy arrays: http://docs.scipy.org/doc/numpy/reference/generated/numpy.array.html
 .. _h5py: http://www.h5py.org/
 
-We are currently exploring ways to enable B-Store to handle OME.TIFF
-metadata and drift correction data as well.
-
 Jupyter Notebook Examples
 +++++++++++++++++++++++++
 
-If you find that this quickstart guide insufficient, you can find more
-examples inside the Jupyter Notebooks at the `B-Store GitHub
-repository`_.
+If you want to learn more after working through the quick-start guide,
+then you can find examples inside the Jupyter Notebooks at the
+`B-Store GitHub repository`_.
+
+`Jupyter Notebooks`_ are a great way to interactively work with
+B-Store when writing code and are very common in the scientific Python
+community. They are free, powerful, and provide a convenient way to
+document your work and share it with others. Alternatively, you may
+use any other Python interpreter to work with B-Store functions.
 
 .. _B-Store GitHub repository: https://github.com/kmdouglass/bstore/tree/master/examples
 
@@ -106,12 +109,6 @@ interact with these tools in two different ways:
 
 1. by using the GUI, and
 2. by writing Python code
-
-`Jupyter Notebooks`_ are a great way to interactively work with
-B-Store when writing code and are very common in the scientific Python
-community. They are free, powerful, and provide a convenient way to
-document your work and share it with others. Alternatively, you may
-use any other Python interpreter to work with B-Store functions.
 
 Once you have a set of HDF files, you may open them in any software
 package or language that supports HDF, such as `MATLAB`_.
@@ -136,7 +133,7 @@ Once activated, simply run the program by typing::
   bstore
 
 In the window that appears, select **File > New HDF
-Datastore...**. The following Window will appear:
+Datastore...**. The following new dialog will appear:
 
 .. image:: ../images/gui_screenshot_1.png
    :align: center
@@ -150,16 +147,25 @@ and WidefieldImage to **.csv**, **.txt**, and **.tif**,
 respectively. This will tell the build routine what files correspond
 to which types of datasets.
 
+If your files have a special identifier in their filename, like
+**locs** for localizations, you can enter search patterns like
+**locs\*.csv**. The asterik (\*) will act as a wildcard such that
+files like *cells_locs_2.csv* or *Cos7_alexa647_locs.csv* would be
+found during the file search.
+
 After this, choose the directory where the raw data files and
 subdirectories are located. We will use the `test files for the
-SimpleParser`_ for this example.
+SimpleParser`_ for this example. Please note that this directory **and
+all of its subdirectories** will be searched for files ending in the
+suffix.filename_extension pattern specified in the previous field.
 
 .. _test files for the SimpleParser: https://github.com/kmdouglass/bstore_test_files/tree/master/parsers_test_files/SimpleParser
 
 Finally, leave the **Read Tiff Tags** box unchecked. Checking this box
 will read Micro-Manager and OME-XML metadata from the image files, but
 it often will fail if the files were modified in anyway after their
-acquisition.
+acquisition which causes the filename of the file not to match the
+filename in the metadata.
 
 The window should now look like this:
 
@@ -173,8 +179,11 @@ it.
 Programming with B-Store
 ========================
 
-Parsing Files to assign Dataset IDs : Code Example
-++++++++++++++++++++++++++++++++++++++++++++++++++
+B-Store also has an API which allows you to write scripts and Python
+code to integrate B-Store into your custom workflows.
+
+Parsing Files to assign Dataset IDs
++++++++++++++++++++++++++++++++++++
 
 A B-Store *Datastore* is a storage container for things like sets of
 localizations, widefield images, and acquisition metadata. Each
@@ -232,8 +241,8 @@ look.
 .. _PositionParser: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.parsers.PositionParser
 .. _tutorial: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%203%20-%20Writing%20custom%20parsers.ipynb
 
-Building a Datastore : Code Example
-+++++++++++++++++++++++++++++++++++
+Building a Datastore
+++++++++++++++++++++
 
 You will typically not need to work directly with a parser. Instead,
 the B-Store database will use a specified parser to automatically read
