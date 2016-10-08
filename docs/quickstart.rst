@@ -260,7 +260,7 @@ files and subdirectories of acquisition data.::
    >>> dataDirectory = Path('bstore_test_files/parsers_test_files/SimpleParser')
    >>> parser = parsers.SimpleParser()
 
-Next, we create a `HDFDatastore`_ instance. This class is used to
+Next, we create a HDFDatastore instance. This class is used to
 interact with and create B-Store databases.::
 
    >>> dsName = 'myFirstDatastore.h5'
