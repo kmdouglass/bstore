@@ -94,4 +94,7 @@ class Localizations(bstore.database.Dataset):
         Pandas DataFrame
             
         """
-        return pd.read_csv(str(filePath))
+        if 'sep' in kwargs:
+            return pd.read_csv(str(filePath), sep = kwargs['sep'])
+        else:
+            return pd.read_csv(str(filePath))

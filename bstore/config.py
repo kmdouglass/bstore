@@ -61,7 +61,7 @@ __MM_PixelSize__ = 'PixelSize_um'
     The list of datasetTypes currently recognized by B-Store.
 
 """
-__Registered_DatasetTypes__ = []
+__Registered_DatasetTypes__ = ['Localizations']
 
 """__Verbose__ : bool
     Controls how much detail is provided when errors occur.
