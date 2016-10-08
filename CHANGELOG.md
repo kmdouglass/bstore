@@ -39,6 +39,10 @@ All notable changes to this project will be documented in this file.
   that locResults, locMetadata, and widefieldImage had from other
   types of datasets. Now, all datasets subclass the `Dataset` class
   and have no special distinction over one another.
+- MMParser was moved to an independent LEB extensions module because
+  it is highly unlikely that any other group would use its naming
+  conventions. The new module may be found here:
+  https://github.com/kmdouglass/lebext
 
 ## [v0.2.1]
 ### Added
