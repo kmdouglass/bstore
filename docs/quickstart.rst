@@ -47,8 +47,11 @@ suffer from bugs.
 .. _master branch: https://github.com/kmdouglass/bstore
 .. _development branch: https://github.com/kmdouglass/bstore/tree/development
       
-Workflow Summary
-================
+Getting Started
+===============
+
+Background
+++++++++++
 
 The B-Store workflow is divided between these two tasks: 
 
@@ -76,7 +79,7 @@ We are currently exploring ways to enable B-Store to handle OME.TIFF
 metadata and drift correction data as well.
 
 Jupyter Notebook Examples
-=========================
++++++++++++++++++++++++++
 
 If you find that this quickstart guide insufficient, you can find more
 examples inside the Jupyter Notebooks at the `B-Store GitHub
@@ -84,8 +87,19 @@ repository`_.
 
 .. _B-Store GitHub repository: https://github.com/kmdouglass/bstore/tree/master/examples
 
-Working with B-Store
-====================
+
+B-Store Test Datasets
++++++++++++++++++++++
+
+The `B-Store test files repository`_ contains a number of datasets for
+B-Store's unit tests. These datasets may also be used to try out the
+code in the `examples`_ or in this guide.
+
+.. _B-Store test files repository: https://github.com/kmdouglass/bstore_test_files
+.. _examples: https://github.com/kmdouglass/bstore/tree/master/examples
+
+Workflow Summary
+++++++++++++++++
 
 B-Store is a collection of tools for working with SMLM data. You may
 interact with these tools in two different ways:
@@ -105,18 +119,8 @@ package or language that supports HDF, such as `MATLAB`_.
 .. _Jupyter Notebooks: http://jupyter.org/
 .. _MATLAB: https://ch.mathworks.com/products/matlab/?requestedDomain=www.mathworks.com
 
-B-Store Test Datasets
-+++++++++++++++++++++
-
-The `B-Store test files repository`_ contains a number of datasets for
-B-Store's unit tests. These datasets may also be used to try out the
-code in the `examples`_ or in this guide.
-
-.. _B-Store test files repository: https://github.com/kmdouglass/bstore_test_files
-.. _examples: https://github.com/kmdouglass/bstore/tree/master/examples
-
 Build a HDF Datastore with the GUI
-++++++++++++++++++++++++++++++++++
+==================================
 
 To start the GUI, navigate to the console window (or Anaconda
 prompt). If you installed B-Store from Anaconda, be sure to activate
@@ -165,6 +169,9 @@ The window should now look like this:
 Click the **Build** button and when it completes, you should have a
 nice, new HDF Datastore with your data files structured safely inside
 it.
+
+Programming with B-Store
+========================
 
 Parsing Files to assign Dataset IDs : Code Example
 ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -225,8 +232,8 @@ look.
 .. _PositionParser: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.parsers.PositionParser
 .. _tutorial: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%203%20-%20Writing%20custom%20parsers.ipynb
 
-Building a Datastore
-++++++++++++++++++++
+Building a Datastore : Code Example
++++++++++++++++++++++++++++++++++++
 
 You will typically not need to work directly with a parser. Instead,
 the B-Store database will use a specified parser to automatically read
