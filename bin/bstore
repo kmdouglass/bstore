@@ -15,6 +15,7 @@ import bstore.config as cfg
 import bstore.database as db
 import bstore.datasetTypes as dsTypes
 import bstore.parsers as parsers
+import bstore._utils as _utils
 import webbrowser
 import inspect
 import threading
@@ -409,6 +410,8 @@ class CreateHDFDatastore():
                               and name != 'Parser']
                               
             # TODO: Create a list of all plugin parsers
+            plugins = _utils.findPlugins('Parser')
+            self._pList.extend(((name, parser()) for name, parser in plugins))
         
             v = IntVar(value = 0)
             parent = self.master

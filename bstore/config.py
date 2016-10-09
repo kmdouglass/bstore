@@ -23,6 +23,19 @@ __Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
                           'A750' : 'AlexaFluor 750',
                           'DAPI' : 'DAPI',
                           'Cy5'  : 'Cy5'}
+                        
+"""__Custom_Dir__ : str
+    The name of the directory containing customization files. 
+    
+"""
+__Custom_Dir__ = ['~', '.bstore']
+
+
+"""__Plugin_Dir__ : str
+    The name of the directory containing B-Store plugins.
+    
+"""
+__Plugin_Dir__ = __Custom_Dir__ + ['bsplugins']
 
 """FormatDefault : dict
     The default mapping for converting between column header names

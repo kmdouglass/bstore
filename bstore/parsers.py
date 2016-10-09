@@ -3,8 +3,6 @@
 # See the LICENSE.txt file for more details.
 
 import pathlib
-import re
-import warnings
 from bstore import config
 from abc import ABCMeta, abstractmethod, abstractproperty
 from os.path import splitext
