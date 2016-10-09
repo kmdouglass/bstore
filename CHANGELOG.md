@@ -42,7 +42,7 @@ All notable changes to this project will be documented in this file.
 - MMParser was moved to an independent LEB extensions module because
   it is highly unlikely that any other group would use its naming
   conventions. The new module may be found here:
-  https://github.com/kmdouglass/lebext
+  https://github.com/kmdouglass/bsplugins-leb
 
 ## [v0.2.1]
 ### Added

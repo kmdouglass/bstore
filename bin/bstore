@@ -407,6 +407,8 @@ class CreateHDFDatastore():
                            in inspect.getmembers(parsers, inspect.isclass)
                            if issubclass(parser, parsers.Parser)
                               and name != 'Parser']
+                              
+            # TODO: Create a list of all plugin parsers
         
             v = IntVar(value = 0)
             parent = self.master
