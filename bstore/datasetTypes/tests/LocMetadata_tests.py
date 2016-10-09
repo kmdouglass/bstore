@@ -101,12 +101,15 @@ def test_HDF_Datastore_Put_LocMetadata_Without_LocResults():
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
     inputFile   = testDataRoot / Path('database_test_files') / Path(f)
     datasetType = 'LocMetadata'
-    mmParser    = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType)
-    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile)
+    parser = parsers.PositionParser(positionIDs = {
+                                            1 : 'prefix', 
+                                            2 : 'channelID', 
+                                            3 : 'acqID'})
+    parser.parseFilename(inputFile, datasetType)
+    parser.dataset.data = parser.dataset.readFromFile(inputFile)
                           
     # Write the metadata into the datastore; should raise LocResultsDoNotExist
-    myEmptyDB.put(mmParser.dataset)
+    myEmptyDB.put(parser.dataset)
 
       
 def test_Get_Data():
@@ -161,22 +164,25 @@ def test_HDF_Datastore_Build():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+                                            1 : 'prefix', 
+                                            3 : 'channelID', 
+                                            4 : 'acqID'})    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
+    myDB.build(parser, searchDirectory,
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)
                
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        name = 'Localizations_A647_Pos0'
-        ok_(key1 + 'Localizations_A647_Pos0' in hdf)
+        key1 = 'Control/Control_1/'
+        name = 'Localizations_A647'
+        ok_(key1 + 'Localizations_A647' in hdf)
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_datasetType'))
@@ -189,22 +195,22 @@ def test_HDF_Datastore_Build():
                                                  'Metadata_SMLM_datasetType')))
         
         
-        key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
+        key2 = 'Control/Control_2/'
         ok_(key2 + name in hdf)
         ok_(hdf[key2 + name].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key2 + name].attrs.__contains__('SMLM_Metadata_Height'))
         ok_(hdf[key2 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         
-        key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
+        key3 = 'shTRF2/shTRF2_1/'
         ok_(key3 + name in hdf)
         ok_(hdf[key3 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         ok_(hdf[key3 + name].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key3 + name].attrs.__contains__('SMLM_Metadata_Height'))
         
-        key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
-        ok_(key4 + 'Localizations_A647_Pos0' in hdf)
+        key4 = 'shTRF2/shTRF2_2/'
+        ok_(key4 + 'Localizations_A647' in hdf)
         ok_(hdf[key4 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
@@ -221,13 +227,16 @@ def test_HDF_Datastore_Query():
     if dbName.exists():
         remove(str(dbName))
     myDB = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+                                            1 : 'prefix', 
+                                            3 : 'channelID', 
+                                            4 : 'acqID'})    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
+    myDB.build(parser, searchDirectory,
                filenameStrings  = {'Localizations' : '_DC.dat',
                                    'LocMetadata'   : '_locMetadata.json'},
                dryRun = False)

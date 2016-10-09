@@ -117,7 +117,7 @@ def test_fiducialTracks_Get_Data():
         # Remove the test datastore
         remove(str(pathToDB / Path('test_db.h5')))
     
-def test_HDF_Datastore_Build_with_fiducialTracks():
+def test_HDF_Datastore_Build_with_fiducialtracks():
     """The datastore build is performed successfully.
     
     """
