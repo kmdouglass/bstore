@@ -319,12 +319,13 @@ def test_HDFDatastore_GetWithDate():
     # Get the data from the datastore and compare it to the input data
     retrievedDataset = myDB.get(myDS)
     ok_(array_equal(retrievedDataset.data, data))
-    
+
 def test_HDFDatastore_Iterable():
     """HDFDatastore acts as an interable over dataset IDs.
     
     """
-    dsName = testDataRoot / Path('test_experiment/test_id_collection_temp.h5')
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
     if dsName.exists():
         remove(str(dsName))
     myDS = database.HDFDatastore(dsName)
@@ -334,18 +335,18 @@ def test_HDFDatastore_Iterable():
         'Localizations', 'LocMetadata', 'WidefieldImage']   
     
     # Create ground-truth IDs
-    gt = [myDS.dsID(name, acqID, dsType, attr, 'A647', None, (0,), None)
+    gt = [myDS.dsID(name, acqID, dsType, attr, None, None, None, None)
           for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
           for dsType, attr in [('Localizations', None),
                                ('LocMetadata', 'Localizations'),
                                ('WidefieldImage', None)]]
         
-    parser = parsers.MMParser()
+    parser = parsers.SimpleParser()
     filenameStrings = {
-        'Localizations'  : '_locResults.dat',
-        'LocMetadata'    : '_locMetadata.json',
-        'WidefieldImage' : 'WF*ome.tif'}
-    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = True)
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt',
+        'WidefieldImage' : '.tif'}
+    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = False)
 
     assert_equal(len(myDS), 6)
     for ds in myDS:
@@ -359,7 +360,6 @@ def test_HDFDatastore_Iterable():
     if dsName.exists():
         remove(str(dsName))
         
-'''    
 @raises(database.HDF5KeyExists)
 def test_HDF_Datastore_Check_Key_Existence():
     """An error is raised if using a key that already exists for locResults.
@@ -369,13 +369,11 @@ def test_HDF_Datastore_Check_Key_Existence():
     dbName = testDataRoot / Path('database_test_files/myDB_DoubleKey.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = database.HDFDatastore(dbName)
-    
-    myDS  = database.Dataset('Cos7', 1, 'locResults', data,
-                             channelID = 'A647',
-                             posID = (0,))
+    myDS    = database.HDFDatastore(dbName)
+    ds      = TestType.TestType(datasetIDs = {
+        'prefix' : 'Cos7', 'acqID' : 1, 'channelID' : 'A647', 'posID' : (0,)})
+    ds.data = data
                              
     # Raises error on the second put because the key already exists.
-    myDB.put(myDS)
-    myDB.put(myDS)
-'''
+    myDS.put(ds)
+    myDS.put(ds)

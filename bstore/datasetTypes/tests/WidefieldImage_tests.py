@@ -53,11 +53,14 @@ def test_Put_Data():
     """
     imgPath = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') \
-              / Path('Cos7_A647_WF1_MMStack_Pos0.ome.tif')
+              / Path('Cos7_A647_1_MMStack_Pos0.ome.tif')
         
     try:
         # Make up some dataset IDs and a dataset
-        parser = parsers.MMParser()
+        parser = parsers.PositionParser(positionIDs = {
+                                            0 : 'prefix', 
+                                            1 : 'channelID', 
+                                            2 : 'acqID'})
         parser.parseFilename(str(imgPath), 'WidefieldImage')
         ds = parser.dataset
         ds.data = ds.readFromFile(str(imgPath), readTiffTags = True)
@@ -70,7 +73,7 @@ def test_Put_Data():
         myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
-        key = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
+        key = 'Cos7/Cos7_1/WidefieldImage_A647'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key].attrs['SMLM_datasetType'], 'WidefieldImage')
             imgData = hdf[key + '/image_data'].value
@@ -93,12 +96,15 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
     """
     # TODO: Rewrite this test to ensure that we really overwrite the metadata
     # pixel size.
-    imgPath = testDataRoot / Path('test_experiment_2/HeLaS_Control_IFFISH') \
-              / Path('HeLaS_Control_IFFISH_A647_WF1') \
-              / Path('HeLaS_Control_IFFISH_A647_WF1_MMStack_Pos0.ome.tif')
+    imgPath = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') \
+              / Path('Cos7_A647_1_MMStack_Pos0.ome.tif')
     try:
         # Make up some dataset IDs and a dataset
-        parser = parsers.MMParser()
+        parser = parsers.PositionParser(positionIDs = {
+                                            0 : 'prefix', 
+                                            1 : 'channelID', 
+                                            2 : 'acqID'})
         parser.parseFilename(str(imgPath), 'WidefieldImage')
         ds = parser.dataset
         ds.data = ds.readFromFile(str(imgPath), readTiffTags = False)
@@ -115,8 +121,7 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
         # These values will be equal to 0.108, 0.108 if no widefieldPixelSize
         # is supplied because the default behavior is to read the MM or OME-XML
         # metadata.        
-        key = ('HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-               'WidefieldImage_A647_Pos0')
+        key = 'Cos7/Cos7_1/WidefieldImage_A647'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][0],
                          1)
@@ -133,17 +138,19 @@ def test_Get_Data():
     
     """
      # Load the datastore
-    imgPath = testDataRoot / Path('test_experiment_2/HeLaS_Control_IFFISH') \
-              / Path('HeLaS_Control_IFFISH_A647_WF1') \
-              / Path('HeLaS_Control_IFFISH_A647_WF1_MMStack_Pos0.ome.tif')
-    img = imread(str(imgPath))
+    imgPath = testDataRoot / Path('database_test_files') \
+              / Path('Cos7_A647_WF1/') \
+              / Path('Cos7_A647_1_MMStack_Pos0.ome.tif')
+    img     = imread(str(imgPath))
     try:
         # Make up some dataset IDs and a dataset
-        dsIDs           = {}
-        dsIDs['prefix'] = 'test_prefix'
-        dsIDs['acqID']  = 1
-        ds      = WidefieldImage(datasetIDs = dsIDs)
-        ds.data = img
+        parser = parsers.PositionParser(positionIDs = {
+                                            0 : 'prefix', 
+                                            1 : 'channelID', 
+                                            2 : 'acqID'})
+        parser.parseFilename(str(imgPath), 'WidefieldImage')
+        ds = parser.dataset
+        ds.data = ds.readFromFile(str(imgPath))
         
         pathToDB = testDataRoot
         # Remove datastore if it exists
@@ -153,14 +160,14 @@ def test_Get_Data():
         myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds, widefieldPixelSize = (0.13, 0.13))
         
-        myNewDSID = myDB.dsID('test_prefix', 1, 'WidefieldImage', None,
-                              None, None, None, None)
+        myNewDSID = myDB.dsID('Cos7', 1, 'WidefieldImage', None,
+                              'A647', None, None, None)
         imgDS = myDB.get(myNewDSID)
         ids     = imgDS.datasetIDs
-        assert_equal(ids['prefix'],              'test_prefix')
+        assert_equal(ids['prefix'],                     'Cos7')
         assert_equal(ids['acqID'],                           1)
         assert_equal(imgDS.datasetType,       'WidefieldImage')
-        assert_equal(ids['channelID'],                    None)
+        assert_equal(ids['channelID'],                  'A647')
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
         assert_equal(ids['sliceID'],                      None)   
@@ -182,13 +189,16 @@ def test_HDF_Datastore_Build():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+        0 : 'prefix', 
+        2 : 'channelID', 
+        3 : 'acqID'})
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
+    myDB.build(parser, searchDirectory,
                filenameStrings  = {'WidefieldImage' : '.ome.tif',
                                    'Localizations'  : 'locResults.dat'},
                dryRun = False, readTiffTags = True)
@@ -196,19 +206,19 @@ def test_HDF_Datastore_Build():
     # Test for existence of the data.
     # Pixel sizes should have been obtained from Micro-Manager meta data.
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('HeLaL_Control/HeLaL_Control_1/WidefieldImage_A647_Pos0/'
+        key1 = ('HeLaL/HeLaL_1/WidefieldImage_A647/'
                 'image_data')
-        ok_('HeLaL_Control/HeLaL_Control_1/Localizations_A647_Pos0' in hdf)
-        ok_('HeLaL_Control/HeLaL_Control_1/WidefieldImage_A647_Pos0' in hdf)
+        ok_('HeLaL/HeLaL_1/Localizations_A647' in hdf)
+        ok_('HeLaL/HeLaL_1/WidefieldImage_A647' in hdf)
         ok_('element_size_um' in hdf[key1].attrs)
         assert_equal(hdf[key1].attrs['element_size_um'][0],     1)
         assert_equal(hdf[key1].attrs['element_size_um'][1], 0.108)
         assert_equal(hdf[key1].attrs['element_size_um'][2], 0.108)
         
-        key2 = ('HeLaS_Control/HeLaS_Control_2/WidefieldImage_A647_Pos0/'
+        key2 = ('HeLaS/HeLaS_2/WidefieldImage_A647/'
                 'image_data')
-        ok_('HeLaS_Control/HeLaS_Control_2/Localizations_A647_Pos0' in hdf)
-        ok_('HeLaS_Control/HeLaS_Control_2/WidefieldImage_A647_Pos0' in hdf)
+        ok_('HeLaS/HeLaS_2/Localizations_A647' in hdf)
+        ok_('HeLaS/HeLaS_2/WidefieldImage_A647' in hdf)
         ok_('element_size_um' in hdf[key2].attrs)
         assert_equal(hdf[key2].attrs['element_size_um'][0],     1)
         assert_equal(hdf[key2].attrs['element_size_um'][1], 0.108)
@@ -225,22 +235,24 @@ def test_HDF_Datastore_WidefieldPixelSize_OMEXML_Only():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+        0 : 'prefix', 
+        1 : 'channelID', 
+        2 : 'acqID'})
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot \
                     / Path('database_test_files/OME-TIFF_No_MM_Metadata')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
-               filenameStrings  = {'WidefieldImage' : '.ome.tif',
-                                   'Localizations'  : 'locResults.dat'},
+    myDB.build(parser, searchDirectory,
+               filenameStrings  = {'WidefieldImage' : '2_MMStack*.ome.tif'},
                dryRun = False, readTiffTags = True)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('Cos7/Cos7_2/WidefieldImage_A647_Pos0/image_data')
-        ok_('Cos7/Cos7_2/WidefieldImage_A647_Pos0' in hdf)
+        key1 = ('Cos7/Cos7_2/WidefieldImage_A647/image_data')
+        ok_('Cos7/Cos7_2/WidefieldImage_A647' in hdf)
         ok_('element_size_um' in hdf[key1].attrs)
         assert_equal(hdf[key1].attrs['element_size_um'][0], 1)
         assert_equal(hdf[key1].attrs['element_size_um'][1], 0.1)
@@ -260,21 +272,24 @@ def test_Put_WidefieldImage_TiffFile():
     myDB     = db.HDFDatastore(dbName)    
     
     # Load the widefield image and convert it to an atom
-    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    f = 'Cos7_A647_1_MMStack_Pos0.ome.tif'
     inputFile = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') / Path(f)
     
     # Read TiffTags
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, datasetType = 'WidefieldImage')
-    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
-                                                          readTiffTags = True)
+    parser = parsers.PositionParser(positionIDs = {
+        0 : 'prefix', 
+        1 : 'channelID', 
+        2 : 'acqID'})
+    parser.parseFilename(str(inputFile), 'WidefieldImage')
+    ds = parser.dataset
+    ds.data = ds.readFromFile(str(inputFile), readTiffTags = True)
     
     # Put the widefield image into the datastore
-    myDB.put(mmParser.dataset)
+    myDB.put(parser.dataset)
     
     # Check that the data was put correctly
-    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
+    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647'
     with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(saveKey + '/image_data' in dbFile,
             'Error: Could not find widefield image key.')
@@ -297,22 +312,25 @@ def test_WidefieldImage_DatasetID_Attributes():
         remove(str(dbName))
     myDB     = db.HDFDatastore(dbName)    
     
-    # Load the widefield image and convert it to an atom
-    f = 'Cos7_A647_WF1_MMStack_Pos0.ome.tif'
+    # Load the widefield image and convert it to a dataset
+    f = 'Cos7_A647_1_MMStack_Pos0.ome.tif'
     inputFile = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') / Path(f)
     
     # Set the parser to read TiffTags
-    mmParser = parsers.MMParser()
-    mmParser.parseFilename(inputFile, 'WidefieldImage')
-    mmParser.dataset.data = mmParser.dataset.readFromFile(inputFile,
-                                                          readTiffTags = True)
+    parser = parsers.PositionParser(positionIDs = {
+                                            0 : 'prefix', 
+                                            1 : 'channelID', 
+                                            2 : 'acqID'})
+    parser.parseFilename(str(inputFile), 'WidefieldImage')
+    ds = parser.dataset
+    ds.data = ds.readFromFile(str(inputFile), readTiffTags = False)
     
     # Put the widefield image into the datastore
-    myDB.put(mmParser.dataset)
+    myDB.put(parser.dataset)
     
     # Check that the dataset IDs were put correctly
-    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647_Pos0'
+    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647'
     with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_prefix'))
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_acqID'))
@@ -326,10 +344,10 @@ def test_WidefieldImage_DatasetID_Attributes():
         assert_equal(dbFile[saveKey].attrs['SMLM_prefix'], 'Cos7')
         assert_equal(dbFile[saveKey].attrs['SMLM_acqID'], 1)
         assert_equal(dbFile[saveKey].attrs['SMLM_datasetType'],
-                                                              'WidefieldImage')
+                         'WidefieldImage')
         assert_equal(dbFile[saveKey].attrs['SMLM_channelID'], 'A647')
         assert_equal(dbFile[saveKey].attrs['SMLM_dateID'], 'None')
-        assert_equal(dbFile[saveKey].attrs['SMLM_posID'], (0,))
+        assert_equal(dbFile[saveKey].attrs['SMLM_posID'], 'None')
         assert_equal(dbFile[saveKey].attrs['SMLM_sliceID'], 'None')
 
 def test_WidefieldImage_Datastore_Query():
@@ -340,22 +358,22 @@ def test_WidefieldImage_Datastore_Query():
     if dbName.exists():
         remove(str(dbName))
     myDB     = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    myParser = parsers.SimpleParser()    
     
     # Directory to traverse for acquisition files
-    searchDirectory = testDataRoot / Path('test_experiment_2')
+    searchDirectory = testDataRoot / Path('parsers_test_files/SimpleParser')
     
     # Build datastore
     myDB.build(myParser, searchDirectory,
-               filenameStrings  = {'WidefieldImage'  : '.ome.tif'},
+               filenameStrings  = {'WidefieldImage'  : '.tif'},
                dryRun = False)
     
     results = myDB.query(datasetType = 'WidefieldImage')
     
     ok_(len(results) != 0, 'Error: No dataset types found in DB.')
 
-    # There are 8 widefield images    
-    assert_equal(len(results), 8)
+    # There are 2 widefield images    
+    assert_equal(len(results), 2)
     for ds in results:
         assert_equal(ds.datasetType, 'WidefieldImage')
     
