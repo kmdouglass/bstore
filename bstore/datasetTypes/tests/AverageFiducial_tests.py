@@ -123,20 +123,23 @@ def test_HDF_Datastore_Build_with_AverageFiducial():
     if dbName.exists():
         remove(str(dbName))
     myDB = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+                                            1 : 'prefix', 
+                                            3 : 'channelID', 
+                                            4 : 'acqID'})    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
+    myDB.build(parser, searchDirectory,
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_1/'
-        name = 'AverageFiducial_A647_Pos0'
+        key1 = 'Control/Control_1/'
+        name = 'AverageFiducial_A647'
         ok_(key1 + name in hdf)
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
@@ -146,15 +149,15 @@ def test_HDF_Datastore_Build_with_AverageFiducial():
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_posID'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_sliceID'))
         
-        key2 = 'HeLaS_Control_IFFISH/HeLaS_Control_IFFISH_2/'
+        key2 = 'Control/Control_2/'
         ok_(key2 + name in hdf)
         ok_(hdf[key2 + name].attrs.__contains__('SMLM_acqID'))
         
-        key3 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_1/'
+        key3 = 'shTRF2/shTRF2_1/'
         ok_(key3 + name in hdf)
         ok_(hdf[key3 + name].attrs.__contains__('SMLM_acqID'))
         
-        key4 = 'HeLaS_shTRF2_IFFISH/HeLaS_shTRF2_IFFISH_2/'
+        key4 = 'shTRF2/shTRF2_2/'
         ok_(key4 + name in hdf)
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))
     
@@ -169,13 +172,16 @@ def test_HDF_Datastore_Query_with_AverageFiducial():
     if dbName.exists():
         remove(str(dbName))
     myDB = db.HDFDatastore(dbName)
-    myParser = parsers.MMParser()    
+    parser = parsers.PositionParser(positionIDs = {
+                                            1 : 'prefix', 
+                                            3 : 'channelID', 
+                                            4 : 'acqID'})    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(myParser, searchDirectory,
+    myDB.build(parser, searchDirectory,
                filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
                dryRun = False)
     
