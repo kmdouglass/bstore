@@ -42,7 +42,12 @@ def findPlugins(classType):
         tree = ast.parse(src)
         classes = [cls for cls in tree.body
                    if isinstance(cls, _ast.ClassDef)
-                   and cls.bases[0].attr == classType]
+                   and cls.bases] # Remove classes that don't inherit anything
+        
+        # Remove all classes who don't inherit from classType; this requires
+        # checking for the presence of an id attribute OR an attr attribute
+        # in cls.bases that equals the string in classType
+        fClasses = _filterClassBases(classes, classType)
          
         # Import the module containing the plugin(s), then
         # import each plugin class
@@ -50,7 +55,38 @@ def findPlugins(classType):
             cfg.__Plugin_Dir__[-1] + '.' + os.path.splitext(file)[0])
         
         # Tuples are: (plugin name, plugin object)
-        plugins.extend(((cls.name, getattr(mod, cls.name)) for cls in classes))
+        plugins.extend(((cls.name, getattr(mod, cls.name))
+                        for cls in fClasses))
         
     return plugins
     
+def _filterClassBases(classes, match):
+    """Filters a list of AST classes.
+    
+    Classes whose ast.ClassDef.id or astClassDef.attr attributes do not
+    match the 'match' string input are removed.
+    
+    Parameters
+    ----------
+    classes: list of ast.ClassDef objects
+    match : str
+        The string to match to ast.ClassDef.id or ast.ClassDef.base 
+    
+    """
+    rClasses = []
+    for cls in classes:
+        # First check the id field
+        try:
+            if match in (base.id for base in cls.bases):
+                rClasses.append(cls)
+        except AttributeError:
+            pass
+        
+        # Now check for attributes
+        try:
+            if match in (base.attr for base in cls.bases):
+                rClasses.append(cls)
+        except AttributeError:
+            continue
+        
+    return rClasses
