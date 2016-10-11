@@ -3,7 +3,7 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-"""Private functions used by B-Store to facilitate its operation.
+"""Tests of private functions used by B-Store to facilitate its operation.
 
 """
 
