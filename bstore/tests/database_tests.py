@@ -173,7 +173,7 @@ def test_HDFDatastore__repr__():
                   'widefieldPixelSize = None)'))
   
 def test_HDFDatastore_KeyGeneration():
-    """Key names are generated correctly from DatastoreAtoms.
+    """Key names are generated correctly from Datasets.
     
     """
     myDatasetIDs = [
@@ -225,7 +225,7 @@ def test_HDFDatastore_KeyGeneration():
     
     for currID, key in zip(myDatasetIDs, keys):
         ds = TestType.TestType(datasetIDs = currID)
-        keyString = myDatastore._genKey(ds)
+        keyString, _ = myDatastore._genKey(ds)
         assert_equal(keyString, key)
 
 def test_HDFDatastore_genDataset():

@@ -396,8 +396,8 @@ class HDFDatastore(Datastore):
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(currFile, datasetType = currType)
-                    parser.dataset.data = parser.dataset.readFromFile(currFile,
-                                                                      **kwargs)
+                    parser.dataset.data = parser.dataset.readFromFile(
+                        currFile, **kwargs)
                     
                     if not dryRun:
                         self.put(parser.dataset)
@@ -483,28 +483,35 @@ class HDFDatastore(Datastore):
             if typeName not in config.__Registered_DatasetTypes__:
                 raise DatasetTypeError(typeName)
     
-    def _checkKeyExistence(self, ds):
+    def _checkKeyExistence(self, ds, raiseException = True):
         """Checks for the existence of a key.
         
         Parameters
         ----------
-        ds : Dataset
+        ds             : Dataset
+        raiseException : bool
+            Should the function raise an exception or only return a bool
+            that is True if the key exists?
         
         Returns
         -------
-        key : str
+        keyExists : bool
+        key       : str
             The HDF key pointing to the dataset.
+        ids       : dsID
+            The namedtuple of IDs extracted from the dataset.
         
         """
-        key = self._genKey(ds)        
+        key, ids  = self._genKey(ds)
+        keyExists = False        
         
         # If Datastore file doesn't exist, return without checking
         try:
             with h5py.File(self._dsName, mode = 'r') as dbFile:
                 # First check atoms that are not attributes
                 if key in dbFile and ds.attributeOf is None:
-                    raise HDF5KeyExists(('Error: '
-                                         '{0:s} already exists.'.format(key)))
+                    raise HDF5KeyExists(
+                        'Error: {0:s} already exists.'.format(key))
                 
                 # Next search for *any* occurence of the attribute flag
                 # in the attribute names of dataset that key points to.
@@ -513,13 +520,19 @@ class HDFDatastore(Datastore):
                     mdKeys = dbFile[key].attrs.keys()
                     for currKey in mdKeys:
                         if attrID in currKey:
-                            raise HDF5KeyExists(('Error: Attributes for'
-                                                 '{0:s} already '
-                                                 'exist.'.format(key)))                    
+                            raise HDF5KeyExists(
+                                'Error: {0:s} already exists.'.format(key))
+                            
         except IOError:
-            pass
-        
-        return key
+            # File doesn't exist
+            keyExists = False
+        except HDF5KeyExists:
+            keyExists = True
+            if raiseException:
+                raise HDF5KeyExists(
+                    ('Error: Attributes for {0:s} already exist.'.format(key)))
+                    
+        return keyExists, key, ids
            
     def _genDatasetID(self, key):
         """Generates an dataset ID (dsID) from a HDF key. Inverse of _genKey.
@@ -631,7 +644,9 @@ class HDFDatastore(Datastore):
         
         Returns
         -------
-        str
+        key : str
+        ids : dsID
+            The namedtuple of IDs extracted from the dataset.
         
         """
         # Account for whether a Dataset or a DatasetID namedtuple was given.
@@ -666,9 +681,11 @@ class HDFDatastore(Datastore):
         # If an attribute, use the name of the DatasetType that this type is
         # an attribute of.
         if ids.attributeOf:
-            return acqKey + '/' + ds.attributeOf + otherIDs
+            key = acqKey + '/' + ds.attributeOf + otherIDs
         else:
-            return acqKey + '/' + ds.datasetType + otherIDs
+            key = acqKey + '/' + ds.datasetType + otherIDs
+            
+        return key, ids
             
     def get(self, dsID):
         """Returns a Dataset from the datastore.
@@ -685,13 +702,14 @@ class HDFDatastore(Datastore):
         
         """
         assert dsID.datasetType in config.__Registered_DatasetTypes__
-        hdfKey = self._genKey(dsID)
 
         # Ensure that the key exists        
-        try:
-            self._checkKeyExistence(dsID)
-        except HDF5KeyExists:
-            pass
+        keyExists, hdfKey, _ = self._checkKeyExistence(
+            dsID, raiseException = False)
+            
+        if not keyExists:
+            raise HDF5KeyDoesNotExist(
+                'Dataset does not exist: ' + dsID.__repr__())
         
         # Generate the dataset and retrieve the data
         dataset       = self._genDataset(dsID)
@@ -714,14 +732,14 @@ class HDFDatastore(Datastore):
                 'Type {0} is unregistered.'.format(dataset.attributeOf)
         
         # Key generation automatically handles datasets that are attributes
-        key = self._checkKeyExistence(dataset)
+        _, key, ids = self._checkKeyExistence(dataset)
             
         dataset.put(self._dsName, key, **kwargs)
-        self._datasets.append(self._unpackDatasetIDs(dataset))
+        self._datasets.append(ids)
             
         # Don't write IDs for attributes
         if not dataset.attributeOf:            
-            self._writeDatasetIDs(dataset)
+            self._writeDatasetIDs(dataset, key = key, ids = ids)
             
     def query(self, datasetType = 'Localizations'):
         """Returns a list of datasets inside this datastore.
@@ -872,17 +890,21 @@ class HDFDatastore(Datastore):
                         
         return ids
     
-    def _writeDatasetIDs(self, ds):
+    def _writeDatasetIDs(self, ds, key = None, ids = None):
         """Writes B-Store dataset IDs as attributes of the dataset.
         
         Parameters
         ----------
-        ds : Dataset
+        ds  : Dataset
+        key : str
+        ids : dsID
         
         """
-        key        = self._genKey(ds)
+        if not key or not ids:
+            key        = self._genKey(ds)
+            ids        = self._unpackDatasetIDs(ds)
+        
         attrPrefix = self.attrPrefix
-        ids        = self._unpackDatasetIDs(ds)
         with  h5py.File(self._dsName, mode = 'a') as hdf:
             hdf[key].attrs[attrPrefix + 'acqID']       = ids.acqID
             hdf[key].attrs[attrPrefix + 'channelID']   = \
@@ -932,6 +954,15 @@ class DatasetTypeError(Exception):
           
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class HDF5KeyDoesNotExist(Exception):
+    """Attempting to get a dataset that doesn't exist.
     
     """
     def __init__(self, value):
