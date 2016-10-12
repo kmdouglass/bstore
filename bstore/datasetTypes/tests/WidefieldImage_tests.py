@@ -41,6 +41,22 @@ def test_Instantiation():
     dsIDs['acqID']  = 1
     
     WidefieldImage(datasetIDs = dsIDs)
+    
+def test__repr__():
+    """DatasetType generates the correct __repr__ string.
+    
+    """
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    
+    ds = WidefieldImage(datasetIDs = dsIDs)
+    
+    assert_equal(
+        ds.__repr__(),
+        'WidefieldImage: {\'prefix\': \'test_prefix\'}')
+    
+    del(ds.datasetIDs['prefix'])
+    assert_equal(ds.__repr__(), 'WidefieldImage: {}')
 
 def test_Put_Data():
     """The datasetType can put its own data and datasetIDs.

@@ -16,6 +16,9 @@ class AverageFiducial(bstore.database.Dataset):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        
+    def __repr__(self):
+        return self.datasetType + ': ' + self.datasetIDs.__repr__()
 
     @property
     def attributeOf(self):

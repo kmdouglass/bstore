@@ -28,6 +28,20 @@ from numpy                         import array
 import h5py
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
+
+def test__repr__():
+    """DatasetType generates the correct __repr__ string.
+    
+    """
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    
+    ds = TestType(datasetIDs = dsIDs)
+    
+    assert_equal(ds.__repr__(), 'TestType: {\'prefix\': \'test_prefix\'}')
+    
+    del(ds.datasetIDs['prefix'])
+    assert_equal(ds.__repr__(), 'TestType: {}')
     
 def test_testType_Put_Data():
     """testType can put its own data and datasetIDs.

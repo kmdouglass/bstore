@@ -213,6 +213,10 @@ class Dataset(metaclass = ABCMeta):
     def __init__(self, datasetIDs = {}):
         self._data       = None        
         self._datasetIDs = datasetIDs
+        
+    @abstractmethod
+    def __repr__(self):
+        pass
 
     @abstractproperty
     def attributeOf():    

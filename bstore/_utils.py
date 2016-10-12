@@ -68,9 +68,15 @@ def _filterClassBases(classes, match):
     
     Parameters
     ----------
-    classes: list of ast.ClassDef objects
-    match : str
-        The string to match to ast.ClassDef.id or ast.ClassDef.base 
+    classes  : list of ast.ClassDef objects
+    match    : str
+        The string to match to ast.ClassDef.id or ast.ClassDef.base
+        
+    Returns
+    -------
+    rClasses : list of ast.ClassDef objects
+        The filtered list of classes whose id or attr base attributes match
+        the string in the `match` variable.
     
     """
     rClasses = []

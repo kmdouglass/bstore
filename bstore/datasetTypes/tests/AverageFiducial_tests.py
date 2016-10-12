@@ -41,6 +41,22 @@ def test_averageFiducial_Instantiation():
     dsIDs['acqID']  = 1
     
     AverageFiducial(datasetIDs = dsIDs)
+    
+def test__repr__():
+    """DatasetType generates the correct __repr__ string.
+    
+    """
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    
+    ds = AverageFiducial(datasetIDs = dsIDs)
+    
+    assert_equal(
+        ds.__repr__(),
+        'AverageFiducial: {\'prefix\': \'test_prefix\'}')
+        
+    del(ds.datasetIDs['prefix'])
+    assert_equal(ds.__repr__(), 'AverageFiducial: {}')
 
 def test_averageFiducial_Put_Data():
     """averageFiducial can put its own data and datasetIDs.

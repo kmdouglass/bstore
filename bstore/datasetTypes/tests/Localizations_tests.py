@@ -41,6 +41,20 @@ def test_Instantiation():
     dsIDs['acqID']  = 1
     
     Localizations(datasetIDs = dsIDs)
+    
+def test__repr__():
+    """DatasetType generates the correct __repr__ string.
+    
+    """
+    dsIDs           = {}
+    dsIDs['prefix'] = 'test_prefix'
+    
+    ds = Localizations(datasetIDs = dsIDs)
+    
+    assert_equal(ds.__repr__(), 'Localizations: {\'prefix\': \'test_prefix\'}')
+    
+    del(ds.datasetIDs['prefix'])
+    assert_equal(ds.__repr__(), 'Localizations: {}')
 
 def test_Put_Data():
     """The datasetType can put its own data and datasetIDs.
