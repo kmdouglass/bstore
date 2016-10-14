@@ -212,8 +212,44 @@ def test_DriftCorrection_MaxRadius():
     assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
         0, level='region_id', drop_level=False)), 8837)
     assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
-        1, level='region_id', drop_level=False)), 9809)    
+        1, level='region_id', drop_level=False)), 9809)
+        
+def test_Reset_DriftComputer():
+    """The drift computer can be reset to its initial state.
     
+    """
+    dc = proc.DefaultDriftComputer(
+            coordCols = ['x', 'y'], frameCol = 'frame', maxRadius = 50,
+            smoothingWindowSize = 800, smoothingFilterSize = 200,
+            useTrajectories = [], zeroFrame = 1000)
+            
+    # Change some parameters
+    dc.coordCols = ['x [nm]', 'y [nm]']
+    dc.frameCol  = 'frames'
+    dc.maxRadius = 100
+    dc.smoothingWindowSize = 1000
+    dc.smoothingFilterSize = 500
+    dc.useTrajectories     = [1,2]
+    dc.zeroFrame           = 3000
+    
+    assert_equal(dc.coordCols, ['x [nm]', 'y [nm]'])
+    assert_equal(dc.frameCol, 'frames')
+    assert_equal(dc.maxRadius, 100)
+    assert_equal(dc.smoothingWindowSize, 1000)
+    assert_equal(dc.smoothingFilterSize, 500)
+    assert_equal(dc.useTrajectories, [1,2])
+    assert_equal(dc.zeroFrame, 3000)
+    
+    # Reset the drift computer
+    dc.reset()
+    
+    assert_equal(dc.coordCols, ['x', 'y'])
+    assert_equal(dc.frameCol, 'frame')
+    assert_equal(dc.maxRadius, 50)
+    assert_equal(dc.smoothingWindowSize, 800)
+    assert_equal(dc.smoothingFilterSize, 200)
+    assert_equal(dc.useTrajectories, [])
+    assert_equal(dc.zeroFrame, 1000)
     
 def test_ClusterStats():
     """Cluster statistics are computed correctly.

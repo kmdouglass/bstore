@@ -72,6 +72,13 @@ class ComputeTrajectories(metaclass = ABCMeta):
         """
         pass
     
+    @abstractmethod
+    def reset(self):
+        """Resets the drift computer to its initial value.
+        
+        """
+        pass
+    
 class DriftCorrect(metaclass = ABCMeta):
     """Basic functionality for a drift correction processor.
     
@@ -622,6 +629,15 @@ class DefaultDriftComputer(ComputeTrajectories):
         
         self._includeColName = 'included_in_fit'
         
+        # initial state
+        self._init_coordCols           = coordCols.copy()
+        self._init_frameCol            = frameCol
+        self._init_maxRadius           = maxRadius
+        self._init_smoothingWindowSize = smoothingWindowSize
+        self._init_smoothingFilterSize = smoothingFilterSize
+        self._init_useTrajectories     = useTrajectories.copy()
+        self._init_zeroFrame           = zeroFrame
+        
     def combineCurves(self, startFrame, stopFrame):
         """Average the splines from different fiducials together.
         
@@ -962,24 +978,17 @@ class DefaultDriftComputer(ComputeTrajectories):
             ['region_id'], append = True, inplace = True)
         self.fiducialLocs = temp
         
-        '''
-        # fid is an integer
-        for fid in self.fiducialLocs.loc[:, 'region_id'].unique():
-            # Get localizations from inside the current region matching fid
-            #currRegionLocs  = self.fiducialLocs.xs(
-            #    fid, level='region_id', drop_level=False)
-            
-            currRegionLocs = self.fiducialLocs.loc[(slice(None), slice(fid)),:] 
-            
-            # Compute the center of mass and compute a centered DataFrame
-            xc, yc = currRegionLocs.loc[:, [x, y]].mean()
-            dfc = pd.concat(
-                [currRegionLocs[x] - xc, currRegionLocs[y] - yc], axis = 1)
-            
-            # Remove localizations farther than maxRadius
-            distFilter = dfc[x]**2 + dfc[y]**2 > maxRadius
-            currRegionLocs.loc[distFilter, self._includeColName] = False
-        '''
+    def reset(self):
+        """Resets the drift computer to its initial state.
+        
+        """
+        self.coordCols           = self._init_coordCols.copy()
+        self.frameCol            = self._init_frameCol
+        self.maxRadius           = self._init_maxRadius
+        self.smoothingWindowSize = self._init_smoothingWindowSize
+        self.smoothingFilterSize = self._init_smoothingFilterSize
+        self.useTrajectories     = self._init_useTrajectories.copy()
+        self.zeroFrame           = self._init_zeroFrame
         
 class FiducialDriftCorrect(DriftCorrect):
     """Correct localizations for lateral drift using fiducials.
