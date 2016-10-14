@@ -951,7 +951,7 @@ class DefaultDriftComputer(ComputeTrajectories):
             xc, yc = group.loc[:, [x,y]].mean()
             dfc = pd.concat(
                 [group[x] - xc, group[y] - yc], axis = 1)
-            distFilter = dfc[x]**2 + dfc[y]**2 > maxRadius
+            distFilter = dfc[x]**2 + dfc[y]**2 > maxRadius**2
             group.loc[distFilter, self._includeColName] = False
             temp.append(group)
         

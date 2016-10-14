@@ -167,9 +167,8 @@ def test_DriftCorrection_MaxRadius():
          
     # Extract fiducials from the localizations
     fiducialLocs = dc._extractLocsFromRegions(locs)
-    dc.driftComputer.maxRadius    = 100 # radius is only 50 nm large
+    dc.driftComputer.maxRadius    = 50 # radius is only 50 nm large
     dc.driftComputer.fiducialLocs = fiducialLocs
-    
     
     # Did we find the trajectories?
     assert_equal(fiducialLocs.index.levels[1].max(), 1)
@@ -187,9 +186,9 @@ def test_DriftCorrection_MaxRadius():
     # should be in x + dx and y + dy of corrdf
     # round() avoids rounding errors when making comparisons
     checkx = (corrLocs['x [nm]'] + corrLocs['dx']).round(2).isin(
-                                           locs['x [nm]'].round(2).as_matrix())
+        locs['x [nm]'].round(2).as_matrix())
     checky = (corrLocs['y [nm]'] + corrLocs['dy']).round(2).isin(
-                                           locs['y [nm]'].round(2).as_matrix())
+        locs['y [nm]'].round(2).as_matrix())
     ok_(checkx.all())
     ok_(checky.all())
     
@@ -202,6 +201,18 @@ def test_DriftCorrection_MaxRadius():
     spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
+    
+    # The number of used localizations should equal the 2*maxRadius parameter
+    # divided by the drift rate (~112 nm / 10,000 frames). However, the drift
+    # data contains noise due to the finite localization precision, so we can
+    # only test an approximate number of localizations.
+    # I independently determined that fiducial region 0 has 8837 localizations
+    # that are 50 nm away or less from the center. Region 1 has 9809.
+    x = dc.driftComputer.fiducialLocs
+    assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
+        0, level='region_id', drop_level=False)), 8837)
+    assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
+        1, level='region_id', drop_level=False)), 9809)    
     
     
 def test_ClusterStats():
