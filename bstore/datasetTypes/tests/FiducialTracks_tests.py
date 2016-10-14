@@ -156,8 +156,8 @@ def test_HDF_Datastore_Build_with_fiducialtracks():
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'Control/Control_1/'
-        name1 = 'FiducialTracks_A647'
-        name2 = 'AverageFiducial_A647'
+        name1 = 'FiducialTracks_ChannelA647'
+        name2 = 'AverageFiducial_ChannelA647'
         ok_(key1 + name1 in hdf)
         ok_(key1 + name2 in hdf)
         ok_(hdf[key1 + name1].attrs.__contains__('SMLM_prefix'))

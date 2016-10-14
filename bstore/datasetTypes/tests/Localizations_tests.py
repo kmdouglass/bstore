@@ -153,7 +153,7 @@ def test_HDF_Datastore_Build():
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'Control/Control_1/'
-        name = 'Localizations_A647'
+        name = 'Localizations_ChannelA647'
         ok_(key1 + name in hdf)
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))

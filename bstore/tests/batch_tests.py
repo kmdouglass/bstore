@@ -122,9 +122,9 @@ def test_HDFBatchProcess_Go():
     bpHDF.go()
     
     results = [outputDirHDF / \
-                Path('HeLaL_Control/HeLaL_Control_1/Localizations_A647_Pos0.csv'),
+                Path('HeLaL_Control/HeLaL_Control_1/Localizations_ChannelA647_Pos0.csv'),
                outputDirHDF / \
-                Path('HeLaS_Control/HeLaS_Control_2/Localizations_A647_Pos0.csv')]
+                Path('HeLaS_Control/HeLaS_Control_2/Localizations_ChannelA647_Pos0.csv')]
                 
     for currRes in results:
         df = pd.read_csv(str(currRes))
@@ -137,9 +137,9 @@ def test_HDFBatchProcess_Go():
     
     # Verify that the atomic ID information was written correctly        
     atomIDs = [outputDirHDF / \
-               Path('HeLaL_Control/HeLaL_Control_1/Localizations_A647_Pos0.json'),
+               Path('HeLaL_Control/HeLaL_Control_1/Localizations_ChannelA647_Pos0.json'),
                outputDirHDF / \
-               Path('HeLaS_Control/HeLaS_Control_2/Localizations_A647_Pos0.json')]
+               Path('HeLaS_Control/HeLaS_Control_2/Localizations_ChannelA647_Pos0.json')]
                
     with open(str(atomIDs[0]), 'r') as infile:        
         info = json.load(infile)

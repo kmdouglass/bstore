@@ -533,6 +533,33 @@ class HDFDatastore(Datastore):
                     ('Error: Attributes for {0:s} already exist.'.format(key)))
                     
         return keyExists, key, ids
+        
+    def _genDataset(self, dsID):
+        """Generate a dataset with an empty data attribute from a DatasetID.
+        
+        Parameters
+        ----------
+        dsID : DatasetID
+            Namedtuple representing a dataset in the datastore.
+            
+        Returns
+        -------
+        : Dataset
+            
+        """
+        idDict      = dict(dsID._asdict())
+        datasetType = idDict['datasetType']
+        
+        # The following do not belong in the dict of ID's, so remove them.
+        # They are attributes of the datasetType.
+        del(idDict['datasetType']); del(idDict['attributeOf'])
+        
+        # Build the return dataset
+        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
+                    datasetType))
+        dType = getattr(mod, datasetType)
+            
+        return dType(datasetIDs = idDict)
            
     def _genDatasetID(self, key):
         """Generates an dataset ID (dsID) from a HDF key. Inverse of _genKey.
@@ -575,15 +602,13 @@ class HDFDatastore(Datastore):
         otherIDs    = splitStr[2]
         datasetType = otherIDs.split('_')[0]
         
-        channelID = [channel
-                     for channel in config.__Channel_Identifier__.keys()
-                     if channel in otherIDs]
-        assert (len(channelID) <= 1), channelID
-        try:
-            channelID       = channelID[0]
-        except IndexError:
-            # When there is no channel identifier found, set it to None
+        channelRaw = re.search(r'Channel(.*)', otherIDs)
+        if channelRaw == None:
             channelID = None
+        else:
+            # 'Channel...' will always be the first item in the split, ergo [0]
+            channelID = channelRaw.group(0).split('_')[0]
+            channelID = channelID[len('Channel'):]
         
         # Obtain the position ID using regular expressions
         # First, extract strings like 'Pos0' or 'Pos_003_002
@@ -607,33 +632,6 @@ class HDFDatastore(Datastore):
         returnDS = self.dsID(prefix, acqID, datasetType, None,
                              channelID, dateID, posID, sliceID)
         return returnDS
-        
-    def _genDataset(self, dsID):
-        """Generate a dataset with an empty data attribute from a DatasetID.
-        
-        Parameters
-        ----------
-        dsID : DatasetID
-            Namedtuple representing a dataset in the datastore.
-            
-        Returns
-        -------
-        : Dataset
-            
-        """
-        idDict      = dict(dsID._asdict())
-        datasetType = idDict['datasetType']
-        
-        # The following do not belong in the dict of ID's, so remove them.
-        # They are attributes of the datasetType.
-        del(idDict['datasetType']); del(idDict['attributeOf'])
-        
-        # Build the return dataset
-        mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                                  datasetType))
-        dType = getattr(mod, datasetType)
-            
-        return dType(datasetIDs = idDict)
 
     def _genKey(self, ds):
         """Generate a key name for a dataset. The inverse of _genAtomicID.
@@ -667,7 +665,7 @@ class HDFDatastore(Datastore):
                                  
         otherIDs = ''
         if ids.channelID is not None:
-            otherIDs += '_' + ids.channelID
+            otherIDs += '_Channel' + ids.channelID
         if ids.posID is not None:
             if len(ids.posID) == 1:
                 posID = ids.posID[0]    

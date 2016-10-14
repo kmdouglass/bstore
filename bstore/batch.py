@@ -226,7 +226,7 @@ class HDFBatchProcessor(BatchProcessor):
                                  
         otherIDs = ''
         if dsID.channelID is not None:
-            otherIDs += '_' + dsID.channelID
+            otherIDs += '_Channel' + dsID.channelID
         if dsID.posID is not None:
             if len(dsID.posID) == 1:
                 posID = dsID.posID[0]    

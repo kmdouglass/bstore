@@ -195,8 +195,8 @@ def test_HDF_Datastore_Build():
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
         key1 = 'Control/Control_1/'
-        name = 'Localizations_A647'
-        ok_(key1 + 'Localizations_A647' in hdf)
+        name = 'Localizations_ChannelA647'
+        ok_(key1 + 'Localizations_ChannelA647' in hdf)
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_prefix'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_acqID'))
         ok_(hdf[key1 + name].attrs.__contains__('SMLM_datasetType'))
@@ -224,7 +224,7 @@ def test_HDF_Datastore_Build():
         ok_(hdf[key3 + name].attrs.__contains__('SMLM_Metadata_Height'))
         
         key4 = 'shTRF2/shTRF2_2/'
-        ok_(key4 + 'Localizations_A647' in hdf)
+        ok_(key4 + 'Localizations_ChannelA647' in hdf)
         ok_(hdf[key4 + name].attrs.__contains__(('SMLM_'
                                                  'Metadata_SMLM_datasetType')))
         ok_(hdf[key4 + name].attrs.__contains__('SMLM_acqID'))

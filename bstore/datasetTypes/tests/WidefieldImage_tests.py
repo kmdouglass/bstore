@@ -89,7 +89,7 @@ def test_Put_Data():
         myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds)
         
-        key = 'Cos7/Cos7_1/WidefieldImage_A647'
+        key = 'Cos7/Cos7_1/WidefieldImage_ChannelA647'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key].attrs['SMLM_datasetType'], 'WidefieldImage')
             imgData = hdf[key + '/image_data'].value
@@ -137,7 +137,7 @@ def test_Put_Data_kwarg_WidefieldPixelSize():
         # These values will be equal to 0.108, 0.108 if no widefieldPixelSize
         # is supplied because the default behavior is to read the MM or OME-XML
         # metadata.        
-        key = 'Cos7/Cos7_1/WidefieldImage_A647'
+        key = 'Cos7/Cos7_1/WidefieldImage_ChannelA647'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
             assert_equal(hdf[key + '/image_data'].attrs['element_size_um'][0],
                          1)
@@ -222,19 +222,19 @@ def test_HDF_Datastore_Build():
     # Test for existence of the data.
     # Pixel sizes should have been obtained from Micro-Manager meta data.
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('HeLaL/HeLaL_1/WidefieldImage_A647/'
+        key1 = ('HeLaL/HeLaL_1/WidefieldImage_ChannelA647/'
                 'image_data')
-        ok_('HeLaL/HeLaL_1/Localizations_A647' in hdf)
-        ok_('HeLaL/HeLaL_1/WidefieldImage_A647' in hdf)
+        ok_('HeLaL/HeLaL_1/Localizations_ChannelA647' in hdf)
+        ok_('HeLaL/HeLaL_1/WidefieldImage_ChannelA647' in hdf)
         ok_('element_size_um' in hdf[key1].attrs)
         assert_equal(hdf[key1].attrs['element_size_um'][0],     1)
         assert_equal(hdf[key1].attrs['element_size_um'][1], 0.108)
         assert_equal(hdf[key1].attrs['element_size_um'][2], 0.108)
         
-        key2 = ('HeLaS/HeLaS_2/WidefieldImage_A647/'
+        key2 = ('HeLaS/HeLaS_2/WidefieldImage_ChannelA647/'
                 'image_data')
-        ok_('HeLaS/HeLaS_2/Localizations_A647' in hdf)
-        ok_('HeLaS/HeLaS_2/WidefieldImage_A647' in hdf)
+        ok_('HeLaS/HeLaS_2/Localizations_ChannelA647' in hdf)
+        ok_('HeLaS/HeLaS_2/WidefieldImage_ChannelA647' in hdf)
         ok_('element_size_um' in hdf[key2].attrs)
         assert_equal(hdf[key2].attrs['element_size_um'][0],     1)
         assert_equal(hdf[key2].attrs['element_size_um'][1], 0.108)
@@ -267,8 +267,8 @@ def test_HDF_Datastore_WidefieldPixelSize_OMEXML_Only():
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
-        key1 = ('Cos7/Cos7_2/WidefieldImage_A647/image_data')
-        ok_('Cos7/Cos7_2/WidefieldImage_A647' in hdf)
+        key1 = ('Cos7/Cos7_2/WidefieldImage_ChannelA647/image_data')
+        ok_('Cos7/Cos7_2/WidefieldImage_ChannelA647' in hdf)
         ok_('element_size_um' in hdf[key1].attrs)
         assert_equal(hdf[key1].attrs['element_size_um'][0], 1)
         assert_equal(hdf[key1].attrs['element_size_um'][1], 0.1)
@@ -305,7 +305,7 @@ def test_Put_WidefieldImage_TiffFile():
     myDB.put(parser.dataset)
     
     # Check that the data was put correctly
-    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647'
+    saveKey = 'Cos7/Cos7_1/WidefieldImage_ChannelA647'
     with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(saveKey + '/image_data' in dbFile,
             'Error: Could not find widefield image key.')
@@ -346,7 +346,7 @@ def test_WidefieldImage_DatasetID_Attributes():
     myDB.put(parser.dataset)
     
     # Check that the dataset IDs were put correctly
-    saveKey = 'Cos7/Cos7_1/WidefieldImage_A647'
+    saveKey = 'Cos7/Cos7_1/WidefieldImage_ChannelA647'
     with h5py.File(myDB._dsName, mode = 'r') as dbFile:
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_prefix'))
         ok_(dbFile[saveKey].attrs.__contains__('SMLM_acqID'))

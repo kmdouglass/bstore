@@ -13,16 +13,6 @@ __HDF_AtomID_Prefix__ = 'SMLM_'
 
 """
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
-
-"""__Channel_Identifier___ : dict
-    Dictionary containing shorthand names for common fluorophores.
-       
-"""
-__Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
-                          'A647' : 'AlexaFluor 647',
-                          'A750' : 'AlexaFluor 750',
-                          'DAPI' : 'DAPI',
-                          'Cy5'  : 'Cy5'}
                         
 """__Custom_Dir__ : str
     The name of the directory containing customization files. 

@@ -206,18 +206,18 @@ def test_HDFDatastore_KeyGeneration():
     # The last one should be locResults and not locMetadata because
     # metadata gets appended to locResults            
     keys       = [
-                  'HeLa_Control/HeLa_Control_1/TestType_A647_Pos0',
+                  'HeLa_Control/HeLa_Control_1/TestType_ChannelA647_Pos0',
                   'HeLa_Control/HeLa_Control_43/TestType_Pos0',
                   'HeLa_Control/HeLa_Control_6/TestType',
-                  'HeLa_Control/HeLa_Control_6/TestType_Cy5_Pos1_Slice3',
+                  'HeLa_Control/HeLa_Control_6/TestType_ChannelCy5_Pos1_Slice3',
                   'HeLa_Control/HeLa_Control_89' + \
-                      '/TestType_DAPI_Pos_003_012_Slice46',
+                      '/TestType_ChannelDAPI_Pos_003_012_Slice46',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/TestType_A750_Pos_000_002',
+                      '/TestType_ChannelA750_Pos_000_002',
                   'HeLa_Control/d2016_05_05/HeLa_Control_76' + \
-                      '/TestType_A750_Pos_000_002',
+                      '/TestType_ChannelA750_Pos_000_002',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/TestType_A750_Pos_000_002'
+                      '/TestType_ChannelA750_Pos_000_002'
                  ]
     
     dbName = 'myDB.h5'
@@ -275,8 +275,8 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
     # Get keys and attributes
     with h5py.File(str(dbName), 'r') as f:
         keys = sorted(list(f['Cos7/Cos7_1'].keys()))
-        assert_equal(keys[0], 'TestType_A647_Pos0')
-        assert_equal(keys[1], 'TestType_A647_Pos_001_002')
+        assert_equal(keys[0], 'TestType_ChannelA647_Pos0')
+        assert_equal(keys[1], 'TestType_ChannelA647_Pos_001_002')
     
         keyString0 = 'Cos7/Cos7_1/' + keys[0]
         assert_equal(f[keyString0].attrs[atomPre + 'acqID'],                 1)
