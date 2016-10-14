@@ -39,6 +39,12 @@ All notable changes to this project will be documented in this file.
   sorting of Datasets.
 - readFromFile() behavior was decoupled from the Parser class. Each
   Dataset now knows how to read and write its own data from files.
+- The channel identifier in keys of a `HDFDatastore` object are now
+  identified by the `Channel` string. This was done for consistency
+  with the other identifiers and to decouple and remove
+  `__Channel_Identifier__` from B-Store completely. B-Store is now
+  agnostic about channels and does not require them to be added in the
+  config file.
 
 ### Removed
 - Generic dataset types were removed. This eliminates the distinction
