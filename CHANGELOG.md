@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
   attribute. Localizations in a region of interest that lie further
   than a distance equal to `maxRadius` from the localizations' center
   of mass are not included in the drift trajectory computation.
+- `ComputeTrajectories` objects, such as `DefaultDriftComputer`, how
+  have reset() methods to reset them to their initial state.
 
 ### Changed
 - `Database` and `HDFDatabase` were renamed to `Datastore` and
