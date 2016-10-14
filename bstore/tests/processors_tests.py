@@ -31,7 +31,7 @@ def test_DriftCorrection():
                                    frameCol = 'frame', removeFiducials = True)
                                    
     # Tell the drift corrector where the fiducials are.
-    # Normally, these methods are not directly access by users; this is why
+    # Normally, these methods are not directly accessed by users; this is why
     # we need to handle renaming of columns.
     dc._fidRegions = [
         {'xMin' : 730,
@@ -142,6 +142,67 @@ def test_DriftCorrection_dropTrajectories():
     spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
+    
+def test_DriftCorrection_MaxRadius():
+    """Drift correction properly filters out far localizations.
+    
+    """
+    # Create the drift corrector
+    dc = proc.FiducialDriftCorrect(coordCols = ['x [nm]', 'y [nm]'],
+                                   frameCol = 'frame', removeFiducials = True)
+                                   
+    # Tell the drift corrector where the fiducials are.
+    # Normally, these methods are not directly accessed by users; this is why
+    # we need to handle renaming of columns.
+    dc._fidRegions = [
+        {'xMin' : 730,
+         'xMax' : 870,
+         'yMin' : 730,
+         'yMax' : 820},
+         {'xMin' : 1400,
+          'xMax' : 1600,
+          'yMin' : 1400,
+          'yMax' : 1600}
+         ]
+         
+    # Extract fiducials from the localizations
+    fiducialLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.maxRadius    = 100 # radius is only 50 nm large
+    dc.driftComputer.fiducialLocs = fiducialLocs
+    
+    
+    # Did we find the trajectories?
+    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+
+    # Correct the localizations
+    dc.interactiveSearch = False
+    corrLocs = dc(locs)
+    
+    # Were fiducial locs removed? There should be 20000 ground truth
+    # localizations after the localizations belonging to
+    # fiducials are removed.
+    assert_equal(corrLocs.shape[0], 20000)
+    
+    # Was the correct drift trajectory applied? The original locs
+    # should be in x + dx and y + dy of corrdf
+    # round() avoids rounding errors when making comparisons
+    checkx = (corrLocs['x [nm]'] + corrLocs['dx']).round(2).isin(
+                                           locs['x [nm]'].round(2).as_matrix())
+    checky = (corrLocs['y [nm]'] + corrLocs['dy']).round(2).isin(
+                                           locs['y [nm]'].round(2).as_matrix())
+    ok_(checkx.all())
+    ok_(checky.all())
+    
+    # dx and dy should equal the avgSpline
+    fidTraj_x = corrLocs[['dx', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dx'].round(2).as_matrix()
+    fidTraj_y = corrLocs[['dy', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dy'].round(2).as_matrix()
+    spline_x  = dc.driftTrajectory['xS'].round(2).as_matrix()
+    spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
+    ok_(all(fidTraj_x == spline_x))
+    ok_(all(fidTraj_y == spline_y))
+    
     
 def test_ClusterStats():
     """Cluster statistics are computed correctly.

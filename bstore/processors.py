@@ -415,7 +415,6 @@ class ComputeClusterStats:
         """
         variances = group[coordinates].var(ddof = 0)
         
-        # sqrt(3/2) makes the radius of gyration comparable to a 3D cluster        
         Rg = np.sqrt(variances.sum())
         return Rg
         
@@ -552,15 +551,20 @@ class DefaultDriftComputer(ComputeTrajectories):
         in that order.
     frameCol            : str
         Name of the column identifying the column containing the frames.
-    smoothingWindowSize   : float
+    maxRadius           : float
+        The maximum distance that a localization may lie from the center of
+        a cluster of fiducial localizations; localizations farther than this
+        distance are not included in the fit. Set to None to include all
+        fiducials. Units are the same as in coordCols.
+    smoothingWindowSize : float
         Moving average window size in frames for spline fitting.
-    smoothingFilterSize   : float
+    smoothingFilterSize : float
         Moving average Gaussian kernel width in frames for spline fitting.
-    useTrajectories : list of int
+    useTrajectories     : list of int
         List of integers corresponding to the fiducial trajectories to use
         when computing the average trajectory. If empty, all trajectories
         are used.
-    zeroFrame       : int
+    zeroFrame           : int
         Frame where all individual drift trajectories are equal to zero.
         This may be adjusted to help correct fiducial trajectories that
         don't overlap well near the beginning.
@@ -580,6 +584,11 @@ class DefaultDriftComputer(ComputeTrajectories):
         parent ComputeTrajectories class.
     frameCol            : str
         Name of the column identifying the column containing the frames.
+    maxRadius           : float
+        The maximum distance that a localization may lie from the center of
+        a cluster of fiducial localizations; localizations farther than this
+        distance are not included in the fit. Set to None to include all
+        fiducials. Units are the same as in coordCols.
     smoothingWindowSize : float
         Moving average window size in frames for spline fitting.
     smoothingFilterSize : float
@@ -598,16 +607,20 @@ class DefaultDriftComputer(ComputeTrajectories):
         
     """
     def __init__(self, coordCols = ['x', 'y'], frameCol = 'frame',
-                 smoothingWindowSize = 600, smoothingFilterSize = 400,
-                 useTrajectories = [], zeroFrame = 1000):
+                 maxRadius = None, smoothingWindowSize = 600,
+                 smoothingFilterSize = 400, useTrajectories = [],
+                 zeroFrame = 1000):
 
         self.coordCols = coordCols
         self.frameCol  = frameCol
+        self.maxRadius = maxRadius
         self.smoothingWindowSize = smoothingWindowSize
         self.smoothingFilterSize = smoothingFilterSize
         self.useTrajectories     = useTrajectories
         self.zeroFrame           = zeroFrame
         super(ComputeTrajectories, self).__init__()
+        
+        self._includeColName = 'included_in_fit'
         
     def combineCurves(self, startFrame, stopFrame):
         """Average the splines from different fiducials together.
@@ -690,7 +703,8 @@ class DefaultDriftComputer(ComputeTrajectories):
         
         """
         self.clearFiducialLocs()
-        self.fiducialLocs = fiducialLocs       
+        self.fiducialLocs = fiducialLocs
+        self._removeOutliers()
         self.fitCurves()
         self.combineCurves(startFrame, stopFrame)
 
@@ -756,8 +770,14 @@ class DefaultDriftComputer(ComputeTrajectories):
         # fid is an integer
         for fid in self.fiducialLocs.index.levels[regionIDIndex]:
             # Get localizations from inside the current region matching fid
-            currRegionLocs  = self.fiducialLocs.xs(fid, level='region_id',
-                                                    drop_level=False)            
+            # and that passed the _removeOutliers() step
+            currRegionLocs  = self.fiducialLocs.xs(
+                fid, level='region_id', drop_level=False)
+            
+            # Use only those fiducials within a certain radius of the 
+            # cluster of localization's center of mass
+            currRegionLocs  = currRegionLocs.loc[
+                currRegionLocs[self._includeColName] == True]
             
             maxFrame        = currRegionLocs[frameID].max()
             minFrame        = currRegionLocs[frameID].min()
@@ -902,6 +922,64 @@ class DefaultDriftComputer(ComputeTrajectories):
             axy.set_ylabel('y-position')
             axy.set_ylim((minyy, maxyy))
             plt.show()
+            
+    def _removeOutliers(self):
+        """Removes outlier localizations from fiducial tracks before fitting.
+        
+        _removeOutliers() computes the center of mass of each cluster of
+        localizations belonging to a fiducial and then removes localizations
+        lying farther than self.maxRadius from this center.
+        
+        """
+        x = self.coordCols[0]
+        y = self.coordCols[1]
+        self.fiducialLocs[self._includeColName] = True
+        
+        maxRadius = self.maxRadius
+        if not maxRadius:
+            return
+        
+        # Change the region_id from an index to a normal column
+        self.fiducialLocs.reset_index(level = 'region_id', inplace = True)
+        groups = self.fiducialLocs.groupby('region_id')
+        temp = []
+        for _, group in groups:
+            # Make a copy to avoid the warning about modifying slices
+            group = group.copy()
+            
+            # Subtract the center of mass and filter by distances
+            xc, yc = group.loc[:, [x,y]].mean()
+            dfc = pd.concat(
+                [group[x] - xc, group[y] - yc], axis = 1)
+            distFilter = dfc[x]**2 + dfc[y]**2 > maxRadius
+            group.loc[distFilter, self._includeColName] = False
+            temp.append(group)
+        
+        # Aggregate the filtered groups, reset the index, then recreate
+        # self.fiducialLocs with the filtered localizations
+        temp = pd.concat(temp)
+        temp.set_index(
+            ['region_id'], append = True, inplace = True)
+        self.fiducialLocs = temp
+        
+        '''
+        # fid is an integer
+        for fid in self.fiducialLocs.loc[:, 'region_id'].unique():
+            # Get localizations from inside the current region matching fid
+            #currRegionLocs  = self.fiducialLocs.xs(
+            #    fid, level='region_id', drop_level=False)
+            
+            currRegionLocs = self.fiducialLocs.loc[(slice(None), slice(fid)),:] 
+            
+            # Compute the center of mass and compute a centered DataFrame
+            xc, yc = currRegionLocs.loc[:, [x, y]].mean()
+            dfc = pd.concat(
+                [currRegionLocs[x] - xc, currRegionLocs[y] - yc], axis = 1)
+            
+            # Remove localizations farther than maxRadius
+            distFilter = dfc[x]**2 + dfc[y]**2 > maxRadius
+            currRegionLocs.loc[distFilter, self._includeColName] = False
+        '''
         
 class FiducialDriftCorrect(DriftCorrect):
     """Correct localizations for lateral drift using fiducials.
