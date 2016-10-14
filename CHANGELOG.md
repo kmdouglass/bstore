@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
   integer-based indexing via `__getitem__()`. This means that one may
   loop over and filter datasets using standard Python operations on
   iterables and sequences.
+- `DefaultDriftComputer` now accepts a `maxRadius`
+  attribute. Localizations in a region of interest that lie further
+  than a distance equal to `maxRadius` from the localizations' center
+  of mass are not included in the drift trajectory computation.
 
 ### Changed
 - `Database` and `HDFDatabase` were renamed to `Datastore` and
