@@ -188,10 +188,11 @@ it.
 Misc. Build Options
 +++++++++++++++++++
 
-The misc. build options, like `sep` and `readFromFile`, are passed to
-each Dataset's method for reading datafiles. They are specified in the
-same notation as `Python dictionaries`_ except they omit the curly
-braces. Each one is optional, so you need not specify any of them.
+The misc. build options, like `sep` and `readTiffTags`, are passed to
+each Dataset's method for reading data from files. They are specified
+in the same notation as `Python dictionaries`_ except they omit the
+curly braces. Each one is optional, so you need not specify any of
+them.
 
 The name of each option must be surrounded in single quotation
 marks. The value for each option is a Python datatype and is separated
@@ -201,9 +202,9 @@ case-sensitive. Strings are also surrounded by single quotes.
 The current list of options is:
 
 1. **sep** - The column separator in the raw text csv files. Common
-   values include commas ',' and tabs '\t'.
-2. **readTiffTags** - whether tif image metadata should be read and
-   recorded in the HDF datastore. Accepts either `True` or
+   values include commas ',' and tabs '\\t'.
+2. **readTiffTags** - Determines whether tif image metadata should be
+   read and recorded in the HDF datastore. Accepts either `True` or
    `False`. Note that this may fail to read the tif images if the
    filename does not match the metadata.
 
