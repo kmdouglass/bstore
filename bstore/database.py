@@ -338,21 +338,17 @@ class HDFDatastore(Datastore):
                                     'posID', 'sliceID'])
     """Dataset IDs used by this datastore.
     
-    Notes
-    -----
-    #Fields' __doc__ attributes must contain the string "(optional)" if they
-    #are not required.
+    prefix      = The descriptive name given to the dataset by the user.
+    acqID       = Acquisition ID number; an integer.
+    datasetType = The type specified by datasetType.
+    attributeOf = The type of dataset that this one describes.
+    channelID   = (optional) String for the channel (color).
+    dateID      = (optional) The date the dataset was acquired.
+    posID       = (optional) One or two-tuple of integers.
+    sliceID     = (optional) Single integer of the axial slice.
         
     """
-    #dsID.prefix.__doc__      = ('The descriptive name given to '
-    #                            'the dataset by the user.')
-    #dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
-    #dsID.datasetType.__doc__ = 'The type specified by datasetType'
-    #dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
-    #dsID.channelID.__doc__   = '(optional) String for the channel (color).'
-    #dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
-    #dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
-    #dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
+    _optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID')
     
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
               **kwargs):
@@ -871,7 +867,7 @@ class HDFDatastore(Datastore):
         
         # Fill in missing optional id fields
         optional = [field for field in self.dsID._fields
-                          if '(optional)' in getattr(self.dsID, field).__doc__]
+                          if field in self._optionalIDs]
         for field in optional:
             if field not in idDict:            
                 idDict[field] = None
