@@ -332,22 +332,27 @@ class HDFDatastore(Datastore):
     @property
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
-    
-    #Dataset IDs used by this datastore.    
+        
     dsID = namedtuple('DatasetID', ['prefix', 'acqID', 'datasetType',
                                     'attributeOf', 'channelID', 'dateID',
                                     'posID', 'sliceID'])
+    """Dataset IDs used by this datastore.
+    
+    Notes
+    -----
     #Fields' __doc__ attributes must contain the string "(optional)" if they
     #are not required.
-    dsID.prefix.__doc__      = ('The descriptive name given to '
-                                'the dataset by the user.')
-    dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
-    dsID.datasetType.__doc__ = 'The type specified by datasetType'
-    dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
-    dsID.channelID.__doc__   = '(optional) String for the channel (color).'
-    dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
-    dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
-    dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
+        
+    """
+    #dsID.prefix.__doc__      = ('The descriptive name given to '
+    #                            'the dataset by the user.')
+    #dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
+    #dsID.datasetType.__doc__ = 'The type specified by datasetType'
+    #dsID.attributeOf.__doc__ = 'The type of dataset that this one describes.'
+    #dsID.channelID.__doc__   = '(optional) String for the channel (color).'
+    #dsID.dateID.__doc__      = '(optional) The date the dataset was acquired.'
+    #dsID.posID.__doc__       = '(optional) One or two-tuple of integers.'
+    #dsID.sliceID.__doc__     = '(optional) Single integer of the axial slice.'
     
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
               **kwargs):
