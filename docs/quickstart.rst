@@ -188,11 +188,10 @@ it.
 Misc. Build Options
 +++++++++++++++++++
 
-The miscellaneous build options, like `sep` and `readFromFile`, are
-passed to each Dataset's method for reading datafiles. They are
-specified in the same notation as `Python dictionaries`_ except they
-omit the curly braces. Each one is optional, so you need not specify
-any of them.
+The misc. build options, like `sep` and `readFromFile`, are passed to
+each Dataset's method for reading datafiles. They are specified in the
+same notation as `Python dictionaries`_ except they omit the curly
+braces. Each one is optional, so you need not specify any of them.
 
 The name of each option must be surrounded in single quotation
 marks. The value for each option is a Python datatype and is separated
