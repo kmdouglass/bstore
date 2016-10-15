@@ -22,8 +22,10 @@ All notable changes to this project will be documented in this file.
   attribute. Localizations in a region of interest that lie further
   than a distance equal to `maxRadius` from the localizations' center
   of mass are not included in the drift trajectory computation.
-- `ComputeTrajectories` objects, such as `DefaultDriftComputer`, how
+- `ComputeTrajectories` objects, such as `DefaultDriftComputer`, now
   have reset() methods to reset them to their initial state.
+- Added an example on merging localizations to the Jupyter Notebook
+  [examples folder](https://github.com/kmdouglass/bstore/tree/master/examples).
 
 ### Changed
 - `Database` and `HDFDatabase` were renamed to `Datastore` and
