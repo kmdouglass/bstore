@@ -22,6 +22,12 @@ import bstore.gui._guiutils as _guiutils
 import ast
 import inspect
 import threading
+import webbrowser
+
+miscURL = 'http://b-store.readthedocs.io/en/development/quickstart.html#misc-build-options'
+
+def openMiscHelp():
+    webbrowser.open_new(miscURL)
 
 class CreateHDFDatastore():
     """Dialog for creating a new HDFDatastore object.
@@ -338,7 +344,7 @@ class CreateHDFDatastore():
             Grid.columnconfigure(self, 1, weight = 1)
             
             self.button = Button(self, text='Help',
-                                 command=lambda: None, width=10)
+                                 command=openMiscHelp, width=10)
             self.button.grid(row = 0, column=1,
                              padx = 5, pady = 5, sticky = E)        
             

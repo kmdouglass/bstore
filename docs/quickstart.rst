@@ -196,8 +196,9 @@ them.
 
 The name of each option must be surrounded in single quotation
 marks. The value for each option is a Python datatype and is separated
-from the option's name by colon. True and False are
-case-sensitive. Strings are also surrounded by single quotes.
+from the option's name by colon. All option/value pairs are separated
+by commas. True and False are case-sensitive. Strings are also
+surrounded by single quotes.
 
 The current list of options is:
 
