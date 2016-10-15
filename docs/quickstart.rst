@@ -32,7 +32,7 @@ manager. `Download Anaconda for Python 3`_ (or Miniconda) and run the
 following commands in the Anaconda shell::
 
   conda update conda
-conda install -c kmdouglass -c soft-matter -c conda-forge bstore
+  conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 
 .. _Download Anaconda for Python 3: https://www.continuum.io/downloads
 
