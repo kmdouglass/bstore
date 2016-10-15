@@ -26,7 +26,7 @@ MOCK_MODULES = [
     'numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot',
     'pandas', 'h5py', 'trackpy', 'sklearn.cluster', 'scipy.signal',
     'scipy.ndimage', 'scipy.interpolate', 'matplotlib.widgets',
-    'tables'
+    'tables', 'tifffile'
 ]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
