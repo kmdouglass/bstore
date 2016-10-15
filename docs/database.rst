@@ -42,7 +42,7 @@ Datasets
 ========
 
 A `Dataset`_ is a single, generalized dataset that can be stored in a
-B-Store database. It is "general" in the sense that it can represent
+B-Store dataset. It is "general" in the sense that it can represent
 one of a few different types of data (e.g. localizations, metadata, or
 widefield images). A specific type of dataset is called a
 `DatasetType`. A DatasetType knows how to read raw input files from
