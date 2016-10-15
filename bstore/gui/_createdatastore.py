@@ -390,8 +390,9 @@ class CreateHDFDatastore():
                               
             plugins = _utils.findPlugins('Parser')
             self._pList.extend(((name, parser()) for name, parser in plugins))
-        
-            v = IntVar(value = 0)
+            
+            # value = 1 prevents PositionParser's config window from opening
+            v = IntVar(value = 1) 
             parent = self.master
             for index, (text, _) in enumerate(self._pList):
                 b = Radiobutton(
