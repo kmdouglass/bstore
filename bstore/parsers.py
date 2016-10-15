@@ -46,7 +46,6 @@ class Parser(metaclass = ABCMeta):
     def dataset(self, ds):
         self._dataset = ds
     
-        
     @abstractproperty
     def requiresConfig(self):
         pass    
@@ -419,8 +418,8 @@ class SimpleParser(Parser):
             # Build the return dataset
             idDict = {'prefix' : prefix, 'acqID' : acqID}
         
-            mod   = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                                  datasetType))
+            mod   = importlib.import_module(
+                'bstore.datasetTypes.{0:s}'.format(datasetType))
             dType             = getattr(mod, datasetType)
             self.dataset      = dType(datasetIDs = idDict)
             self.dataset.data = self.dataset.readFromFile(self._fullPath)
