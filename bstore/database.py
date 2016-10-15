@@ -332,18 +332,13 @@ class HDFDatastore(Datastore):
     @property
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
-        
+    
+    #Dataset IDs used by this datastore.    
     dsID = namedtuple('DatasetID', ['prefix', 'acqID', 'datasetType',
                                     'attributeOf', 'channelID', 'dateID',
                                     'posID', 'sliceID'])
-    """Dataset IDs used by this datastore.
-    
-    Notes
-    -----
-    Fields' __doc__ attributes must contain the string "(optional)" if they
-    are not required.
-        
-    """
+    #Fields' __doc__ attributes must contain the string "(optional)" if they
+    #are not required.
     dsID.prefix.__doc__      = ('The descriptive name given to '
                                 'the dataset by the user.')
     dsID.acqID.__doc__       = 'Acquisition ID number; an integer.'
