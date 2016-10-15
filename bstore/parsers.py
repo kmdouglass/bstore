@@ -424,6 +424,7 @@ class SimpleParser(Parser):
             self.dataset      = dType(datasetIDs = idDict)
             self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
+            self.dataset = None
             raise ParseFilenameFailure(('Error: File could not be parsed.',
                                         sys.exc_info()[0]))
 
