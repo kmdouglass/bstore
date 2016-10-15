@@ -8,7 +8,7 @@ Quick Start
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
 :revision: Revision: 2
-:date: 2016-10-08
+:date: 2016-10-15
 
 :abstract:
 
@@ -24,13 +24,14 @@ Quick Start
 Installation
 ============
 
-Anaconda
-++++++++
-Installation is most easily performed using the Anaconda package
-manager::
+Anaconda ++++++++ Installation is most easily performed using the
+Anaconda package manager. `Download Anaconda for Python 3`_ (or
+Miniconda) and run the following commands in the Anaconda shell::
 
   conda update conda
-  conda install -c kmdouglass -c soft-matter -c conda-forge bstore
+conda install -c kmdouglass -c soft-matter -c conda-forge bstore
+
+.. _Download Anaconda for Python 3: https://www.continuum.io/downloads
 
 Installation from Source
 ++++++++++++++++++++++++
@@ -66,9 +67,11 @@ tabulated localization data and the standard `json module`_ for
 handling metadata. Images are treated as `NumPy arrays`_ whose image
 metadata can be read from tiff tags (OME-XML and Micro-Manager
 metadata are currently supported). Reading and writing from/to HDF
-files is performed with `h5py`_. If you can't do something with
-B-Store, chances are you can implement a custom solution using another
-Python library.
+files is performed with `h5py`_.
+
+What all this means is that if you can't do something with B-Store,
+chances are you can implement a custom solution using another Python
+library.
 
 .. _Pandas DataFrames: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
 .. _json module: https://docs.python.org/3/library/json.html
@@ -161,11 +164,17 @@ suffix.filename_extension pattern specified in the previous field.
 
 .. _test files for the SimpleParser: https://github.com/kmdouglass/bstore_test_files/tree/master/parsers_test_files/SimpleParser
 
-Finally, leave the **Read Tiff Tags** box unchecked. Checking this box
-will read Micro-Manager and OME-XML metadata from the image files, but
-it often will fail if the files were modified in anyway after their
-acquisition which causes the filename of the file not to match the
-filename in the metadata.
+Finally, leave the Misc. options as they are. This box allows you to
+manually specify options for reading the raw data files.
+
+'sep' for example is the separator between columns in a .csv file. If
+you have a tab-separated file, change ',' to '\t' (\t is the tab
+character).
+
+Change 'readTiffTags' from False to True if you have Micro-Manager or
+OME-XML metadata in your tif image files. Please note that this may
+fail if the metadata does not match the filename like, for example,
+what would happen if someone renamed the file.
 
 The window should now look like this:
 
@@ -193,7 +202,7 @@ example, if you have localizations stored in a comma-separated text
 file named *HeLaL_Control_1.csv* and you use the built-in
 `SimpleParser`_, then your dataset will have the following ID's:
 
-1. *prefix* - 'HeLaL_Control_1.csv'
+1. *prefix* - 'HeLaL_Control'
 2. *acqID* - 1
 
 You can follow along by entering the following code into the Python
@@ -232,6 +241,15 @@ PositionParser like this: ::
   >>> pp = parsers.PositionParser(positionIDs = {
   >>>     0 : 'prefix', 2 : 'acqID', 3 : 'dateID'})
 
+Changing the separator of 'positions' is also easy: simply specify a
+`sep` parameter to the PositionParser's constructor. We can change the
+seperator to hyphen underscore (-_) like this: ::
+
+  >>> pp = parsers.PositionParser(
+  >>>>    positionIDs = {
+  >>>         0 : 'prefix', 2 : 'acqID', 3 : 'dateID'},
+  >>>     sep = '-_')
+
 If you require a customized parser to assign ID's, the Jupyter
 Notebook `tutorial`_ on writing custom parsers is a good place to
 look.
@@ -245,9 +263,9 @@ Building a Datastore
 ++++++++++++++++++++
 
 You will typically not need to work directly with a parser. Instead,
-the B-Store database will use a specified parser to automatically read
-your files, assign the proper ID's, and then insert the data into the
-database.
+the B-Store datastore will use a specified parser to automatically
+read your files, assign the proper ID's, and then insert the data into
+the database.
 
 Let's say you have data from an experiment that can be parsed using
 the **SimpleParser**. (Test data for this example may be found at
@@ -264,7 +282,7 @@ Next, we create a HDFDatastore instance. This class is used to
 interact with and create B-Store databases.::
 
    >>> dsName = 'myFirstDatastore.h5'
-   >>> myDB   = database.HDFDatastore(dsName)
+   >>> myDS   = database.HDFDatastore(dsName)
 
 After this, we tell B-Store what types of files it should know how to
 process: ::
