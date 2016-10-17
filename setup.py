@@ -10,8 +10,7 @@ config = {
     'download_url'    : 'https://github.com/kmdouglass/bstore',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '1.0.0',
-    'packages'        : find_packages('bstore'),
-    'package_dir'     : {'':'bstore'},
+    'packages'        : find_packages(),
     'scripts'         : ['bin/bstore'],
     'name'            : 'bstore'
 }
