@@ -73,9 +73,9 @@ author = 'Kyle M. Douglass'
 # built documents.
 #
 # The short X.Y version.
-version = '0.2.1'
+version = '1.0.0'
 # The full version, including alpha/beta/rc tags.
-release = '0.2.1'
+release = '1.0.0'
 
 # Napoleon settings
 napoleon_include_private_with_doc = False

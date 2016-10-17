@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v1.0.0]
 ### Added
 - `PositionParser` was added for parsing files whose names contain
   fields spaced by string separators and whose positions correspond to
@@ -165,7 +165,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.1...HEAD
+[v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1
