@@ -74,7 +74,7 @@ the database is not B-Store, but
 [HDFView](https://www.hdfgroup.org/products/java/hdfview/) from the
 HDF Group.)
 
-<img src="images/database_example_2.png">
+<img src="images/database_example_3.png">
 
 Please see the [FAQ](http://b-store.readthedocs.io/en/latest/faq.html)
 for more information.
