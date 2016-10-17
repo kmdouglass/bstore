@@ -4,7 +4,7 @@ package:
   version: "1.0.0"
 
 source:
-  git_rev: v1.0.0rc1
+  git_rev: v1.0.0
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
@@ -22,7 +22,7 @@ requirements:
     - pytables
     - trackpy
     - nb_conda
-
+    
   run:
     - python
     - nose
@@ -36,11 +36,16 @@ requirements:
     - trackpy 0.3.2
     - tifffile 0.9.0
     - nb_conda
+    - qt 4.8.7
+    - pyqt 4.11.4
+
 
 test:
   imports:
     - tables
     - bstore
+    - bstore.gui
+    - bstore.datasetTypes
 
 about:
   home: https://github.com/kmdouglass/bstore.git
