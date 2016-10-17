@@ -7,8 +7,8 @@ Frequently Asked Questions
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 3 $
-:date: 2016-08-13
+:revision: $Revision: 4 $
+:date: 2016-10-15
 
 :abstract:
 
@@ -31,8 +31,8 @@ B-Store is a lightweight data management and analysis library for
 single molecule localization microscopy (SMLM). It serves two primary
 roles:
 
-    1. To structure SMLM data inside a database for fast and easy
-       information retrieval and storage.
+    1. To structure SMLM data inside a single, high performance
+       filetype for fast and easy information retrieval and storage.
     2. To facilitate the analysis of high-throughput SMLM datasets.
 
 What problem does B-Store solve?
@@ -41,7 +41,7 @@ What problem does B-Store solve?
 High-throughput SMLM experiments can produce hundreds or even
 thousands of files containing multiple types of data (images, raw
 localizations, acquisition information, etc.). B-Store automatically
-sorts and stores this information in a database for rapid retrieval
+sorts and stores this information in a datastore for rapid retrieval
 and analysis, removing any need to manually maintain the data
 yourself.
 
@@ -101,8 +101,8 @@ have been a significant undertaking on our part.
 In addition, the OME database tool, OMERO, requires time for set up
 and maintenance. Many small labs doing SMLM may not be willing to
 invest the resources required for this. In contrast, B-Store is
-intended to be lightweight and require as little time for use as
-possible.
+intended to be lightweight and require as little time for setup and
+maintenance as possible.
 
 Some researchers in the SMLM community have expressed interest in
 extending the OME to SMLM, and we gladly welcome this effort. In the
@@ -116,18 +116,39 @@ How do I use B-Store?
 =====================
 
 B-Store is currently comprised of a set of functions, classes, and
-interfaces that are written in Python. You therefore can use B-Store
-in any environment that runs Python code, including:
+interfaces that are written in Python. You therefore can make B-Store
+datastores in any environment that runs Python code, including:
 
++ The B-Store GUI
 + `Jupyter Notebooks <http://jupyter.org/>`_
 + `IPython <https://ipython.org/>`_
 + .py scripts
-    
+
+Once inside the datastore, the data may be accessed by any software
+that can read the HDF file format, including
+
+1. B-Store
+2. `Python`_
+3. `MATLAB`_
+4. `ImageJ/Fiji`_
+5. `R`_
+6. `C/C++`_
+7. `Java`_
+
+and more.
+
+.. _Python: http://www.h5py.org/
+.. _MATLAB: https://ch.mathworks.com/help/matlab/hdf5-files.html
+.. _ImageJ/Fiji: http://lmb.informatik.uni-freiburg.de/resources/opensource/imagej_plugins/hdf5.html
+.. _R: http://bioconductor.org/packages/2.11/bioc/html/rhdf5.html
+.. _C/C++: https://support.hdfgroup.org/HDF5/examples/intro.html#c
+.. _Java: https://support.hdfgroup.org/HDF5/examples/intro.html#java
+
 Is there a GUI interface?
 -------------------------
 
-Currently there is no GUI interface for B-Store. We may add one in the
-future to facilitate normal processing routines.
+There is currently a lightweight GUI interface for building HDF
+datastores.
 
 Can I still use B-Store if I don't know Python?
 -----------------------------------------------
@@ -135,19 +156,17 @@ Can I still use B-Store if I don't know Python?
 If you don't know Python, you can still use B-Store in a number of
 ways.
 
-The easiest way is to explore the Jupyter notebooks in the `examples
-folder
+The easiest way is to use the GUI. After that, try exploring the
+Jupyter notebooks in the `examples folder
 <https://github.com/kmdouglass/bstore/tree/master/examples>`_. Find an
 example that does what you want, then modify the relevant parts, such
 as file names. Then, simply run the notebook.
 
-You may also wish to use B-Store's database system, but not its
+You may also wish to use B-Store's datastore system, but not its
 analysis tools. In this case, you can use the notebooks to build your
 database, but access and analyze the data from the programming
 language of your choice, such as MATLAB. B-Store currently provides
-functionality for a database stored in an HDF file, but the Database
-interface allows for an extension to SQL or something else if you find
-it useful.
+functionality for a datastore stored in an HDF file.
 
 A third option is to call the Python code from within another
 language. Information for doing this in MATLAB may be found at the
@@ -160,14 +179,13 @@ these customizations are most easily implemented in
 Python. Regardless, the largest amount of customization you will want
 to do will likely be to write a Parser. A Parser converts raw
 acquisition and localization data into a format that can pass through
-the database interface (known as a DatabaseAtom). If your programming
-language can call Python and access the DatabaseAtom and Database
-interfaces, then you can write the parser in the language of your
-choice and then pass the parsed data through these interfaces to build
-your database.
+the datastore interface. If your programming language can call Python
+and the HDFDatastore object, then you can write the parser in the
+language of your choice and then pass the parsed data through these
+interfaces to build your database.
 
-How do I contribute to B-Store?
-===============================
+How do I contribute to or extend B-Store?
+=========================================
 
 B-Store was designed to be extensible. If you have an idea, code, or
 even a comment about how to improve it, we would love to hear about
@@ -177,6 +195,15 @@ A great place to start contributing is by posting questions or
 comments to the `B-Store mailing list`_.
 
 .. _B-Store mailing list: https://groups.google.com/forum/#!forum/b-store
+
+Common extensions you would want to do are to write plugins that
+extend the Parser and Processor classes, or write your own
+DatasetTypes. If you add your custom Python files to the
+`~/.bstore/bsplugins` directory (`%USERPROFILE%\.bstore\bsplugins` on
+Windows), B-Store will know to search this directory for imports.
+
+A custom Parser that we use in our own lab may be found here:
+https://github.com/kmdouglass/bsplugins-leb
 
 How do I add my custom code to the B-Store project?
 ---------------------------------------------------
@@ -200,6 +227,13 @@ to the `authors list`_.
 .. _pull request: https://help.github.com/articles/using-pull-requests/
 .. _authors list: http://b-store.readthedocs.io/en/latest/acknowledgments.html#authors
 
+For testing, B-Store uses the `nose` package. Type `nosetests` in the
+B-Store project root to run them. Test files are in the `test files
+repository already mentioned`_. To run these successfully, set the
+`__Path_To_Test_Data__` variable in bstore/config.py.
+
+.. _test files repository already mentioned: https://github.com/kmdouglass/bstore_test_files
+
 What language is B-Store written in?
 ------------------------------------
 
@@ -215,41 +249,39 @@ numerous scientific, open source Python libraries like numpy and
 matplotlib. If you can't do something in B-Store, you can likely still
 use these libraries to achieve what you want.
 
-What is the logic of the B-Store database?
-------------------------------------------
+What is the logic of the B-Store datastore?
+-------------------------------------------
 
 B-Store is designed to search specified directories on your computer
 for files associated with an SMLM experiment, such as those containing
 raw localizations and widefield images. These files are passed through
 a Parser, which converts them into a format suitable for insertion
 into a database. It does this by ensuring that the files satisfy the
-requirements of an interface known as a DatabaseAtom. Data that
+requirements of an interface known as a DatasetID. Data that
 implements this interface may pass into and out of the database; data
 that does not implement the interface cannot. You can think of the
-DatabaseAtom interface like a guard post at a government research
-facility. Only people with an ID badge for that facility (the
-interface) may enter. In principle, B-Store does not care about the
-data itself or the details of the database (HDF, SQL, etc.). At the
-moment, however, B-Store only supports databases contained in HDF
-files.
+interface like a guard post at a government research facility. Only
+people with an ID badge for that facility (the interface) may
+enter. In principle, B-Store does not care about the data itself or
+the details of the database (HDF, SQL, etc.). At the moment, however,
+B-Store only supports databases contained in HDF files.
 
-At the time this README file was written, the DatabaseAtom interface
-consisted of the following properties:
+At the time this README file was written, the DatasetID of
+HDFDatastore consisted of the following properties:
 
     + **acquisition ID** - integer identifying a specific acquisition
-    + **data** - the actual data to insert into the database, which
-      can be numeric or otherwise
     + **prefix** - a descriptive name for the acquisition, such as the
       cell type or condition
-    + **dataset type** - The type of data contained in the atom
-      (currently localizations, metadata, or widefield images)
+    + **datasetType** - The type of data contained in the atom
+    + **attribute of** - For types that describe others, like
+      localization metadata
     + channel ID - the wavelength being imaged
     + date ID - the date on which an acquisition was taken
     + position ID - A single integer or integer pair identifying the
       position on the sample
     + slice ID - An integer identifying the axial slice acquired
 
-The first four properties in bold are required; the last three are
+The first four properties in bold are required; the last four are
 optional.
 
 There are three important advantages to enforcing an interface such as
@@ -258,10 +290,10 @@ this.
     1. The computer will always know what kind of data it is working
        with and how to organize it.
     2. The format of the data that you generate in your experiments
-       can be made independent of the database, so you can do whatever
-       you want to it. The Parser ensures that it is in the right
-       format only at the point of database insertion.
-    3. The nature of the database and the types of data it can handle
+       can be made independent of the datastore, so you can do
+       whatever you want to it. The Parser ensures that it is in the
+       right format only at the point of datastore insertion.
+    3. The nature of the datastore and the types of data it can handle
        can grow and change in the future with minimal difficulty.
 
 The logic of this interface is described graphically below. The raw
@@ -291,8 +323,11 @@ The B-Store code base is divided into five separate modules:
 4. processors
 5. multiprocessors
 
+In addition, functionality for each dataset type is specified in its
+own file in */bstore/datasetTypes/*.
+
 The first two modules, parsers and database, contain all the code for
-organizing SMLM datasets into a database. The last three modules,
+organizing SMLM datasets into a datastore. The last three modules,
 batch, processors, and multiprocessors, are primarily used for
 extracting data from B-Store databases and performing (semi-)automated
 analyses.
@@ -301,14 +336,14 @@ Parsers
 +++++++
 
 A parser reads files from a SMLM acquisition and produces a
-DatabaseAtom--an object that can be inserted into a B-Store
-database. This object will have mandatory and possibly optional fields
-for uniquely identifying the data within the database.
+Dataset--an object that can be inserted into a B-Store datastore. This
+object will have mandatory and possibly optional fields for uniquely
+identifying the data within the datastore.
 
 Database
 ++++++++
 
-The database module contains code for building databases from raw
+The database module contains code for building datastores from raw
 data. It relies on a parser for translating files into a format that
 it knows how to work with.
 
@@ -317,7 +352,7 @@ Batch
 
 The batch module contains routines for performing automated analyses
 with B-Store databases. It allows you to build simple analysis
-pipelines for extracting just the data you need from the database.
+pipelines for extracting just the data you need from the datastore.
 
 Processors
 ++++++++++
@@ -345,10 +380,12 @@ What testing framework is used by the B-Store developers?
 Unit tests for B-Store are written as functions with utilities
 provided by Python's `nose`_ package. Each module in B-Store has its
 own .py file containing these tests. They are stored in the
-`bstore/tests`_ folder in the B-Store root directory.
+`bstore/tests`_ and `bstore/datasetTypes/tests`_ folders in the
+B-Store root directory.
 
 .. _nose: http://nose.readthedocs.io/en/latest/
 .. _bstore/tests: https://github.com/kmdouglass/bstore/tree/master/bstore/tests
+.. _bstore/datasetTypes/tests: https://github.com/kmdouglass/bstore/tree/master/bstore/datasetTypes
 
 If you contribute to B-Store, we ask that you write unit tests for
 your code so that the developers can better understand what it's

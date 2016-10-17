@@ -1,28 +1,31 @@
-__bstore_Version__ = '0.2.1'
+__bstore_Version__ = 'v1.0.0-578775c'
 
 """__HDF_AtomID_Prefix__ : str
-    String that precedes all attributes marking database atom
-    identifiers in an HDF database.
+    String that precedes all attributes marking dataset
+    identifiers in an HDF datastore.
 
 """
 __HDF_AtomID_Prefix__ = 'SMLM_'
 
 """___HDF_Metadata_Prefix : str
     String that precedes all attributes marking metadata elements in
-    an HDF database.
+    an HDF datastore.
 
 """
 __HDF_Metadata_Prefix__ = __HDF_AtomID_Prefix__ + 'Metadata_'
-
-"""__Channel_Identifier___ : dict
-    Dictionary containing shorthand names for common fluorophores.
-       
+                        
+"""__Custom_Dir__ : str
+    The name of the directory containing customization files. 
+    
 """
-__Channel_Identifier__ = {'A488' : 'AlexaFluor 488',
-                          'A647' : 'AlexaFluor 647',
-                          'A750' : 'AlexaFluor 750',
-                          'DAPI' : 'DAPI',
-                          'Cy5'  : 'Cy5'}
+__Custom_Dir__ = ['~', '.bstore']
+
+
+"""__Plugin_Dir__ : str
+    The name of the directory containing B-Store plugins.
+    
+"""
+__Plugin_Dir__ = __Custom_Dir__ + ['bsplugins']
 
 """FormatDefault : dict
     The default mapping for converting between column header names
@@ -50,18 +53,6 @@ __Format_Default__['length [frames]']    = 'length'
 """
 __Path_To_Test_Data__ = '../bstore_test_files/'
 
-"""__Types_Of_Atoms__ : tuple
-    Strings identifying the types of atoms understood by the software.
-    
-    locMetadata must follow locResults in the list.
-       
-"""
-__Types_Of_Atoms__ = [
-                      'locResults',
-                      'locMetadata',
-                      'widefieldImage',
-                      'generic'
-                     ]
 
 """__MM_PixelSize__ : str
     Name of the field in the Micro-Manager metadata containing the pixel size.
@@ -69,8 +60,13 @@ __Types_Of_Atoms__ = [
 """                     
 __MM_PixelSize__ = 'PixelSize_um'
 
-"""__Registered_Generics__ : list of str
-    The list of generic datasetTypes currently recognized by B-Store.
+"""__Registered_DatasetTypes__ : list of str
+    The list of datasetTypes currently recognized by B-Store.
 
 """
-__Registered_Generics__ = []
+__Registered_DatasetTypes__ = ['Localizations']
+
+"""__Verbose__ : bool
+    Controls how much detail is provided when errors occur.
+"""
+__Verbose__ = False

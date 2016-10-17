@@ -1,10 +1,10 @@
 # conda build <DIR_WITH_THIS_FILE> --channel soft-matter --channel conda-forge
 package:
   name: bstore
-  version: "0.2.1"
+  version: "1.0.0"
 
 source:
-  git_rev: v0.2.1
+  git_rev: v1.0.0
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
@@ -36,11 +36,15 @@ requirements:
     - trackpy 0.3.2
     - tifffile 0.9.0
     - nb_conda
+    - qt 4.8.7
+    - pyqt 4.11.4
 
 test:
   imports:
-    - bstore
     - tables
+    - bstore
+    - bstore.gui
+    - bstore.datasetTypes
 
 about:
   home: https://github.com/kmdouglass/bstore.git

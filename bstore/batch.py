@@ -167,33 +167,33 @@ class CSVBatchProcessor(BatchProcessor):
         return locResultFiles
         
 class HDFBatchProcessor(BatchProcessor):
-    """Automatic processing of localizations stored in a HDF database.
+    """Automatic processing of localizations stored in a HDF datastore.
     
     """
     def __init__(self,
-                 inputDatabase,
+                 inputDatastore,
                  pipeline,
                  outputDirectory = 'processed_data',
-                 searchString    = 'locResults'):
-        """Parse the input database by finding SMLM data files.
+                 searchString    = 'Localizations'):
+        """Parse the input datastore by finding SMLM data files.
         
-        The constructor parses the HDF database and creates a list of Path
+        The constructor parses the HDF datastore and creates a list of Path
         objects all pointing to localization datasets.
         
         Parameters
         ----------
-        inputDatabase  : str or Path
-            A string or Path to an HDF database.
+        inputDatastore  : str or Path
+            A string or Path to an HDF datastore.
         pipeline        : list of Processors
             List of Processor objects to process the data.
         outputDirectory : str or Path
             Relative path to the folder for saving the processed results.
         searchString    : str
-            The suffix identifying SMLM datasets.
+            The dataset type to process in batch.
         
         """
         # TODO: Check for file's existence
-        self._db = dsdb.HDFDatabase(inputDatabase)
+        self._db = dsdb.HDFDatastore(inputDatastore)
         try:        
             self.datasetList = self._db.query(searchString)
             self.pipeline = pipeline
@@ -209,51 +209,49 @@ class HDFBatchProcessor(BatchProcessor):
         self._outputDirectory = Path(outputDirectory)
         self._searchString    = searchString
         
-    def _genFileName(self, atom):
-        """Generate an output file name for a processed dataset atom.
+    def _genFileName(self, dsID):
+        """Generate an output file name for a processed dataset.
         
         Parameters
         ----------
-        atoms    : DatabaseAtom
+        dsID     : Dataset
         
         Returns
         -------
         fileName : Path
         
         """
-        acqKey    = '/'.join([atom.prefix, atom.prefix]) + \
-                    '_' + str(atom.acqID)
+        acqKey    = '/'.join([dsID.prefix, dsID.prefix]) + \
+                    '_' + str(dsID.acqID)
                                  
         otherIDs = ''
-        if atom.channelID is not None:
-            otherIDs += '_' + atom.channelID
-        if atom.posID is not None:
-            if len(atom.posID) == 1:
-                posID = atom.posID[0]    
+        if dsID.channelID is not None:
+            otherIDs += '_Channel' + dsID.channelID
+        if dsID.posID is not None:
+            if len(dsID.posID) == 1:
+                posID = dsID.posID[0]    
                 otherIDs += '_Pos{:d}'.format(posID)
             else:
-                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(atom.posID[0], 
-                                                            atom.posID[1])
-        if atom.sliceID is not None:
-            otherIDs += '_Slice{:d}'.format(atom.sliceID)
+                otherIDs += '_Pos_{0:0>3d}_{1:0>3d}'.format(dsID.posID[0], 
+                                                            dsID.posID[1])
+        if dsID.sliceID is not None:
+            otherIDs += '_Slice{:d}'.format(dsID.sliceID)
         
-        assert atom.datasetType != 'locMetadata', \
-            'Error: locMetadata is not processed in batch.'
-        fileName = acqKey + '/locResults' + otherIDs
+        fileName = acqKey + '/' + dsID.datasetType + otherIDs
             
         return Path(fileName)
     
-    def _writeAtomicIDs(self, filename, atom):
+    def _writeAtomicIDs(self, filename, dsID):
         """Writes the atomic ID information to a text file.
         
         Parameters
         ----------
         filename : str
-        atom     : Dataset
+        dsID     : datasetID
         """
-        atomicIDs = atom.getInfoDict()
+        
         with open(filename, 'w') as outfile:
-            json.dump(atomicIDs, outfile)
+            json.dump(dsID, outfile)
     
     @property
     def datasetList(self):
@@ -287,7 +285,7 @@ class HDFBatchProcessor(BatchProcessor):
                 df = proc(df)
             
             # Build the directory structure
-            outputFile = self._outputDirectory / self._genFileName(atom)
+            outputFile = self._outputDirectory / self._genFileName(currDataset)
             if not outputFile.parent.parent.exists():
                 outputFile.parent.parent.mkdir()
             if not outputFile.parent.exists():
@@ -302,7 +300,7 @@ class HDFBatchProcessor(BatchProcessor):
                       mode  = 'w',
                       index = False)
                       
-            # Write the database atomic IDs to the same folder
+            # Write the datastore atomic IDs to the same folder
             idFilename = str(outputFile) + '.json'
             self._writeAtomicIDs(idFilename, currDataset)
                       

@@ -31,7 +31,7 @@ def test_DriftCorrection():
                                    frameCol = 'frame', removeFiducials = True)
                                    
     # Tell the drift corrector where the fiducials are.
-    # Normally, these methods are not directly access by users; this is why
+    # Normally, these methods are not directly accessed by users; this is why
     # we need to handle renaming of columns.
     dc._fidRegions = [
         {'xMin' : 730,
@@ -142,6 +142,114 @@ def test_DriftCorrection_dropTrajectories():
     spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
     ok_(all(fidTraj_x == spline_x))
     ok_(all(fidTraj_y == spline_y))
+    
+def test_DriftCorrection_MaxRadius():
+    """Drift correction properly filters out far localizations.
+    
+    """
+    # Create the drift corrector
+    dc = proc.FiducialDriftCorrect(coordCols = ['x [nm]', 'y [nm]'],
+                                   frameCol = 'frame', removeFiducials = True)
+                                   
+    # Tell the drift corrector where the fiducials are.
+    # Normally, these methods are not directly accessed by users; this is why
+    # we need to handle renaming of columns.
+    dc._fidRegions = [
+        {'xMin' : 730,
+         'xMax' : 870,
+         'yMin' : 730,
+         'yMax' : 820},
+         {'xMin' : 1400,
+          'xMax' : 1600,
+          'yMin' : 1400,
+          'yMax' : 1600}
+         ]
+         
+    # Extract fiducials from the localizations
+    fiducialLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.maxRadius    = 50 # radius is only 50 nm large
+    dc.driftComputer.fiducialLocs = fiducialLocs
+    
+    # Did we find the trajectories?
+    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+
+    # Correct the localizations
+    dc.interactiveSearch = False
+    corrLocs = dc(locs)
+    
+    # Were fiducial locs removed? There should be 20000 ground truth
+    # localizations after the localizations belonging to
+    # fiducials are removed.
+    assert_equal(corrLocs.shape[0], 20000)
+    
+    # Was the correct drift trajectory applied? The original locs
+    # should be in x + dx and y + dy of corrdf
+    # round() avoids rounding errors when making comparisons
+    checkx = (corrLocs['x [nm]'] + corrLocs['dx']).round(2).isin(
+        locs['x [nm]'].round(2).as_matrix())
+    checky = (corrLocs['y [nm]'] + corrLocs['dy']).round(2).isin(
+        locs['y [nm]'].round(2).as_matrix())
+    ok_(checkx.all())
+    ok_(checky.all())
+    
+    # dx and dy should equal the avgSpline
+    fidTraj_x = corrLocs[['dx', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dx'].round(2).as_matrix()
+    fidTraj_y = corrLocs[['dy', 'frame']].sort_values(
+              'frame').drop_duplicates('frame')['dy'].round(2).as_matrix()
+    spline_x  = dc.driftTrajectory['xS'].round(2).as_matrix()
+    spline_y  = dc.driftTrajectory['yS'].round(2).as_matrix()
+    ok_(all(fidTraj_x == spline_x))
+    ok_(all(fidTraj_y == spline_y))
+    
+    # The number of used localizations should equal the 2*maxRadius parameter
+    # divided by the drift rate (~112 nm / 10,000 frames). However, the drift
+    # data contains noise due to the finite localization precision, so we can
+    # only test an approximate number of localizations.
+    # I independently determined that fiducial region 0 has 8837 localizations
+    # that are 50 nm away or less from the center. Region 1 has 9809.
+    x = dc.driftComputer.fiducialLocs
+    assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
+        0, level='region_id', drop_level=False)), 8837)
+    assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
+        1, level='region_id', drop_level=False)), 9809)
+        
+def test_Reset_DriftComputer():
+    """The drift computer can be reset to its initial state.
+    
+    """
+    dc = proc.DefaultDriftComputer(
+            coordCols = ['x', 'y'], frameCol = 'frame', maxRadius = 50,
+            smoothingWindowSize = 800, smoothingFilterSize = 200,
+            useTrajectories = [], zeroFrame = 1000)
+            
+    # Change some parameters
+    dc.coordCols = ['x [nm]', 'y [nm]']
+    dc.frameCol  = 'frames'
+    dc.maxRadius = 100
+    dc.smoothingWindowSize = 1000
+    dc.smoothingFilterSize = 500
+    dc.useTrajectories     = [1,2]
+    dc.zeroFrame           = 3000
+    
+    assert_equal(dc.coordCols, ['x [nm]', 'y [nm]'])
+    assert_equal(dc.frameCol, 'frames')
+    assert_equal(dc.maxRadius, 100)
+    assert_equal(dc.smoothingWindowSize, 1000)
+    assert_equal(dc.smoothingFilterSize, 500)
+    assert_equal(dc.useTrajectories, [1,2])
+    assert_equal(dc.zeroFrame, 3000)
+    
+    # Reset the drift computer
+    dc.reset()
+    
+    assert_equal(dc.coordCols, ['x', 'y'])
+    assert_equal(dc.frameCol, 'frame')
+    assert_equal(dc.maxRadius, 50)
+    assert_equal(dc.smoothingWindowSize, 800)
+    assert_equal(dc.smoothingFilterSize, 200)
+    assert_equal(dc.useTrajectories, [])
+    assert_equal(dc.zeroFrame, 1000)
     
 def test_ClusterStats():
     """Cluster statistics are computed correctly.
@@ -335,7 +443,7 @@ def test_ConvertHeader():
     # Pandas DataFrames with all scalars require an index; hence, index = [1]
     df = pd.DataFrame(test_data, index = [1])
     
-    # Create the header converter and convert the columns to database default
+    # Create the header converter and convert the columns to datastore default
     converter = proc.ConvertHeader()
     conv_df   = converter(df)
     
@@ -368,7 +476,7 @@ def test_ConvertHeader_Custom_Mapping():
     # Pandas DataFrames with all scalars require an index; hence, index = [1]
     df = pd.DataFrame(test_data, index = [1])
     
-    # Create the header converter and convert the columns to database default
+    # Create the header converter and convert the columns to datastore default
     # Note that a mapping for 'frame' is not supplied, so it should not change.
     from bstore.parsers import FormatMap
     testMap = FormatMap({'x [nm]' : 'x',

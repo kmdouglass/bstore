@@ -43,7 +43,7 @@ Batch Processing
 
 B-Store currently provides two batch processors for working with SMLM
 data: `HDFBatchProcessor`_, for extracting data from B-Store HDF
-databases and processing them, and `CSVBatchProcessor`_, for applying
+Datastores and processing them, and `CSVBatchProcessor`_, for applying
 the same processing pipeline to .csv files spread across a directory
 tree.
 
@@ -51,11 +51,11 @@ tree.
 .. _CSVBatchProcessor: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.batch.CSVBatchProcessor
 
 The operation of a batch processor is simple: first, it accepts an
-analysis pipeline and a database or directory that contain at least
-one localization dataset. The pipeline is a list of `B-Store
-processors`_ that modify a DataFrame containing localizations. Each
-processor is applied to a single dataset sequentially, starting from
-the first processor in the list.
+analysis pipeline and a datastore or directory that contain at least
+one file corresponding to an SMLM dataset. The pipeline is a list of
+`B-Store processors`_ that modify a DataFrame containing
+localizations. Each processor is applied to a single dataset
+sequentially, starting from the first processor in the list.
 
 Next, the batch processor accumulates a list of all the localization
 files in the database. If using the CSVBatchProcessor, it finds all
@@ -110,8 +110,6 @@ on, a string specifying the comparison operator (in this case
 less-than) and a numeric value. All rows in the 'precision' column
 will have values less than 15 after this filter is applied.
 
-
-
 After creating the processor, you apply it to a Pandas DataFrame by
 using it like a function. In the above example, we pass a DataFrame
 named `df` to `myFilter` and store the processed DataFrame in
@@ -136,7 +134,7 @@ Multi-processors are similar to processors, except for two points:
 
 1. they accept multiple inputs instead of a single DataFrame, and
 2. they may take user-input and thus may not necessarily be used in
-batch processing.
+   batch processing.
 
 Two examples of multi-processors are `AlignToWidefield`_ and
 `OverlayClusters`_. `AlignToWidefield` determines the global offset
@@ -156,7 +154,7 @@ before `OverlayClusters`.
 Performing Analyses Outside of B-Store
 ======================================
 
-B-Store databases use the HDF format and are therefore readable by an
-enormous number of scientific libraries. You may analyze your data in
-any of these if you B-Store analysis tools do not suit your purposes.
+B-Store databases use the HDF format and are therefore readable by
+many scientific libraries. You may analyze your data in any of these
+if the B-Store analysis tools do not suit your purposes.
 

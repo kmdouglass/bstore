@@ -1,6 +1,63 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [v1.0.0]
+### Added
+- `PositionParser` was added for parsing files whose names contain
+  fields spaced by string separators and whose positions correspond to
+  different dataset IDs. For example, the filename `HeLa_1_A647_0.csv`
+  may be split at each underscore and possess four fields that would
+  serve as possible IDs: `HeLa`, `1`, `A647`, and `0`.
+- There is now a GUI interface for building HDF datatstores.
+- The `__Verbose__` flag was added to config.py. Setting this flag to
+  true will print more information to the console to assist with
+  debugging.
+- `HDFDatastore` now supports iteration via the `__iter__()` magic
+  method and direct inspection of the number of datasets using `len()`
+  via the `__len__()` magic method. Furthermore, it supports
+  integer-based indexing via `__getitem__()`. This means that one may
+  loop over and filter datasets using standard Python operations on
+  iterables and sequences.
+- `DefaultDriftComputer` now accepts a `maxRadius`
+  attribute. Localizations in a region of interest that lie further
+  than a distance equal to `maxRadius` from the localizations' center
+  of mass are not included in the drift trajectory computation.
+- `ComputeTrajectories` objects, such as `DefaultDriftComputer`, now
+  have reset() methods to reset them to their initial state.
+- Added an example on merging localizations to the Jupyter Notebook
+  [examples folder](https://github.com/kmdouglass/bstore/tree/master/examples).
+
+### Changed
+- `Database` and `HDFDatabase` were renamed to `Datastore` and
+  `HDFDatastore`, respectively. The database module has not changed
+  names.
+- Datasets were simplified into a parent class and child
+  classes. Child classes were previously called generics; now each
+  child class represents its own type of dataset. This effectively
+  decouples dataset information from the Datastore and Parser classes.
+- get() and put() behaviors were decoupled from the HDFDatastore. Now,
+  each Dataset knows how to get and put its down data from the
+  Datastore. HDFDatastore now only manages the identification and
+  sorting of Datasets.
+- readFromFile() behavior was decoupled from the Parser class. Each
+  Dataset now knows how to read and write its own data from files.
+- The channel identifier in keys of a `HDFDatastore` object are now
+  identified by the `Channel` string. This was done for consistency
+  with the other identifiers and to decouple and remove
+  `__Channel_Identifier__` from B-Store completely. B-Store is now
+  agnostic about channels and does not require them to be added in the
+  config file.
+
+### Removed
+- Generic dataset types were removed. This eliminates the distinction
+  that locResults, locMetadata, and widefieldImage had from other
+  types of datasets. Now, all datasets subclass the `Dataset` class
+  and have no special distinction over one another.
+- MMParser was moved to an independent LEB extensions module because
+  it is highly unlikely that any other group would use its naming
+  conventions. The new module may be found here:
+  https://github.com/kmdouglass/bsplugins-leb
+
 ## [v0.2.1]
 ### Added
 - Generic datasetTypes are now available. These allow users to easily
@@ -108,7 +165,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v0.2.1...HEAD
+[v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/kmdouglass/bstore/compare/v0.1.0...v0.1.1

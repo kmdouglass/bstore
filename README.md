@@ -57,7 +57,7 @@ conda install -c kmdouglass -c soft-matter -c conda-forge bstore
 
 ## Source Installs
 
-To install from source, simply clone this repository and install using
+To install from source, simply clone this repository and install
 B-Store using pip:
 
 ```
