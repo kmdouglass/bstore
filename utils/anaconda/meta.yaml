@@ -41,8 +41,6 @@ test:
   imports:
     - tables
     - bstore
-    - bstore.datasetTypes
-    - bstore.gui
 
 about:
   home: https://github.com/kmdouglass/bstore.git
