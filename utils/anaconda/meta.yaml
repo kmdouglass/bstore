@@ -41,6 +41,7 @@ test:
   imports:
     - bstore
     - tables
+    - bstore.gui
 
 about:
   home: https://github.com/kmdouglass/bstore.git
