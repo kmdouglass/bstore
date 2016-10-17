@@ -1,5 +1,5 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup
 
@@ -10,7 +10,8 @@ config = {
     'download_url'    : 'https://github.com/kmdouglass/bstore',
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '1.0.0',
-    'packages'        : ['bstore'],
+    'packages'        : find_packages('bstore'),
+    'package_dir'     : {'':'bstore'},
     'scripts'         : ['bin/bstore'],
     'name'            : 'bstore'
 }

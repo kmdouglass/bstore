@@ -39,8 +39,9 @@ requirements:
 
 test:
   imports:
-    - bstore
     - tables
+    - bstore
+    - bstore.datasetTypes
     - bstore.gui
 
 about:
