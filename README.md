@@ -11,8 +11,7 @@ Lightweight data management and analysis tools for single-molecule microscopy.
 - [Documentation](#documentation)
   - [Getting Help](#getting-help)
 - [Installation](#installation)
-  - [Linux / OSX](#linux--osx)
-  - [Windows](#windows)
+  - [Anaconda Package Manager](#anaconda-package-manager)
   - [Source Installs](#source-installs)
 - [What is B-Store?](#what-is-b-store)
 
@@ -39,20 +38,12 @@ B-Store is most easily installed from the [Anaconda Cloud package repository](ht
 
 *Note that these commands will install B-Store into an environment named bstore that is independent of your default environment. When you want to activate this environment to use B-Store, simply type `source activate bstore` in the Linux/OSX terminal or `activate bstore` in the Windows Anaconda Prompt.*
 
-## Linux / OSX
+## Anaconda Package Manager
 ```sh
 conda update conda
-conda create --name bstore jupyter
-source activate bstore
-conda install -c kmdouglass -c soft-matter -c conda-forge bstore
-```
-
-## Windows
-```sh
-conda update conda
-conda create --name bstore jupyter
-activate bstore
-conda install -c kmdouglass -c soft-matter -c conda-forge bstore
+conda config --append channels conda-forge
+conda config --append channels soft-matter
+conda create -n bstore -c kmdouglass bstore
 ```
 
 ## Source Installs

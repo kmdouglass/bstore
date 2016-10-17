@@ -32,7 +32,30 @@ manager. `Download Anaconda for Python 3`_ (or Miniconda) and run the
 following commands in the Anaconda shell::
 
   conda update conda
-  conda install -c kmdouglass -c soft-matter -c conda-forge bstore
+  conda config --append channels conda-forge
+  conda config --append channels soft-matter
+  conda create -n bstore -c kmdouglass bstore
+
+The above commands add two custom channels to the package manager
+(conda-forge and soft-matter) and give them lower priority over the
+default channel. Then, a new conda environment named bstore is created
+and the bstore package is installed from the kmdouglass channel.
+
+If you would like to use Jupyter Notebooks--which aren't required--,
+then be sure to run these commands after installing B-Store::
+
+  conda install jupyter nb_conda
+
+Every time you want to run bstore, ensure that you are working in the
+bstore environment with ::
+
+  activate bstore
+
+on Windows and ::
+
+  source activate bstore
+
+on Linux and Mac.
 
 .. _Download Anaconda for Python 3: https://www.continuum.io/downloads
 
