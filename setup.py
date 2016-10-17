@@ -11,6 +11,7 @@ config = {
     'author_email'    : 'kyle.m.douglass@gmail.com',
     'version'         : '1.0.0',
     'packages'        : find_packages('bstore'),
+    'package_dir'     : {'':'bstore'},
     'scripts'         : ['bin/bstore'],
     'name'            : 'bstore'
 }

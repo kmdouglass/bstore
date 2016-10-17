@@ -4,7 +4,7 @@ package:
   version: "1.0.0"
 
 source:
-  git_rev: v1.0.0
+  git_rev: v1.0.0rc1
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
