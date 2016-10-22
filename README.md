@@ -49,14 +49,38 @@ conda create -n bstore -c kmdouglass bstore
 ## Source Installs
 
 To install from source, simply clone this repository and install
-B-Store using pip:
+B-Store using pip.
 
-```
-pip install <B-STORE DIRECTORY>
+```sh
+git clone https://github.com/kmdouglass/bstore.git
+pip install bstore
 ```
 
 The most up-to-date code may be found on the development branch,
-though it may not be as thoroughly tested as code on the master.
+though it may not be as thoroughly tested as code on the
+master. Source installs will always be more up-to-date than the
+Anaconda packages.
+
+A partial list of requirements to run B-Store may be found in the
+[requirements.txt file](https://github.com/kmdouglass/bstore/blob/master/requirements.txt).
+
+## Updating B-Store
+
+If you installed B-Store using the Anaconda package manager, updating
+it is easy. *The following assumes that the soft-matter and
+conda-forge channels were appended to your conda config as described
+above. It also assumes that you have already activated the environment
+in which you installed B-Store.*
+
+```sh
+conda update -c kmdouglass bstore
+```
+
+If instead you installed B-Store from source using pip, simply
+uninstall your current version, download or pull the latest code from
+the GitHub repository, then install the new version as before.
+
+## Update
 
 # What is B-Store?
 
