@@ -69,6 +69,7 @@ def test_UnpackDatasetIDs():
     
     """
     myDB = database.HDFDatastore('test_db.h5')
+    dsID = database.DatasetID
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1})
     t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
@@ -80,12 +81,12 @@ def test_UnpackDatasetIDs():
     ids2 = myDB._unpackDatasetIDs(t2)
     
     # Ground truths
-    gt1  = myDB.dsID(prefix = 'HeLa', acqID = 1, datasetType = 'TestType',
-                     attributeOf = None, channelID = None, dateID = None,
-                     posID = None, sliceID = None)
-    gt2  = myDB.dsID(prefix = 'HeLa', acqID = 2, datasetType = 'TestType',
-                     attributeOf = None, channelID = 'A647',
-                     dateID = '2016-09-16', posID = (0,), sliceID = 1)
+    gt1  = dsID(prefix = 'HeLa', acqID = 1, datasetType = 'TestType',
+                attributeOf = None, channelID = None, dateID = None,
+                posID = None, sliceID = None)
+    gt2  = dsID(prefix = 'HeLa', acqID = 2, datasetType = 'TestType',
+                attributeOf = None, channelID = 'A647',
+                dateID = '2016-09-16', posID = (0,), sliceID = 1)
     
     assert_equal(ids1, gt1)
     assert_equal(ids2, gt2)
@@ -233,8 +234,9 @@ def test_HDFDatastore_genDataset():
     
     """
     myDB = database.HDFDatastore('test_db.h5')
-    ids  = myDB.dsID('test_prefix', 2, 'TestType', None,
-                     'A647', None, (0,), 3)
+    dsID = database.DatasetID
+    ids  = dsID('test_prefix', 2, 'TestType', None,
+                'A647', None, (0,), 3)
     
     ds = myDB._genDataset(ids)
     assert_equal(ds.datasetIDs['prefix'], 'test_prefix')
@@ -311,10 +313,11 @@ def test_HDFDatastore_GetWithDate():
     dbName   = testDataRoot / Path('database_test_files/myDB.h5')
     # Created in test_HDFDatastore_Put_Keys_AtomicMetadata()  
     myDB     = database.HDFDatastore(dbName)
+    dsID = database.DatasetID
      
     # Create an ID with empty data for retrieving the dataset     
-    myDS = myDB.dsID('Cos7', 1, 'TestType', None,
-                     'A647', '2016-05-05', (1,2), None)
+    myDS = dsID('Cos7', 1, 'TestType', None,
+                'A647', '2016-05-05', (1,2), None)
     
     # Get the data from the datastore and compare it to the input data
     retrievedDataset = myDB.get(myDS)
@@ -329,13 +332,14 @@ def test_HDFDatastore_Iterable():
     if dsName.exists():
         remove(str(dsName))
     myDS = database.HDFDatastore(dsName)
+    dsID = database.DatasetID
     
     temp = config.__Registered_DatasetTypes__.copy()
     config.__Registered_DatasetTypes__ = [
         'Localizations', 'LocMetadata', 'WidefieldImage']   
     
     # Create ground-truth IDs
-    gt = [myDS.dsID(name, acqID, dsType, attr, None, None, None, None)
+    gt = [dsID(name, acqID, dsType, attr, None, None, None, None)
           for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
           for dsType, attr in [('Localizations', None),
                                ('LocMetadata', 'Localizations'),

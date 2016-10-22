@@ -4,6 +4,7 @@
 
 from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
+import numpy as np
 import h5py
 import json
 import bstore.config as config
@@ -16,6 +17,7 @@ from tifffile import TiffFile
 import importlib
 from collections import namedtuple, OrderedDict
 import traceback
+import pickle
 
 __version__ = config.__bstore_Version__
 
@@ -269,6 +271,21 @@ class Dataset(metaclass = ABCMeta):
 """Concrete classes
 -------------------------------------------------------------------------------
 """
+DatasetID = namedtuple('DatasetID', ('prefix acqID datasetType attributeOf '
+                                     'channelID dateID posID sliceID'))
+"""Dataset IDs used the HDFDatastore
+
+prefix      = The descriptive name given to the dataset by the user.
+acqID       = Acquisition ID number; an integer.
+datasetType = The type specified by datasetType.
+attributeOf = The type of dataset that this one describes.
+channelID   = (optional) String for the channel (color).
+dateID      = (optional) The date the dataset was acquired.
+posID       = (optional) One or two-tuple of integers.
+sliceID     = (optional) Single integer of the axial slice.
+"""
+_optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID')
+
 class HDFDatastore(Datastore):
     """A HDFDatastore structure for managing SMLM data.
     
@@ -310,6 +327,10 @@ class HDFDatastore(Datastore):
         
         self._datasets = []
         
+        # Used to store a persistent copy of an HDFDatastore instance
+        # in the HDF file
+        self._persistenceKey = '/bstore'
+        
     def __getitem__(self, key):
         return self._datasets[key]
         
@@ -332,23 +353,6 @@ class HDFDatastore(Datastore):
     @property
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
-        
-    dsID = namedtuple('DatasetID', ['prefix', 'acqID', 'datasetType',
-                                    'attributeOf', 'channelID', 'dateID',
-                                    'posID', 'sliceID'])
-    """Dataset IDs used by this datastore.
-    
-    prefix      = The descriptive name given to the dataset by the user.
-    acqID       = Acquisition ID number; an integer.
-    datasetType = The type specified by datasetType.
-    attributeOf = The type of dataset that this one describes.
-    channelID   = (optional) String for the channel (color).
-    dateID      = (optional) The date the dataset was acquired.
-    posID       = (optional) One or two-tuple of integers.
-    sliceID     = (optional) Single integer of the axial slice.
-        
-    """
-    _optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID')
     
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
               **kwargs):
@@ -457,7 +461,7 @@ class HDFDatastore(Datastore):
             # after non-attributes
             dsTypeString = x[0]
             mod = importlib.import_module('bstore.datasetTypes.{0:s}'.format(
-                                                                 dsTypeString))
+                      dsTypeString))
             ds  = getattr(mod, dsTypeString)() # Note () for instantiation
             if ds.attributeOf:
                 return 1
@@ -529,6 +533,25 @@ class HDFDatastore(Datastore):
                     ('Error: Attributes for {0:s} already exist.'.format(key)))
                     
         return keyExists, key, ids
+        
+    def _dumps(self):
+        """Writes the state of the HDFDatastore object to the HDF file.
+        
+        """
+        with h5py.File(self._dsName, mode = 'a') as file:
+            try:
+                # Remove the old dataset containing the persistence information
+                del(file[self._persistenceKey])
+            except KeyError:
+                pass # key doesn't exist yet
+                
+            # Pickle this instance and write the byte string to the HDF file
+            # See https://docs.python.org/3/library/pickle.html#data-stream-format
+            # for an explanation of the pickle format levels.
+            # np.void is necessary for writing byte strings, see
+            # http://docs.h5py.org/en/latest/strings.html#how-to-store-raw-binary-data
+            picklestring = pickle.dumps(self.__dict__, protocol = 3)
+            file[self._persistenceKey] = np.void(picklestring)
         
     def _genDataset(self, dsID):
         """Generate a dataset with an empty data attribute from a DatasetID.
@@ -625,7 +648,7 @@ class HDFDatastore(Datastore):
             sliceID = int(index[0])
         
         # Build the return dataset
-        returnDS = self.dsID(prefix, acqID, datasetType, None,
+        returnDS = DatasetID(prefix, acqID, datasetType, None,
                              channelID, dateID, posID, sliceID)
         return returnDS
 
@@ -735,6 +758,9 @@ class HDFDatastore(Datastore):
         if not dataset.attributeOf:            
             self._writeDatasetIDs(dataset, key = key, ids = ids)
             
+        # TODO: Dump the serialized bytestring of the class to the HDF file
+        self._dumps()
+            
     def query(self, datasetType = 'Localizations'):
         """Returns a list of datasets inside this datastore.
 
@@ -792,11 +818,9 @@ class HDFDatastore(Datastore):
         if tempDS.attributeOf:
             for (index, atom) in enumerate(atomicIDs):
                 # Can't set atom attributes directly, so make new ones
-                atomicIDs[index]   = self.dsID(atom.prefix, atom.acqID,
-                                               tempDS.datasetType,
-                                               tempDS.attributeOf,
-                                               atom.channelID, atom.dateID,
-                                               atom.posID, atom.sliceID)
+                atomicIDs[index] = DatasetID(atom.prefix, atom.acqID,
+                    tempDS.datasetType, tempDS.attributeOf, atom.channelID,
+                    atom.dateID, atom.posID, atom.sliceID)
         
         return atomicIDs
         
@@ -866,14 +890,14 @@ class HDFDatastore(Datastore):
                               'YYYY-MM-DD.'))               
         
         # Fill in missing optional id fields
-        optional = [field for field in self.dsID._fields
-                          if field in self._optionalIDs]
+        optional = [field for field in DatasetID._fields
+                          if field in _optionalIDs]
         for field in optional:
             if field not in idDict:            
                 idDict[field] = None
         
         # Create the DatasetID        
-        ids = self.dsID(prefix      = idDict['prefix'],
+        ids = DatasetID(prefix      = idDict['prefix'],
                         acqID       = idDict['acqID'],
                         datasetType = ds.datasetType,
                         attributeOf = ds.attributeOf,

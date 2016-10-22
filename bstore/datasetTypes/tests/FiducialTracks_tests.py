@@ -112,8 +112,8 @@ def test_fiducialTracks_Get_Data():
         myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDSID = myDB.dsID('test_prefix', 1, 'FiducialTracks', None,
-                              None, None, None, None)
+        myNewDSID = db.DatasetID('test_prefix', 1, 'FiducialTracks', None,
+                                 None, None, None, None)
         myNewDS = myDB.get(myNewDSID)
         ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')

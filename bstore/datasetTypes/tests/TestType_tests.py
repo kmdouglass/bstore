@@ -110,8 +110,8 @@ def test_testType_Get_Data():
     myDB.put(ds)
     
     # Create a new dataset containing only IDs to test getting of the data
-    dsID = myDB.dsID('test_prefix', 1, 'TestType', None,
-                     None, None, None, None)   
+    dsID = db.DatasetID('test_prefix', 1, 'TestType', None,
+                        None, None, None, None)   
     
     myNewDS = myDB.get(dsID)
     ids     = myNewDS.datasetIDs

@@ -99,10 +99,11 @@ def test_HDFBatchProcessor_DatasetParser():
     """HDFBatchProcessor correctly finds the datasets in the HDF file.
     
     """
-    knownDS = [myDB.dsID('HeLaL_Control', 1, 'Localizations', None,
-                         'A647', None, (0,), None),
-               myDB.dsID('HeLaS_Control', 2, 'Localizations', None,
-                         'A647', None, (0,), None)]
+    dsID = db.DatasetID
+    knownDS = [dsID('HeLaL_Control', 1, 'Localizations', None,
+                    'A647', None, (0,), None),
+               dsID('HeLaS_Control', 2, 'Localizations', None,
+                    'A647', None, (0,), None)]
                     
     assert_equal(len(bpHDF.datasetList), 2)
     

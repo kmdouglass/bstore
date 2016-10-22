@@ -152,8 +152,8 @@ def test_Get_Data():
         myDB.put(dsAttr)
         
         # Test the get() function now.
-        myNewDSID = myDB.dsID('test_prefix', 1, 'LocMetadata',
-                              'Localizations', None, None, None, None)
+        myNewDSID = db.DatasetID('test_prefix', 1, 'LocMetadata',
+                                 'Localizations', None, None, None, None)
         myNewDS   = myDB.get(myNewDSID)
         ids       = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')

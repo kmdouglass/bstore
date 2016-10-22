@@ -153,6 +153,7 @@ def test_Get_Data():
     """The datasetType can get its own data and datasetIDs.
     
     """
+    dsID = db.DatasetID
      # Load the datastore
     imgPath = testDataRoot / Path('database_test_files') \
               / Path('Cos7_A647_WF1/') \
@@ -176,8 +177,8 @@ def test_Get_Data():
         myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
         myDB.put(ds, widefieldPixelSize = (0.13, 0.13))
         
-        myNewDSID = myDB.dsID('Cos7', 1, 'WidefieldImage', None,
-                              'A647', None, None, None)
+        myNewDSID = dsID('Cos7', 1, 'WidefieldImage', None,
+                         'A647', None, None, None)
         imgDS = myDB.get(myNewDSID)
         ids     = imgDS.datasetIDs
         assert_equal(ids['prefix'],                     'Cos7')
