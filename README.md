@@ -80,8 +80,6 @@ If instead you installed B-Store from source using pip, simply
 uninstall your current version, download or pull the latest code from
 the GitHub repository, then install the new version as before.
 
-## Update
-
 # What is B-Store?
 
 [B-Store](https://github.com/kmdouglass/bstore) is a lightweight data
