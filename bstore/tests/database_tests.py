@@ -25,6 +25,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from numpy        import array_equal
 from os           import remove
+import pickle
 import h5py
 import bstore.datasetTypes.TestType as TestType
 
@@ -358,6 +359,10 @@ def test_HDFDatastore_Iterable():
         
     # Indexing works
     ok_(myDS[0] != myDS[1])
+    
+    # The datastore contains all the ground truth datasets
+    for dataset in gt:
+        ok_(dataset in myDS)
         
     # Clean-up the file and reset the registered types
     config.__Registered_DatasetTypes__ = temp
@@ -365,7 +370,7 @@ def test_HDFDatastore_Iterable():
         remove(str(dsName))
         
 @raises(database.HDF5KeyExists)
-def test_HDF_Datastore_Check_Key_Existence():
+def test_HDFDatastore_Check_Key_Existence():
     """An error is raised if using a key that already exists for locResults.
     
     """
@@ -381,3 +386,59 @@ def test_HDF_Datastore_Check_Key_Existence():
     # Raises error on the second put because the key already exists.
     myDS.put(ds)
     myDS.put(ds)
+    
+def test_HDFDatastore_Persistent_State():
+    """The HDFDatastore writes the state of the HDFDatastore object to file.
+    
+    """
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    myDS = database.HDFDatastore(dsName)
+    dsID = database.DatasetID
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+    
+    # Create ground-truth IDs
+    gt = [dsID(name, acqID, dsType, attr, None, None, None, None)
+          for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
+          for dsType, attr in [('Localizations', None),
+                               ('LocMetadata', 'Localizations'),
+                               ('WidefieldImage', None)]]
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt',
+        'WidefieldImage' : '.tif'}
+    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = False)
+    
+    # Open the HDF file and read the state of the HDFDatastore object
+    # Also, delete the old HDFDatastore object
+    del(myDS)
+    with h5py.File(str(dsName), mode = 'r') as file:
+        serialObject = file['/bstore']
+        
+        newDS = database.HDFDatastore('test')
+        newDS.__dict__ = pickle.loads(serialObject.value)
+        
+    assert_equal(len(newDS), 6)
+    for ds in newDS:
+        ok_(ds in gt, 'Error: DatasetID not found in Datastore')
+        
+    # Indexing works
+    ok_(newDS[0] != newDS[1])
+    # The name of the Dataset has changed from 'test' to that of the file
+    assert_equal(newDS._dsName, str(dsName))   
+    
+    # The datastore contains all the ground truth datasets
+    for dataset in gt:
+        ok_(dataset in newDS)
+        
+    # Clean-up the file and reset the registered types
+    config.__Registered_DatasetTypes__ = temp
+    if dsName.exists():
+        remove(str(dsName))

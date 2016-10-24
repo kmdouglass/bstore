@@ -331,14 +331,26 @@ class HDFDatastore(Datastore):
         # in the HDF file
         self._persistenceKey = '/bstore'
         
+    def __enter__(self, key):
+        """Required for context managers, but does nothing.
+        
+        """
+        raise NotImplementedError
+    
+    def __exit__(self, key):
+        """Releases the lock on the file.
+        
+        """
+        raise NotImplementedError
+        
     def __getitem__(self, key):
         return self._datasets[key]
         
-    def __len__(self):
-        return len(self._datasets)
-        
     def __iter__(self):
         return (x for x in self._datasets)
+        
+    def __len__(self):
+        return len(self._datasets)
         
     def __repr__(self):
         if self.widefieldPixelSize is None:
@@ -470,6 +482,12 @@ class HDFDatastore(Datastore):
               
         files = OrderedDict(sorted(files.items(), key=sortKey))
         return files
+        
+    def close(self):
+        """Releases the write lock on the HDF file.
+        
+        """
+        raise NotImplementedError
     
     def _checkForRegisteredTypes(self, typeList):
         """Verifies that each type in typeList is registered.
