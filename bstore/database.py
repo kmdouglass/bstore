@@ -18,6 +18,7 @@ import importlib
 from collections import namedtuple, OrderedDict
 import traceback
 import pickle
+import filelock
 
 __version__ = config.__bstore_Version__
 
@@ -331,20 +332,41 @@ class HDFDatastore(Datastore):
         # in the HDF file
         self._persistenceKey = '/bstore'
         
-    def __enter__(self, key):
-        """Required for context managers, but does nothing.
+        # Lock file to prevent concurrent writes
+        self._lock = filelock.FileLock(str(dsName))
+        
+    def __enter__(self):
+        """For context managers; updates self._datasets then locks HDF file.
         
         """
-        raise NotImplementedError
+        self._loads()
+        self._lock.acquire()
+        return self
     
-    def __exit__(self, key):
+    def __exit__(self, *args):
         """Releases the lock on the file.
         
         """
-        raise NotImplementedError
+        self._lock.release()
         
     def __getitem__(self, key):
         return self._datasets[key]
+        
+    def __getstate__(self):
+        """Returns the properties of the HDFDatastore to pickle.
+        
+        This returns the attributes of the HDFDatastore that should be saved
+        in the persistent state inside the HDF file. Without this function,
+        pickle would try to pickle the FileLock object, which would raise an
+        exception.
+        
+        For this reason, '_lock' is not returned as part of the class's state.
+        '_dsName' is not returned because it's a property of the file, not the
+        class.
+        
+        """
+        return {k:v for k, v in self.__dict__.items()
+                if (k != '_lock') and (k != '_dsName')}
         
     def __iter__(self):
         return (x for x in self._datasets)
@@ -415,7 +437,10 @@ class HDFDatastore(Datastore):
                         self.put(parser.dataset)
                     
                     datasets.append(self._unpackDatasetIDs(parser.dataset))
-                
+                except FileNotLocked:
+                    raise FileNotLocked(
+                        ('Error: %s is not locked '
+                         'for writing' % str(self._dsName)))
                 except Exception as err:
                     print(("Unexpected error in build():"),
                     sys.exc_info()[0])
@@ -568,7 +593,7 @@ class HDFDatastore(Datastore):
             # for an explanation of the pickle format levels.
             # np.void is necessary for writing byte strings, see
             # http://docs.h5py.org/en/latest/strings.html#how-to-store-raw-binary-data
-            picklestring = pickle.dumps(self.__dict__, protocol = 3)
+            picklestring = pickle.dumps(self, protocol = 3)
             file[self._persistenceKey] = np.void(picklestring)
         
     def _genDataset(self, dsID):
@@ -751,6 +776,19 @@ class HDFDatastore(Datastore):
         dataset.data = dataset.get(self._dsName, hdfKey)
             
         return dataset
+        
+    def _loads(self):
+        """Loads and updates the dataset ID information from the HDF file.
+        
+        """
+        try:
+            with h5py.File(str(self._dsName), mode = 'r') as file:
+                serialObject   = file[self._persistenceKey]
+                objFromHDF     = pickle.loads(serialObject.value)
+                self.__dict__.update(objFromHDF.__dict__)
+        except OSError:
+            # File doesn't exist, so don't try to update
+            pass
             
     def put(self, dataset, **kwargs):
         """Writes data from a single dataset into the datastore.
@@ -760,6 +798,8 @@ class HDFDatastore(Datastore):
         dataset : Dataset
         
         """
+        if not self._lock.is_locked:
+            raise FileNotLocked('Error: File is not locked for writing.')
         assert dataset.datasetType in config.__Registered_DatasetTypes__,\
             'Type {0} is unregistered.'.format(dataset.datasetType)
         if dataset.attributeOf:
@@ -776,7 +816,7 @@ class HDFDatastore(Datastore):
         if not dataset.attributeOf:            
             self._writeDatasetIDs(dataset, key = key, ids = ids)
             
-        # TODO: Dump the serialized bytestring of the class to the HDF file
+        # Dump the serialized bytestring of the class to the HDF file
         self._dumps()
             
     def query(self, datasetType = 'Localizations'):
@@ -988,6 +1028,15 @@ class DatasetTypeError(Exception):
     def __str__(self):
         return repr(self.value)
           
+class FileNotLocked(Exception):
+    """Raised when trying to write to an unlocked file.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
 class LocResultsDoNotExist(Exception):
     """Attempting to attach locMetadata to non-existing locResults.
     

@@ -258,7 +258,6 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
     if dbName.exists():
         remove(str(dbName))
     
-    myDB  = database.HDFDatastore(dbName)
     myDS  = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1,
                                    'channelID' : 'A647', 'posID' : (0,)})
     myDS2 = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1, 
@@ -270,9 +269,11 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
     myDS2.data = data.as_matrix()
     myDS3.data = data.as_matrix()
     
-    myDB.put(myDS)
-    myDB.put(myDS2)
-    myDB.put(myDS3)
+    with database.HDFDatastore(dbName) as myDB:
+        myDB.put(myDS)
+        myDB.put(myDS2)
+        myDB.put(myDS3)
+    
     assert_true(dbName.exists())
     
     # Get keys and attributes
@@ -311,17 +312,17 @@ def test_HDFDatastore_GetWithDate():
     """HDFDatastore.get() returns the correct Dataset with a dateID.
     
     """
-    dbName   = testDataRoot / Path('database_test_files/myDB.h5')
+    dsName   = testDataRoot / Path('database_test_files/myDB.h5')
     # Created in test_HDFDatastore_Put_Keys_AtomicMetadata()  
-    myDB     = database.HDFDatastore(dbName)
+    myDS = database.HDFDatastore(dsName)
     dsID = database.DatasetID
      
     # Create an ID with empty data for retrieving the dataset     
-    myDS = dsID('Cos7', 1, 'TestType', None,
+    ds = dsID('Cos7', 1, 'TestType', None,
                 'A647', '2016-05-05', (1,2), None)
     
     # Get the data from the datastore and compare it to the input data
-    retrievedDataset = myDB.get(myDS)
+    retrievedDataset = myDS.get(ds)
     ok_(array_equal(retrievedDataset.data, data))
 
 def test_HDFDatastore_Iterable():
@@ -332,7 +333,6 @@ def test_HDFDatastore_Iterable():
                                   'test_id_collection_temp.h5'))
     if dsName.exists():
         remove(str(dsName))
-    myDS = database.HDFDatastore(dsName)
     dsID = database.DatasetID
     
     temp = config.__Registered_DatasetTypes__.copy()
@@ -351,7 +351,9 @@ def test_HDFDatastore_Iterable():
         'Localizations'  : '.csv',
         'LocMetadata'    : '.txt',
         'WidefieldImage' : '.tif'}
-    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = False)
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
 
     assert_equal(len(myDS), 6)
     for ds in myDS:
@@ -371,21 +373,21 @@ def test_HDFDatastore_Iterable():
         
 @raises(database.HDF5KeyExists)
 def test_HDFDatastore_Check_Key_Existence():
-    """An error is raised if using a key that already exists for locResults.
+    """An error is raised if using a key that already exists for a dataset.
     
     """
     # Remake the datastore
-    dbName = testDataRoot / Path('database_test_files/myDB_DoubleKey.h5')
-    if dbName.exists():
-        remove(str(dbName))
-    myDS    = database.HDFDatastore(dbName)
+    dsName = testDataRoot / Path('database_test_files/myDB_DoubleKey.h5')
+    if dsName.exists():
+        remove(str(dsName))
     ds      = TestType.TestType(datasetIDs = {
         'prefix' : 'Cos7', 'acqID' : 1, 'channelID' : 'A647', 'posID' : (0,)})
     ds.data = data
                              
     # Raises error on the second put because the key already exists.
-    myDS.put(ds)
-    myDS.put(ds)
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.put(ds)
+        myDS.put(ds)
     
 def test_HDFDatastore_Persistent_State():
     """The HDFDatastore writes the state of the HDFDatastore object to file.
@@ -395,7 +397,6 @@ def test_HDFDatastore_Persistent_State():
                                   'test_id_collection_temp.h5'))
     if dsName.exists():
         remove(str(dsName))
-    myDS = database.HDFDatastore(dsName)
     dsID = database.DatasetID
     
     temp = config.__Registered_DatasetTypes__.copy()
@@ -414,7 +415,9 @@ def test_HDFDatastore_Persistent_State():
         'Localizations'  : '.csv',
         'LocMetadata'    : '.txt',
         'WidefieldImage' : '.tif'}
-    myDS.build(parser, dsName.parent, filenameStrings, readTiffTags = False)
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
     
     # Open the HDF file and read the state of the HDFDatastore object
     # Also, delete the old HDFDatastore object
@@ -423,7 +426,8 @@ def test_HDFDatastore_Persistent_State():
         serialObject = file['/bstore']
         
         newDS = database.HDFDatastore('test')
-        newDS.__dict__ = pickle.loads(serialObject.value)
+        newState = pickle.loads(serialObject.value)
+        newDS.__dict__.update(newState.__dict__)
         
     assert_equal(len(newDS), 6)
     for ds in newDS:
@@ -431,13 +435,126 @@ def test_HDFDatastore_Persistent_State():
         
     # Indexing works
     ok_(newDS[0] != newDS[1])
-    # The name of the Dataset has changed from 'test' to that of the file
-    assert_equal(newDS._dsName, str(dsName))   
+    # The name of the new Dataset has not changed when reading the state
+    assert_equal(newDS._dsName, 'test')
     
     # The datastore contains all the ground truth datasets
     for dataset in gt:
         ok_(dataset in newDS)
         
+    # Clean-up the file and reset the registered types
+    config.__Registered_DatasetTypes__ = temp
+    if dsName.exists():
+        remove(str(dsName))
+        
+def test_HDFDatastore_Context_Manager():
+    """HDFDatastores work with 'with...as' statements.
+    
+    """
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt',
+        'WidefieldImage' : '.tif'}
+    
+    # Use the Datastore as a context manager
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
+            
+    assert_equal(len(myDS), 6)
+    
+    # Clean-up the file and reset the registered types
+    config.__Registered_DatasetTypes__ = temp
+    if dsName.exists():
+        remove(str(dsName))
+
+@raises(database.FileNotLocked)        
+def test_HDFDatastore_Context_Manager_Locks_File():
+    """HDFDatastores locks files for writing inside the context manager.
+    
+    """
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt'} # Note that widefield images aren't included
+    
+    # badDS refers to the same file as myDS
+    badDS = database.HDFDatastore(dsName)    
+    
+    # Use the Datastore as a context manager
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
+    
+    # File lock prevents badDS from adding widefield images
+    try:
+        badDS.build(
+            parser, dsName.parent,
+            {'WidefieldImage': '.tif'}, readTiffTags = False)
+    
+    finally:    
+        # Clean-up the file and reset the registered types
+        config.__Registered_DatasetTypes__ = temp
+        if dsName.exists():
+            remove(str(dsName))
+            
+def test_HDFDatastore_State_Updates_Correctly():
+    """HDFDatastores locks files for writing inside the context manager.
+    
+    """
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt'} # Note that widefield images aren't included   
+    
+    # Use the Datastore as a context manager
+    with database.HDFDatastore(dsName) as myDS:
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
+    
+    # Write the widefield images with a new datastore;
+    # The state of the Datastore should contain the previously written
+    # datasets as well
+    with database.HDFDatastore(dsName) as newDS:
+        newDS.build(
+            parser, dsName.parent,
+            {'WidefieldImage': '.tif'}, readTiffTags = False)
+            
+    assert_equal(len(newDS), 6) # If state wasn't updated, it would be 2!
+    assert_equal(len(myDS), 4)  # State isn't updated yet
+    with myDS:
+        pass
+    
+    assert_equal(len(myDS), 6)  # State is up-to-date
+    
     # Clean-up the file and reset the registered types
     config.__Registered_DatasetTypes__ = temp
     if dsName.exists():
