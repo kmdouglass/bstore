@@ -465,7 +465,7 @@ class HDFDatastore(Datastore):
         
         Parameters
         ----------
-        searchDirectory : str or Path
+        searchDirectory : Path
             This directory and all subdirectories will be traversed.
         filenameStrings : dict
             Dictionary of key-value pairs, where each key is the name of a
@@ -482,6 +482,10 @@ class HDFDatastore(Datastore):
         """
         if not filenameStrings:
             return {}
+            
+        if not searchDirectory.exists():
+            raise SearchDirectoryDoesNotExist(
+                '%s does not exist.' % str(searchDirectory))
             
         files = {}
         for filename, fileID in filenameStrings.items():
@@ -1057,6 +1061,15 @@ class HDF5KeyDoesNotExist(Exception):
         
 class HDF5KeyExists(Exception):
     """Attempting to write to an existing key in the datastore.
+    
+    """
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+        
+class SearchDirectoryDoesNotExist(Exception):
+    """The search directory for a datastore build does not exist.
     
     """
     def __init__(self, value):

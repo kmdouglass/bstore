@@ -8,9 +8,11 @@
 
 from tkinter import Entry, LabelFrame, Checkbutton, Grid, IntVar, Radiobutton
 from tkinter import Scrollbar, Text, BooleanVar, Label, E, W, DISABLED, END
-from tkinter import Toplevel, Button, N, S
+from tkinter import Toplevel, Button, N, S, StringVar
 from tkinter.filedialog import askdirectory, asksaveasfilename
 from tkinter.messagebox import showinfo
+
+from pathlib import Path
 
 import bstore.config as cfg
 import bstore.database as db
@@ -41,26 +43,20 @@ class CreateHDFDatastore():
     def __init__(self, root):
         top = Toplevel(master = root)
         top.title('Create a new HDF Datastore')
-        frames = {'SelectFilename'     : 0,
+        frames = {'SelectFilename'     : 4,
                   'SelectDatasetTypes' : 1,
-                  'SelectSearchPath'   : 2,
-                  'SelectParser'       : 3,
-                  'Options'            : 4,
+                  'SelectSearchPath'   : 0,
+                  'SelectParser'       : 2,
+                  'Options'            : 3,
                   'BuildButton'        : 5}
         Grid.rowconfigure(top, frames['SelectDatasetTypes'], weight = 1)
         Grid.rowconfigure(top, frames['BuildButton'],        weight = 0)
         Grid.columnconfigure(top, 0, weight=1)
-    
-        # Select filename and path    
-        f = self.Frame_SelectFilename(
-            master = top, padx = 5, pady = 5,
-            text = 'Path and filename for the new datastore')
-        f.grid(row = frames['SelectFilename'], sticky = E+W)
         
         # Select dataset types
         t = self.Frame_SelectDatasetTypes(
             master = top, padx = 5, pady = 5,
-            text = 'Select dataset types and configure the file reader')
+            text = 'Select dataset types and their corresponding files')
         t.grid(row = frames['SelectDatasetTypes'], sticky = N+S+E+W)
         
         # Select search path
@@ -80,6 +76,12 @@ class CreateHDFDatastore():
             master = top, padx = 5, pady = 5,
             text = 'Miscellaneous build options')
         o.grid(row = frames['Options'], sticky = E+W)
+        
+        # Select filename and path    
+        f = self.Frame_SelectFilename(
+            master = top, padx = 5, pady = 5,
+            text = 'Path and filename for the new datastore')
+        f.grid(row = frames['SelectFilename'], sticky = E+W)        
         
         frameParams = (f, t, s, p, o)
         build = Button(
@@ -114,9 +116,9 @@ class CreateHDFDatastore():
         o_filename, o_datasetTypes, o_searchPath, o_parser, o_options = frames
         filenameStrings = o_datasetTypes.get() 
         if cfg.__Verbose__:
-            print('Filename: ' + str(o_filename.filename))
+            print('Filename: ' + str(o_filename.filename.get()))
             print('Dataset Types: ' + str(filenameStrings))
-            print('Search Path: ' + str(o_searchPath.searchPath))
+            print('Search Path: ' + str(o_searchPath.searchPath.get()))
             print('Parser: ' + str(o_parser.parser))
             print(('Options: ' +
                    str(o_options.kwargs)))
@@ -129,9 +131,14 @@ class CreateHDFDatastore():
                        str(o_parser.parser.sep)))
             except:
                 pass
-            
+
+        assert o_searchPath.isReady, ('Error: Search path for input '
+                                      'files is not set.')           
         assert o_filename.isReady, 'Error: Path to new Datastore is not set.'
-        assert o_searchPath.isReady, 'Error: Raw file search path is not set.'
+        
+        if not Path(o_searchPath.searchPath.get()).exists():
+            raise db.SearchDirectoryDoesNotExist(
+                '%s does not exist.' % str(o_searchPath.searchPath.get()))
         
         # Register the dataset types
         cfg.__Registered_DatasetTypes__ = [
@@ -145,12 +152,12 @@ class CreateHDFDatastore():
             parent = top)     
                  
         # Start the build thread that creates the Datastore
-        with db.HDFDatastore(o_filename.filename) as dstore:
+        with db.HDFDatastore(o_filename.filename.get()) as dstore:
         
             t = threading.Thread(
                 target = dstore.build,
                 args = (
-                    o_parser.parser, o_searchPath.searchPath,
+                    o_parser.parser, o_searchPath.searchPath.get(),
                     filenameStrings),
                 kwargs  = o_options.kwargs)
                 
@@ -295,21 +302,26 @@ class CreateHDFDatastore():
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self._isReady = False
-            self.filename = None
+            self.filename = StringVar()
+            self.filename.set('')
             
             Grid.columnconfigure(self, 1, weight = 1)
             
             self.button = Button(self, text="Browse",
                                  command=self.loadFile, width=10)
             self.button.grid(row = 0, column=1,
-                             padx = 5, pady = 5, sticky = E)        
+                             padx = 5, pady = 5, sticky = E)
             
-            self.entry = Entry(self, width = 65)
+            self.entry = Entry(self, width = 65, textvariable = self.filename)
             self.entry.delete(0, END)
             self.entry.insert(0, 'Enter a path to a new datastore file...')
             self.entry.grid(row = 0, column = 0,
                             padx = 5, pady = 5, sticky = W)
-            self.entry.configure(state = 'readonly')
+                            
+            def setReady(a,b,c):
+                self._isReady = True
+                            
+            self.filename.trace('w', setReady)
             
         @property
         def isReady(self):
@@ -321,11 +333,9 @@ class CreateHDFDatastore():
                                       title       = 'Select a new file...',
                                       initialfile = 'datastore.h5')
             if fname:
-                self.filename = fname
                 self.entry.configure(state = 'normal')
                 self.entry.delete(0, END)
-                self.entry.insert(0, fname)
-                self.entry.configure(state = 'readonly')
+                self.entry.insert(0, fname) # also updates self.filename
                 self._isReady = True
             
     class Frame_SelectOptions(LabelFrame):
@@ -432,7 +442,8 @@ class CreateHDFDatastore():
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self._isReady   = False
-            self.searchPath = None
+            self.searchPath = StringVar()
+            self.searchPath.set('')
             
             Grid.columnconfigure(self, 1, weight = 1)
             
@@ -441,13 +452,18 @@ class CreateHDFDatastore():
             self.button.grid(row=0, column=1,
                              padx = 5, pady = 5, sticky = E)        
             
-            self.entry = Entry(self, width = 65)
+            self.entry = Entry(self, width = 65,
+                               textvariable = self.searchPath)
             self.entry.delete(0, END)
             self.entry.insert(
                 0, 'Enter the directory containing the input files...')
             self.entry.grid(row = 0, column = 0,
                             padx = 5, pady = 5, sticky = W)
-            self.entry.configure(state = 'readonly')
+                            
+            def setReady(a,b,c):
+                self._isReady = True
+                            
+            self.searchPath.trace('w', setReady)
             
         @property
         def isReady(self):
@@ -457,9 +473,7 @@ class CreateHDFDatastore():
             fname = askdirectory(title = 'Select a search directory...',
                                  mustexist = True)
             if fname:
-                self.searchPath = fname
                 self.entry.configure(state = 'normal')
                 self.entry.delete(0, END)
-                self.entry.insert(0, fname)
-                self.entry.configure(state = 'readonly')
+                self.entry.insert(0, fname) # also updates self.searchPath
                 self._isReady = True

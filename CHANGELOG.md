@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file.
   preventing multiple HDFDatastore objects that point to the same file
   from going out of sync with the persistent representation inside the
   file.
+- The order of the fields in the GUI's HDFDatastore build dialog was
+  changed to better match the inputs->parameters->outputs mental model
+  of how the build process occurs.
+  
 
 ## [v1.0.0]
 ### Added
