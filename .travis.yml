@@ -29,10 +29,12 @@ install:
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy matplotlib scikit-learn pytables h5py pandas
   - source activate test-environment
-  - conda install -c soft-matter -c conda-forge trackpy tifffile=0.9.0
+  - conda install -c soft-matter trackpy
 
-  # Install convex hull software
+  # Install third party packages from pip
   - easy_install pyhull
+  - pip install filelock
+  - pip install tifffile
 
   # Install this library
   - python setup.py install
