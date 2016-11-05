@@ -145,19 +145,18 @@ class CreateHDFDatastore():
             parent = top)     
                  
         # Start the build thread that creates the Datastore
-        dstore = db.HDFDatastore(o_filename.filename)
+        with db.HDFDatastore(o_filename.filename) as dstore:
         
-        t = threading.Thread(
-            target = dstore.build,
-            args = (
-                o_parser.parser, o_searchPath.searchPath,
-                filenameStrings),
-            kwargs  = o_options.kwargs)
-            #kwargs = {'readTiffTags' : o_options.readTiffTags.var.get()})
-            
-        bd = self.BuildDialog(top, t)
-        bd.start()
-        bd.destroy()
+            t = threading.Thread(
+                target = dstore.build,
+                args = (
+                    o_parser.parser, o_searchPath.searchPath,
+                    filenameStrings),
+                kwargs  = o_options.kwargs)
+                
+            bd = self.BuildDialog(top, t)
+            bd.start()
+            bd.destroy()
         
         showinfo(title   = 'Build Complete',
                  message = ('The build has finished.'))

@@ -70,3 +70,8 @@ __Registered_DatasetTypes__ = ['Localizations']
     Controls how much detail is provided when errors occur.
 """
 __Verbose__ = False
+
+"""__Persistence_Key__ : str
+    The location in the HDF file where the HDFDatastore object's state is kept.
+"""
+__Persistence_Key__ = '/bstore'

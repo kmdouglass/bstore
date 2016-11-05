@@ -1,6 +1,21 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- `HDFDatastore` objects are now persistent; their state is saved to
+  the HDF file every time a dataset is put into the datastore, which
+  includes datastore builds.
+
+### Changed
+- `HDFDatastore` now require Python *with...as...* statements
+  (i.e. `HDFDatastore`'s are now context managers) when putting
+  datasets or building a datastore. The reason for this is that it's
+  easier to lock the HDF file when it's used as a context manager,
+  preventing multiple HDFDatastore objects that point to the same file
+  from going out of sync with the persistent representation inside the
+  file.
+
 ## [v1.0.0]
 ### Added
 - `PositionParser` was added for parsing files whose names contain
@@ -165,6 +180,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.0.0...HEAD
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0

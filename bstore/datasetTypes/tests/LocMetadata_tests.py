@@ -80,9 +80,9 @@ def test_Put_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
-        myDB.put(dsAttr)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
+            myDB.put(dsAttr)
         
         key = 'test_prefix/test_prefix_1/Localizations'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
@@ -108,8 +108,6 @@ def test_HDF_Datastore_Put_LocMetadata_Without_LocResults():
     dbName = testDataRoot / Path('database_test_files/myEmptyDB.h5')
     if dbName.exists():
         remove(str(dbName))
-        
-    myEmptyDB     = db.HDFDatastore(dbName)
 
     # Load a json metadata file
     f           = 'HeLa_Control_A750_2_MMStack_Pos0_locMetadata.json'
@@ -123,7 +121,8 @@ def test_HDF_Datastore_Put_LocMetadata_Without_LocResults():
     parser.dataset.data = parser.dataset.readFromFile(inputFile)
                           
     # Write the metadata into the datastore; should raise LocResultsDoNotExist
-    myEmptyDB.put(parser.dataset)
+    with db.HDFDatastore(dbName) as myEmptyDB:
+        myEmptyDB.put(parser.dataset)
 
       
 def test_Get_Data():
@@ -147,9 +146,9 @@ def test_Get_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
-        myDB.put(dsAttr)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
+            myDB.put(dsAttr)
         
         # Test the get() function now.
         myNewDSID = db.DatasetID('test_prefix', 1, 'LocMetadata',
@@ -177,7 +176,6 @@ def test_HDF_Datastore_Build():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB     = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
@@ -187,10 +185,11 @@ def test_HDF_Datastore_Build():
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings  = {'Localizations' : '_DC.dat',
-                                   'LocMetadata'   : '_locMetadata.json'},
-               dryRun = False)
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings  = {'Localizations' : '_DC.dat',
+                                       'LocMetadata'   : '_locMetadata.json'},
+                   dryRun = False)
                
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
@@ -240,7 +239,6 @@ def test_HDF_Datastore_Query():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
@@ -250,10 +248,11 @@ def test_HDF_Datastore_Query():
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings  = {'Localizations' : '_DC.dat',
-                                   'LocMetadata'   : '_locMetadata.json'},
-               dryRun = False)
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings  = {'Localizations' : '_DC.dat',
+                                       'LocMetadata'   : '_locMetadata.json'},
+                   dryRun = False)
     
     results = myDB.query(datasetType = 'LocMetadata')
     

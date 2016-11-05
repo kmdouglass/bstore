@@ -59,8 +59,8 @@ def test_testType_Put_Data():
     if exists(str(pathToDB / Path('test_db.h5'))):
         remove(str(pathToDB / Path('test_db.h5')))
     
-    myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-    myDB.put(ds)
+    with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+        myDB.put(ds)
     
     key = 'test_prefix/test_prefix_1/TestType'
     with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
@@ -106,8 +106,8 @@ def test_testType_Get_Data():
     if exists(str(pathToDB / Path('test_db.h5'))):
         remove(str(pathToDB / Path('test_db.h5')))
     
-    myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-    myDB.put(ds)
+    with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+        myDB.put(ds)
     
     # Create a new dataset containing only IDs to test getting of the data
     dsID = db.DatasetID('test_prefix', 1, 'TestType', None,

@@ -423,7 +423,7 @@ def test_HDFDatastore_Persistent_State():
     # Also, delete the old HDFDatastore object
     del(myDS)
     with h5py.File(str(dsName), mode = 'r') as file:
-        serialObject = file['/bstore']
+        serialObject = file[config.__Persistence_Key__]
         
         newDS = database.HDFDatastore('test')
         newState = pickle.loads(serialObject.value)

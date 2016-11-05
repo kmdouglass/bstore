@@ -330,7 +330,7 @@ class HDFDatastore(Datastore):
         
         # Used to store a persistent copy of an HDFDatastore instance
         # in the HDF file
-        self._persistenceKey = '/bstore'
+        self._persistenceKey = config.__Persistence_Key__
         
         # Lock file to prevent concurrent writes
         self._lock = filelock.FileLock(str(dsName))
