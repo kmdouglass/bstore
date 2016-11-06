@@ -199,8 +199,8 @@ comments to the `B-Store mailing list`_.
 Common extensions you would want to do are to write plugins that
 extend the Parser and Processor classes, or write your own
 DatasetTypes. If you add your custom Python files to the
-`~/.bstore/bsplugins` directory (`%USERPROFILE%\.bstore\bsplugins` on
-Windows), B-Store will know to search this directory for imports.
+`~/.bstore/bsplugins` directory (`%USERPROFILE%\\.bstore\\bsplugins`
+on Windows), B-Store will know to search this directory for imports.
 
 A custom Parser that we use in our own lab may be found here:
 https://github.com/kmdouglass/bsplugins-leb

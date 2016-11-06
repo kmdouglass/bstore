@@ -22,7 +22,7 @@ requirements:
     - pytables
     - trackpy
     - nb_conda
-    
+
   run:
     - python
     - nose
@@ -38,7 +38,6 @@ requirements:
     - nb_conda
     - qt 4.8.7
     - pyqt 4.11.4
-
 
 test:
   imports:
