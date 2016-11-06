@@ -19,9 +19,9 @@ from bstore.batch import CSVBatchProcessor, HDFBatchProcessor
 from bstore       import processors as proc
 from bstore       import database   as db
 from bstore       import config
-from bstore.datasetTypes.Localizations import Localizations
 import shutil
 import pandas as pd
+import warnings
 import json
 
 config.__Registered_DatasetTypes__.append('Localizations')
@@ -76,7 +76,9 @@ def test_CSVBatchProcessor_Pipeline():
     
     """
     # Execute the batch process
-    bpCSV.go()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  
+        bpCSV.go()
     
     # Check the results of the filtering
     results = [
@@ -87,7 +89,16 @@ def test_CSVBatchProcessor_Pipeline():
                
     for currRes in results:
         pathToCurrRes = outputDir / Path(currRes)
-        df = pd.read_csv(str(pathToCurrRes), sep = ',')
+        df = pd.read_csv(str(pathToCurrRes), sep = ',',
+                         dtype={'x [nm]' : float,
+                                'y [nm]' : float,
+                                'z [nm]' : int,
+                                'frame'  : int,
+                                'uncertainty [nm]'   : float,
+                                'intensity [photon]' : float,
+                                'offset [photon]'    : float,
+                                'loglikelihood'      : float,
+                                'sigma [nm]'         : float})
         
         # Verify that filters were applied during the processing
         ok_(df['loglikelihood'].max() <= 250,
