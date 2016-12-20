@@ -46,6 +46,37 @@ def test_AlignToWidefield():
     assert_equal(round(dy), -194.0)
     assert_equal(round(dx), -173.0)
     
+def test_OverlayClusters():
+    """Overlay clusters does not produce
+    
+    """
+    pathToLocs  = pathToTestData \
+                / Path('align_to_widefield/locResults_A647_Pos0.csv')
+    pathToStats = pathToTestData \
+                / Path('align_to_widefield/locResults_A647_Pos0_processed.csv')
+    pathToWF = pathToTestData / Path('align_to_widefield') \
+             /Path('HeLaS_Control_53BP1_IF_FISH_A647_WF1') \
+             /Path('HeLaS_Control_53BP1_IF_FISH_A647_WF1_MMStack_Pos0.ome.tif')
+             
+    with open(str(pathToLocs), 'r') as f:
+        locs = pd.read_csv(f)
+        
+    with open(str(pathToStats), 'r') as f:
+        stats = pd.read_csv(f)
+        
+    with open(str(pathToWF), 'rb') as f:
+        wfImage = plt.imread(f)
+        
+    # Add filter and annotate columns to stats
+    stats['keep_for_analysis'] = 1
+    stats['annotate']          = 1
+        
+    # Create the multiprocessor and align the data
+    overlay = mp.OverlayClusters(
+        annotateCol = 'annotate', filterCol = 'keep_for_analysis')
+    overlay._testing = True
+    overlay(locs, wfImage = wfImage, stats = stats)
+
 def test_EstimatePhotons():
     """EstimatePhotons correctly finds photons, backgrounds, and boundaries.
     
