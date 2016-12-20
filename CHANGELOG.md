@@ -20,6 +20,19 @@ All notable changes to this project will be documented in this file.
   of how the build process occurs.
   
 
+## [v1.0.1]
+## Added	
+- Added a unit test for the OverlayClusters multiprocessor.
+
+### Fixed
+- Fixed a bug in `OverlayClusters` that was related to a change in
+  Pandas 0.19.1 and the np.min() function was fixed.
+- Localizations not used for spline fitting in the
+  `DefaultDriftComputer` now appear as gray, rather than blue, when
+  `plotFiducials()` is called.
+- The `PositionParser` was not correctly parsing file names on
+  Windows because */* was the assumed separator. This is now fixed.
+	
 ## [v1.0.0]
 ### Added
 - `PositionParser` was added for parsing files whose names contain
@@ -184,7 +197,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.0.1...HEAD
+[v1.0.1]: https://github.com/kmdouglass/bstore/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0

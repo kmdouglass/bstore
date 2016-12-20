@@ -300,7 +300,7 @@ class OverlayClusters:
     step through each cluster with the keyboard.
     
     It also allows for annotating clusters by labeling clusters with a numeric
-    ID between 0 and 9 or a True/False value, allowing users to perform
+    ID between 1 and 9 or a True/False value, allowing users to perform
     manual filtering or classification, for example.
     
     Parameters
@@ -386,6 +386,9 @@ class OverlayClusters:
         self._clusterIDs          = []
         self.currentCluster       = []
         
+        # Used only for testing to prevent the figure from appearing
+        self._testing       = False
+        
         # Holds information on the current figure
         self._fig           = None
         self._ax0           = None
@@ -459,7 +462,7 @@ class OverlayClusters:
             """Handles user input.
             
             """
-            if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']:
+            if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
                 if self.annotateCol is not None:                
                     # Add a numeric label to the cluster
                     stats.loc[self.currentCluster, self.annotateCol] = \
@@ -494,11 +497,15 @@ class OverlayClusters:
                     stats.loc[self.currentCluster, self.annotateCol] = False
                     self._currentClusterIndex += 1
                     self._drawCurrentCluster(locs)
-                
-        self._fig.canvas.mpl_connect('close_event', onClose)
-        plt.connect('key_press_event',
-                    lambda event: keyMonitor(event, self))
-        self._fig.canvas.start_event_loop_default()
+        
+        if self._testing:
+            pass
+        else:
+            # Start the keyboard monitor
+            self._fig.canvas.mpl_connect('close_event', onClose)
+            plt.connect('key_press_event',
+                        lambda event: keyMonitor(event, self))
+            self._fig.canvas.start_event_loop_default()
         
         if centerNameTemp:
             # Reset the center names to the value that was overridden
@@ -560,6 +567,7 @@ class OverlayClusters:
         if (not self.filterCol) and (not self.annotateCol):
             self._clusterIDs = stats[stats.index != -1].index.unique()
         elif not self.filterCol:
+            # 0 cannot be an annotation because of this line
             self._clusterIDs = stats[(stats.index != -1)
             & (stats[self.annotateCol] != False)].index.unique()
         elif not self.annotateCol:
@@ -569,7 +577,7 @@ class OverlayClusters:
             self._clusterIDs = stats[(stats.index != -1)
                 & (stats[self.annotateCol] != False)
                 & (stats[self.filterCol] != False)].index.unique()
-        self.currentCluster = np.min(self._clusterIDs)
+        self.currentCluster = self._clusterIDs.min()
         
     def _initCanvas(self, locs, wfImage, stats):
         """Draws the initial canvas for the localizations and other data.
@@ -606,6 +614,10 @@ class OverlayClusters:
         # Reset the current cluster to zero
         self._currentClusterIndex = 0
         self.currentCluster       = self._clusterIDs[self._currentClusterIndex]        
+        
+        if self._testing:
+            return # Don't run anything past here to prevent display issues
+                   # during unit tests
         
         # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)

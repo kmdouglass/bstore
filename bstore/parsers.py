@@ -177,12 +177,13 @@ class PositionParser(Parser):
             self._fullPath = pathlib.Path(filename)        
             
             # Convert Path objects to strings if Path is supplied
-            if isinstance(filename, pathlib.PurePath):
-                filename = str(filename.name)
+            #if isinstance(filename, pathlib.PurePath):
+            #    filename = str(filename.name)
     
             # Remove file type ending and any parent folders
             # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
-            rootName = splitext(filename)[0].split('/')[-1]
+            #rootName = splitext(filename)[0].split('/')[-1]
+            rootName = str(self._fullPath.stem)
             
             # Extract the ids
             idDict = self._parse(rootName)

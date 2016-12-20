@@ -585,7 +585,7 @@ class DefaultDriftComputer(ComputeTrajectories):
     coordCols           : list str
         List of strings identifying the x- and y-coordinate column names
         in that order.
-    fiducialData        : Pandas DataFrame
+    fiducialLocs        : Pandas DataFrame
         DataFrame with a 'region_id' column denoting localizations from
         different regions of the original dataset. This is created by the
         parent ComputeTrajectories class.
@@ -618,15 +618,17 @@ class DefaultDriftComputer(ComputeTrajectories):
                  smoothingFilterSize = 400, useTrajectories = [],
                  zeroFrame = 1000):
 
-        self.coordCols = coordCols
-        self.frameCol  = frameCol
-        self.maxRadius = maxRadius
+        self.coordCols    = coordCols
+        self.frameCol     = frameCol
+        self.maxRadius    = maxRadius
         self.smoothingWindowSize = smoothingWindowSize
         self.smoothingFilterSize = smoothingFilterSize
         self.useTrajectories     = useTrajectories
         self.zeroFrame           = zeroFrame
         super(ComputeTrajectories, self).__init__()
         
+        # Column of DataFrame used to indicate what localizations are not
+        # included in a spline fit, e.g. outliers
         self._includeColName = 'included_in_fit'
         
         # initial state
@@ -901,11 +903,11 @@ class DefaultDriftComputer(ComputeTrajectories):
             locs = self.fiducialLocs.xs(fid, level = 'region_id',
                                          drop_level = False)
             
-            # Shift fiducial trajectories to zero at their start
-            #frame0 = locs['frame'].iloc[[self.zeroFrame]].as_matrix()
-            #x0 = self.splines[fid]['xS'](frame0)
-            #y0 = self.splines[fid]['yS'](frame0)      
-            x0, y0 = self._computeOffsets(locs)
+            x0, y0 = self._computeOffsets(locs)            
+            
+            # Filter out localizations that are outliers
+            outliers = locs.loc[locs[self._includeColName] == False]
+            locs     = locs.loc[locs[self._includeColName] == True]
             
             if (fid in self.useTrajectories) or (not self.useTrajectories):
                 markerColor = 'blue'
@@ -916,6 +918,11 @@ class DefaultDriftComputer(ComputeTrajectories):
                      locs[x] - x0,
                      '.',
                      color = markerColor,
+                     alpha = 0.5)
+            axx.plot(outliers[self.frameCol],
+                     outliers[x] - x0,
+                     'x',
+                     color = '#999999',
                      alpha = 0.5)
             axx.plot(self.avgSpline.index,
                      self.avgSpline['xS'],
@@ -929,6 +936,11 @@ class DefaultDriftComputer(ComputeTrajectories):
                      locs[y] - y0,
                      '.',
                      color = markerColor,
+                     alpha = 0.5)
+            axy.plot(outliers[self.frameCol],
+                     outliers[y] - y0,
+                     'x',
+                     color = '#999999',
                      alpha = 0.5)
             axy.plot(self.avgSpline.index,
                      self.avgSpline['yS'],
@@ -1283,10 +1295,10 @@ class FiducialDriftCorrect(DriftCorrect):
         return pd.concat(locsInRegions)
     
     def readSettings(self):
-        pass
+        raise(NotImplementedError)
     
     def writeSettings(self):
-        pass
+        raise(NotImplementedError)
             
 class Filter:
     """Processor for filtering DataFrames containing localizations.
