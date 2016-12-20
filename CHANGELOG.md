@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- Added a unit test for the OverlayClusters multiprocessor.
+
+### Fixed
+- A bug `OverlayClusters` that was related to a change in
+  Pandas 0.19.1 and the np.min() function was fixed.
+	
 ## [v1.0.0]
 ### Added
 - `PositionParser` was added for parsing files whose names contain
@@ -165,6 +173,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.0.0...HEAD
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
