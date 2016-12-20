@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - A bug `OverlayClusters` that was related to a change in
   Pandas 0.19.1 and the np.min() function was fixed.
+- Localizations not used for spline fitting in the
+  `DefaultDriftComputer` now appear as gray, rather than blue, when
+  `plotFiducials()` is called.
 	
 ## [v1.0.0]
 ### Added
