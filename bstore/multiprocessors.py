@@ -462,7 +462,7 @@ class OverlayClusters:
             """Handles user input.
             
             """
-            if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']:
+            if event.key in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
                 if self.annotateCol is not None:                
                     # Add a numeric label to the cluster
                     stats.loc[self.currentCluster, self.annotateCol] = \
@@ -615,6 +615,10 @@ class OverlayClusters:
         self._currentClusterIndex = 0
         self.currentCluster       = self._clusterIDs[self._currentClusterIndex]        
         
+        if self._testing:
+            return # Don't run anything past here to prevent display issues
+                   # during unit tests
+        
         # Create the figure and axes
         fig, (ax0, ax1) = plt.subplots(nrows = 1, ncols = 2)
         self._fig = fig
@@ -680,10 +684,7 @@ class OverlayClusters:
         # Draw the initial cluster
         self._drawCurrentCluster(locs)        
         
-        if self._testing:
-            plt.close()
-        else:
-            # Make the figure full screen
-            figManager = plt.get_current_fig_manager()
-            figManager.window.showMaximized()
-            plt.show()
+        # Make the figure full screen
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+        plt.show()
