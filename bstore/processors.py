@@ -906,8 +906,8 @@ class DefaultDriftComputer(ComputeTrajectories):
             x0, y0 = self._computeOffsets(locs)            
             
             # Filter out localizations that are outliers
-            outliers = locs.loc[locs['included_in_fit'] == False]
-            locs     = locs.loc[locs['included_in_fit'] == True]
+            outliers = locs.loc[locs[self._includeColName] == False]
+            locs     = locs.loc[locs[self._includeColName] == True]
             
             if (fid in self.useTrajectories) or (not self.useTrajectories):
                 markerColor = 'blue'
