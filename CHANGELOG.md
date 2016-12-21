@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v1.0.1]
 ### Added
 - Added a unit test for the OverlayClusters multiprocessor.
 
@@ -178,7 +178,7 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.0.0...HEAD
+[v1.0.1]: https://github.com/kmdouglass/bstore/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
 [v0.2.0]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0
