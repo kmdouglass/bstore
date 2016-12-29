@@ -442,6 +442,11 @@ class HDFDatastore(Datastore):
     def _checkKeyExistence(self, ds, raiseException = True):
         """Checks for the existence of a key.
         
+        This is required for checking whether attributes are attached to a
+        dataset. For example, a key to a dataset might exist, but it may not
+        have B-Store attributes. In this case, a key *would not* exist for the
+        Dataset's attributes.
+        
         Parameters
         ----------
         ds             : Dataset
