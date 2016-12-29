@@ -13,7 +13,6 @@ import pprint
 import re
 import pandas as pd
 from dateutil.parser import parse
-from tifffile import TiffFile
 import importlib
 from collections import namedtuple, OrderedDict
 import traceback
@@ -31,119 +30,32 @@ def _checkType(typeString):
 
 """Decorators
 -------------------------------------------------------------------------------
-"""          
-def putWidefieldImageWithMicroscopyTiffTags(writeImageData):
-    """Decorator for writing OME-XML and Micro-Manager metadata + image data.
+"""
+def hdfLockCheck(writeFunc):
+    """Decorator to check whether a HDF file is locked for writing.
     
-    This effectively serves as a patch to the original code (versions <= 0.1.1)
-    where widefieldImages were represented merely as NumPy arrays. No image
-    metadata was included in these versions.
-    
-    This decorator allows the Datastore to work with both NumPy arrays and
-    TiffFile objects, the latter of which holds the Tiff metadata as well as
-    image data.
+    Place this decorator before functions like build() and put() that require
+    a file to be locked before writing data to the file. This prevents multiple
+    HDFDatastore instances from writing to the same file at the same time.
     
     Parameters
     ----------
-    writeImageData        : function       
-        Used to write image data into the datastore.
-        
+    writeFunc    : function
+        The function call of the Datastore to be called.
+    
     Returns
     -------
-    writeImageDataAndTags : function
-        Bound function for writing image data and Tiff tags.
-        
-    References
-    ----------
-    1. https://pypi.python.org/pypi/tifffile
-       
-    """
-    def writeImageDataAndTags(self, atom):
-        """Separates image data from Tiff tags and writes them separately.
-        
-        Parameters
-        ----------
-        atom : Dataset
-            The atom (or Dataset) to write into the datastore. If it's a
-            TiffFile, the image metadata will be saved as well.
-        
-        """
-        MM_PixelSize = config.__MM_PixelSize__
-        
-        if isinstance(atom.data, TiffFile):
-            # Write the TiffFile metadata to the HDF file; otherwise do nothing
-            # First, get the Tiff tags; pages[0] assumes there is only one
-            # image in the Tiff file.
-            tags = dict(atom.data.pages[0].tags.items())
-            
-            with h5py.File(self._dsName, mode = 'a') as hdf:
-                dt      = h5py.special_dtype(vlen=str)
-                
-                # Start by writing just the OME-XML
-                # Note: omexml data is a byte string; the text is UTF-8 encoded
-                # See http://docs.h5py.org/en/latest/strings.html for more info
-                if 'image_description' in tags:
-                    keyName = self._genKey(atom) + '/OME-XML'
-                    omexml  = tags['image_description'].value
-                
-                    hdf.create_dataset(keyName, (1,), dtype = dt, data=omexml)
-                    
-                    try:
-                        # Write the element_size_um tag if its present in the
-                        # OME-XML metadata.
-                        ome     = omexml.decode('utf-8', 'strict')
-                        stringX = re.search('PhysicalSizeX="(\d*\.?\d*)"',
-                                            ome).groups()[0]
-                        stringY = re.search('PhysicalSizeY="(\d*\.?\d*)"',
-                                            ome).groups()[0]
-                        pxSizeX = float(stringX)
-                        pxSizeY = float(stringY)
-                        
-                        # Ensure that the units is microns
-                        pxUnitsX = re.search('PhysicalSizeXUnit="(\D\D?)"',
-                                             ome).groups()[0].encode()
-                        pxUnitsY = re.search('PhysicalSizeYUnit="(\D\D?)"',
-                                             ome).groups()[0].encode()
-                        assert pxUnitsX == b'\xc2\xb5m', 'OME-XML units not um'
-                        assert pxUnitsY == b'\xc2\xb5m', 'OME-XML units not um'
+    lockCheck     : function
 
-                        self.widefieldPixelSize = (pxSizeX, pxSizeY)
-                        
-                    except (AttributeError, AssertionError):
-                        # When no PhysicalSizeX,Y XML tags are found, or the
-                        # the units are not microns, move on to looking inside
-                        # the MM metadata.                       
-                        pass
-                
-                # Micro-Manager device states metadata is a JSON string
-                if 'micromanager_metadata' in tags:
-                    keyName = self._genKey(atom) + '/MM_Metadata'
-                    mmmd    = json.dumps(tags['micromanager_metadata'].value)
-                    
-                    hdf.create_dataset(keyName, (1,), dtype = dt, data = mmmd)
-                
-                # Micro-Manager summary metadata in JSON string
-                if atom.data.is_micromanager:
-                    keyName  = self._genKey(atom) + '/MM_Summary_Metadata'
-                    metaDict = atom.data.micromanager_metadata
-                    mmsmd    = json.dumps(metaDict)
-                
-                    hdf.create_dataset(keyName, (1,), dtype = dt, data = mmsmd)
-                    
-                    # Write the element_size_um tag if its present in the
-                    # Micro-Manager metadata (this has priority over OME-XML
-                    # due to its position here)
-                    if MM_PixelSize in metaDict['summary'] \
-                                           and self.widefieldPixelSize is None:
-                        pxSize = metaDict['summary'][MM_PixelSize]
-                        self.widefieldPixelSize = (pxSize, pxSize)
-            
-            # Convert atom.data to a NumPy array before writing image data
-            atom.data = atom.data.asarray()
-            
-        writeImageData(self, atom)
+    """
+    def lockCheck(self, *args, **kwargs):
+        if not self._lock.is_locked:
+            raise FileNotLocked('Error: File is not locked for writing. Use '
+                                'this Datastore inside a with...as block.')
         
-    return writeImageDataAndTags
+        writeFunc(self, *args, **kwargs)
+        
+    return lockCheck
 
 """Metaclasses
 -------------------------------------------------------------------------------
@@ -388,6 +300,7 @@ class HDFDatastore(Datastore):
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
     
+    @hdfLockCheck
     def build(self, parser, searchDirectory, filenameStrings, dryRun = False,
               **kwargs):
         """Builds a datastore by traversing a directory for experimental files.
@@ -597,7 +510,7 @@ class HDFDatastore(Datastore):
             file[self._persistenceKey] = np.void(picklestring)
         
     def _genDataset(self, dsID):
-        """Generate a dataset with an empty data attribute from a DatasetID.
+        """Generate a Dataset with an empty data attribute from a DatasetID.
         
         Parameters
         ----------
@@ -789,7 +702,8 @@ class HDFDatastore(Datastore):
         except OSError:
             # File doesn't exist, so don't try to update
             pass
-            
+    
+    @hdfLockCheck        
     def put(self, dataset, **kwargs):
         """Writes data from a single dataset into the datastore.
         

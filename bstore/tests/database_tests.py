@@ -25,6 +25,7 @@ from pandas       import DataFrame
 from numpy.random import rand
 from numpy        import array_equal
 from os           import remove
+import sys
 import pickle
 import h5py
 import filelock
@@ -563,3 +564,66 @@ def test_HDFDatastore_State_Updates_Correctly():
     config.__Registered_DatasetTypes__ = temp
     if dsName.exists():
         remove(str(dsName))
+
+@raises(database.FileNotLocked)        
+def test_HDFDatastore_Requires_Context_Manager_During_Build():
+    """HDFDatadatastore must be used in a with...as block when using build().
+    
+    """
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt',
+        'WidefieldImage' : '.tif'}
+    
+    myDS = database.HDFDatastore(dsName)
+    
+    try:
+        # Error! myDS.build() not used inside with...as block
+        myDS.build(
+            parser, dsName.parent, filenameStrings, readTiffTags = False)
+    except database.FileNotLocked:
+        # Clean-up the file and reset the registered types
+        config.__Registered_DatasetTypes__ = temp
+        if dsName.exists():
+            remove(str(dsName))
+        raise(database.FileNotLocked('Error: File is not locked for writing.'))
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
+        
+@raises(database.FileNotLocked)        
+def test_HDFDatastore_Requires_Context_Manager_During_Put():
+    """HDFDatadatastore must be used in a with...as block when using put().
+    
+    """
+    dbName = testDataRoot / Path('database_test_files/myDB.h5')
+    if dbName.exists():
+        remove(str(dbName))
+    
+    myDS  = TestType.TestType(datasetIDs = {'prefix' : 'Cos7', 'acqID' : 1,
+                                   'channelID' : 'A647', 'posID' : (0,)})
+
+    myDS.data  = data.as_matrix()
+    myDB = database.HDFDatastore(dbName)
+        
+    try:
+        # Error! myDS.build() not used inside with...as block
+        myDB.put(myDS)
+    except database.FileNotLocked:
+        # Clean-up the file and reset the registered types
+        if dbName.exists():
+            remove(str(dbName))
+        raise(database.FileNotLocked('Error: File is not locked for writing.'))
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
