@@ -27,6 +27,7 @@ from numpy        import array_equal
 from os           import remove
 import pickle
 import h5py
+import filelock
 import bstore.datasetTypes.TestType as TestType
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
@@ -478,7 +479,7 @@ def test_HDFDatastore_Context_Manager():
     if dsName.exists():
         remove(str(dsName))
 
-@raises(database.FileNotLocked)        
+@raises(filelock.Timeout)        
 def test_HDFDatastore_Context_Manager_Locks_File():
     """HDFDatastores locks files for writing inside the context manager.
     
@@ -497,25 +498,28 @@ def test_HDFDatastore_Context_Manager_Locks_File():
         'Localizations'  : '.csv',
         'LocMetadata'    : '.txt'} # Note that widefield images aren't included
     
-    # badDS refers to the same file as myDS
-    badDS = database.HDFDatastore(dsName)    
-    
-    # Use the Datastore as a context manager
-    with database.HDFDatastore(dsName) as myDS:
-        myDS.build(
-            parser, dsName.parent, filenameStrings, readTiffTags = False)
-    
-    # File lock prevents badDS from adding widefield images
     try:
-        badDS.build(
-            parser, dsName.parent,
-            {'WidefieldImage': '.tif'}, readTiffTags = False)
-    
-    finally:    
+        # Use the Datastore as a context manager
+        with database.HDFDatastore(dsName) as myDS:
+            myDS.build(
+                parser, dsName.parent, filenameStrings, readTiffTags = False)
+            
+            with database.HDFDatastore(dsName) as badDS:
+                # The file should be locked so that the other HDFDatastore
+                # instance cannot perform the build inside the original's
+                # context. # Widefield images will therefore not be included
+                # in the build.
+                badDS.build(
+                    parser, dsName.parent,
+                    {'WidefieldImage': '.tif'}, readTiffTags = False)
+    except filelock.Timeout:
         # Clean-up the file and reset the registered types
         config.__Registered_DatasetTypes__ = temp
         if dsName.exists():
             remove(str(dsName))
+        
+        # rethrow the error
+        raise(filelock.Timeout(dsName))
             
 def test_HDFDatastore_State_Updates_Correctly():
     """HDFDatastores locks files for writing inside the context manager.

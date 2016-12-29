@@ -333,14 +333,14 @@ class HDFDatastore(Datastore):
         self._persistenceKey = config.__Persistence_Key__
         
         # Lock file to prevent concurrent writes
-        self._lock = filelock.FileLock(str(dsName))
+        self._lock = filelock.FileLock(str(dsName) + '.lock')
         
     def __enter__(self):
         """For context managers; updates self._datasets then locks HDF file.
         
         """
         self._loads()
-        self._lock.acquire()
+        self._lock.acquire(timeout = 0) # timeout = 0 -> try only once
         return self
     
     def __exit__(self, *args):
@@ -437,10 +437,6 @@ class HDFDatastore(Datastore):
                         self.put(parser.dataset)
                     
                     datasets.append(self._unpackDatasetIDs(parser.dataset))
-                except FileNotLocked:
-                    raise FileNotLocked(
-                        ('Error: %s is not locked '
-                         'for writing' % str(self._dsName)))
                 except Exception as err:
                     print(("Unexpected error in build():"),
                     sys.exc_info()[0])
@@ -802,8 +798,6 @@ class HDFDatastore(Datastore):
         dataset : Dataset
         
         """
-        if not self._lock.is_locked:
-            raise FileNotLocked('Error: File is not locked for writing.')
         assert dataset.datasetType in config.__Registered_DatasetTypes__,\
             'Type {0} is unregistered.'.format(dataset.datasetType)
         if dataset.attributeOf:
@@ -874,17 +868,17 @@ class HDFDatastore(Datastore):
         # Note: If you use Path and Not PurePosixPath, '/' will
         # become '\\' on Windows and you won't get the right keys.
         resultKeys = list(map(PurePosixPath, resultGroups))
-        atomicIDs  = [self._genDatasetID(str(key)) for key in resultKeys]
+        dsIDs      = [self._genDatasetID(str(key)) for key in resultKeys]
                                            
         # Convert datasetType for the attributes special case
         if tempDS.attributeOf:
-            for (index, atom) in enumerate(atomicIDs):
+            for (index, atom) in enumerate(dsIDs):
                 # Can't set atom attributes directly, so make new ones
-                atomicIDs[index] = DatasetID(atom.prefix, atom.acqID,
+                dsIDs[index] = DatasetID(atom.prefix, atom.acqID,
                     tempDS.datasetType, tempDS.attributeOf, atom.channelID,
                     atom.dateID, atom.posID, atom.sliceID)
         
-        return atomicIDs
+        return dsIDs
         
     def _sortDatasets(self, dsInfo):
         """Sorts and organizes all datasets before a Datastore build.
@@ -971,7 +965,7 @@ class HDFDatastore(Datastore):
         return ids
     
     def _writeDatasetIDs(self, ds, key = None, ids = None):
-        """Writes B-Store dataset IDs as attributes of the dataset.
+        """Writes B-Store dataset IDs as HDF attributes of the dataset.
         
         Parameters
         ----------
