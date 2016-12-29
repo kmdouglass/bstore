@@ -6,7 +6,6 @@ from pathlib import PurePath, Path, PurePosixPath
 from abc import ABCMeta, abstractmethod, abstractproperty
 import numpy as np
 import h5py
-import json
 import bstore.config as config
 import sys
 import pprint
