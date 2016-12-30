@@ -22,11 +22,6 @@ __version__ = config.__bstore_Version__
 
 pp = pprint.PrettyPrinter(indent=4)  
 
-def _checkType(typeString):
-    if typeString not in config.__Registered_DatasetTypes__:
-        raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
-                                                                   typeString))
-
 """Decorators
 -------------------------------------------------------------------------------
 """
@@ -258,7 +253,7 @@ class HDFDatastore(Datastore):
         
         """
         self._loads()
-        self._lock.acquire(timeout = 0) # timeout = 0 -> try only once
+        self._lock.acquire(timeout = 0) # timeout = 0 -> try acquire only once
         return self
     
     def __exit__(self, *args):
@@ -428,12 +423,6 @@ class HDFDatastore(Datastore):
               
         files = OrderedDict(sorted(files.items(), key=sortKey))
         return files
-        
-    def close(self):
-        """Releases the write lock on the HDF file.
-        
-        """
-        raise NotImplementedError
     
     def _checkForRegisteredTypes(self, typeList):
         """Verifies that each type in typeList is registered.
@@ -687,7 +676,8 @@ class HDFDatastore(Datastore):
             A complete dataset.
         
         """
-        assert dsID.datasetType in config.__Registered_DatasetTypes__
+        self._checkForRegisteredTypes(config.__Registered_DatasetTypes__)
+        #assert dsID.datasetType in config.__Registered_DatasetTypes__
 
         # Ensure that the key exists        
         keyExists, hdfKey, _ = self._checkKeyExistence(
@@ -926,15 +916,6 @@ class HDFDatastore(Datastore):
 """Exceptions
 -------------------------------------------------------------------------------
 """
-class DatasetError(Exception):
-    """Error raised when a bad datasetType is passed.
-    
-    """
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-        
 class DatasetIDError(Exception):
     """Error raised when a bad or missing dataset IDs are supplied.
     

@@ -176,10 +176,6 @@ class PositionParser(Parser):
             # Save the full path to the file for later.
             # If filename is already a Path object, this does nothing.
             self._fullPath = pathlib.Path(filename)        
-            
-            # Convert Path objects to strings if Path is supplied
-            #if isinstance(filename, pathlib.PurePath):
-            #    filename = str(filename.name)
     
             # Remove file type ending and any parent folders
             # Example: 'path/to/HeLa_Control_7.csv' becomes 'HeLa_Control_7'
