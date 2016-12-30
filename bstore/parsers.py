@@ -11,6 +11,7 @@ import sys
 import tkinter as tk
 import bstore.database as db
 import traceback
+import warnings
 
 __version__ = config.__bstore_Version__
 
@@ -192,11 +193,18 @@ class PositionParser(Parser):
                                                                   datasetType))
             dType             = getattr(mod, datasetType)
             self.dataset      = dType(datasetIDs = idDict)
-            self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
             if config.__Verbose__:
                 print(traceback.format_exc())
             raise ParseFilenameFailure('ParseFilenameError')
+        
+        # Read the data from file
+        try:
+            self.dataset.data = self.dataset.readFromFile(
+                                                 self._fullPath, **kwargs)
+        except:
+            warnings.warn('Warning: Filename successfully parsed, but no data '
+                          'was read from the file.')
                                         
     def _parse(self, rootName):
         """Actually does the work of splitting the name and finding IDs.
@@ -211,7 +219,14 @@ class PositionParser(Parser):
         
         """
         idDict = {}
-        for pos, field in enumerate(rootName.split(self.sep)):
+        fields = rootName.split(self.sep)
+        
+        if max(self.positionIDs.keys()) + 1 > len(fields):
+            # Raises an error if more fields are supplied than are present in
+            # the filename.
+            raise ParseFilenameFailure('ParseFilenameError')
+        
+        for pos, field in enumerate(fields):
             # Skip empty or positions or those marked None
             if pos not in self.positionIDs or self.positionIDs[pos] is None:
                 continue
@@ -423,11 +438,18 @@ class SimpleParser(Parser):
                 'bstore.datasetTypes.{0:s}'.format(datasetType))
             dType             = getattr(mod, datasetType)
             self.dataset      = dType(datasetIDs = idDict)
-            self.dataset.data = self.dataset.readFromFile(self._fullPath)
         except:
             self.dataset = None
             raise ParseFilenameFailure(('Error: File could not be parsed.',
                                         sys.exc_info()[0]))
+                                        
+        # Read the data from file
+        try:
+            self.dataset.data = self.dataset.readFromFile(
+                                                 self._fullPath, **kwargs)
+        except:
+            warnings.warn('Warning: Filename successfully parsed, but no data '
+                          'was read from the file.')
 
 """
 Exceptions
