@@ -108,7 +108,10 @@ class Localizations(bstore.database.Dataset):
             
         """
         if 'reader' in kwargs:
-            return kwargs['reader'](str(filePath), **kwargs)
+            reader = kwargs['reader']
+            del(kwargs['reader'])
+            
+            return reader(str(filePath), **kwargs)
         else:
             # Default read behavior
             return pd.read_csv(str(filePath))

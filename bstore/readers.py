@@ -66,6 +66,8 @@ class CSVReader(Reader):
             key-value arguments to pass to the csv reading machinery.
             
         """
+        # TODO: Inspect read_csv and pull out only its keyword arguments from
+        # **kwargs. This will prevent errors in passing unrecognized kwargs.
         return pd.read_csv(filename, **kwargs)
     
     def __repr__(self):
