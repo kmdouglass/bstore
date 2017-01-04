@@ -13,7 +13,17 @@ import sys
 class Localizations(bstore.database.Dataset):
     """DatasetType representing localization information.
     
+    Localizations are represented internally by Pandas DataFrame objects.
+    
+    Attributes
+    ----------
+    INTERNALTYPE : DataFrame
+        The structure that holds the actual data for this datasetType. This is
+        is used to match this datasetType to the appropriate Reader.
+        
     """
+    INTERNALTYPE = pd.DataFrame    
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
@@ -97,7 +107,8 @@ class Localizations(bstore.database.Dataset):
         Pandas DataFrame
             
         """
-        if 'sep' in kwargs:
-            return pd.read_csv(str(filePath), sep = kwargs['sep'])
+        if 'reader' in kwargs:
+            return kwargs['reader'](str(filePath), **kwargs)
         else:
+            # Default read behavior
             return pd.read_csv(str(filePath))

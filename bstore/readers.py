@@ -3,7 +3,6 @@
 # See the LICENSE.txt file for more details.
 
 from abc import ABCMeta, abstractmethod
-import bstore.datasetTypes as dsTypes
 
 import pandas as pd
 
@@ -11,34 +10,15 @@ import pandas as pd
 -------------------------------------------------------------------------------
 """
 class Reader(metaclass = ABCMeta):
-    """Reads the data for a given datasetType from file.
+    """Reads the data for a given DatasetType from file.
     
-    The constructor checks that a Reader instance matches a datasetType that is
-    already defined in B-Store.
-    
-    Parameters
-    ----------
-    instanceTypes : set of str
-        The datasetTypes that the reader may be used with.
-        
-    Attributes
-    ----------
-    DATASETTYPE : set of str
-        The datasetTypes that the reader may be used with.
-    
-    """
-    DATASETTYPE = set()    
-    
-    def __init__(self, instanceTypes):
-        # Check that datasetType is defined in B-Store
-        if not (instanceTypes & set(dsTypes.__all__)):
-            raise DatasetTypeError(
-                'Error: {:s} is not a recognized dataset type.'.format(
-                    self.datasetType))
-    
+    """    
     @abstractmethod
     def __call__(self, filename, **kwargs):
         """Reads the data inside a file into a Python object.
+        
+        Note that a return type function annotation must be specified in the
+        concrete methods to automatically match a Reader with a DatasetType.
         
         Parameters
         ----------
@@ -70,25 +50,12 @@ class CSVReader(Reader):
     different parameters to be adjusted, such as the value separator. For an
     explanation of the parameters, see the reference below.
     
-    Attributes
-    ----------
-    DATASETTYPE : set of str
-        The datasetTypes that the reader may be used with.
-    
     References
     ----------
     http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html
     
-    """
-    DATASETTYPE = {'Localizations', 
-                   'WidefieldImage',
-                   'AverageFiducial',
-                   'FiducialTracks'}    
-    
-    def __init__(self):
-        super(Reader, self).__init__(self.DATASETTYPE)
-        
-    def __call__(self, filename, **kwargs):
+    """        
+    def __call__(self, filename, **kwargs) -> pd.DataFrame:
         """Calls the CSV reading machinery.
         
         Parameters
@@ -105,7 +72,7 @@ class CSVReader(Reader):
         return 'CSVReader()'
     
     def __str__(self):
-        return 'Generic CSV Reader'
+        return 'Generic CSV File Reader'
 
 """Exceptions
 -------------------------------------------------------------------------------
