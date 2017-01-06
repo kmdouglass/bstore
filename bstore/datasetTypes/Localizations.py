@@ -109,8 +109,6 @@ class Localizations(bstore.database.Dataset):
         """
         if 'reader' in kwargs:
             reader = kwargs['reader']
-            del(kwargs['reader'])
-            
             return reader(str(filePath), **kwargs)
         else:
             # Default read behavior
