@@ -96,4 +96,5 @@ def test_CSVReader_Works_With_Parser():
     assert_equal(len(parser.dataset.data), 11)
     
 # TODO: Write unit test for CSVReader.__signature__ by checking that 'filename'
-# is the first parameter.
+# is the first parameter. This can be done once Readers are combined with the
+# reworked GUI.

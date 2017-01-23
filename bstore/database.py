@@ -53,7 +53,7 @@ def hdfLockCheck(writeFunc):
             raise FileNotLocked('Error: File is not locked for writing. Use '
                                 'this Datastore inside a with...as block.')
         
-        writeFunc(self, *args, **kwargs)
+        return writeFunc(self, *args, **kwargs)
         
     return lockCheck
 
