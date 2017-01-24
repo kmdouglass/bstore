@@ -19,6 +19,9 @@ from bstore import processors as proc
 from scipy.signal import fftconvolve
 from scipy.ndimage import zoom
 
+# Disable Matplotlib keyboard shortcuts
+plt.rcParams['keymap.fullscreen'] = ''
+
 
 class AlignToWidefield:
     """Aligns localizations to a corresponding widefield image.
@@ -482,7 +485,7 @@ class OverlayClusters:
                     self._currentClusterIndex -= 1
                     self._drawCurrentCluster(locs)
 
-            if event.key in ['g', 'G']:
+            if event.key in ['f', 'f']:
                 # Go forward one cluster
                 if self._currentClusterIndex != len(self._clusterIDs) - 1:
                     self._currentClusterIndex += 1
