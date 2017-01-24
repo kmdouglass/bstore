@@ -74,7 +74,7 @@ class CSVReader(Reader):
         # https://docs.python.org/3.5/library/inspect.html#inspect.Signature
         sig = inspect.signature(pd.read_csv)
         p1  = inspect.Parameter(
-            'filename', inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            'filename', inspect.Parameter.POSITIONAL_ONLY)
             
         newParams = [p1] + [param for name, param in sig.parameters.items()
                                   if name != 'filepath_or_buffer']
