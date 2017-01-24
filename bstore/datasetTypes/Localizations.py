@@ -9,11 +9,22 @@ __version__ = bstore.config.__bstore_Version__
 import bstore.database
 import pandas as pd
 import sys
+import traceback
 
 class Localizations(bstore.database.Dataset):
     """DatasetType representing localization information.
     
+    Localizations are represented internally by Pandas DataFrame objects.
+    
+    Attributes
+    ----------
+    INTERNALTYPE : DataFrame
+        The structure that holds the actual data for this datasetType. This is
+        is used to match this datasetType to the appropriate Reader.
+        
     """
+    INTERNALTYPE = pd.DataFrame    
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
@@ -80,6 +91,9 @@ class Localizations(bstore.database.Dataset):
                     data_columns = True, index = False)
         except:
             print("Unexpected error in put():", sys.exc_info()[0])
+            
+            if bstore.config.__Verbose__:
+                print(traceback.format_exc())
         finally:
             hdf.close()
     
@@ -97,7 +111,9 @@ class Localizations(bstore.database.Dataset):
         Pandas DataFrame
             
         """
-        if 'sep' in kwargs:
-            return pd.read_csv(str(filePath), sep = kwargs['sep'])
+        if 'reader' in kwargs:
+            reader = kwargs['reader']
+            return reader(str(filePath), **kwargs)
         else:
+            # Default read behavior
             return pd.read_csv(str(filePath))

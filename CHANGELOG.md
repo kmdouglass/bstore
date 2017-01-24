@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 - `HDFDatastore` objects are now persistent; their state is saved to
   the HDF file every time a dataset is put into the datastore, which
   includes datastore builds.
+- There are now so-called `Reader` objects for reading raw
+  localization files. A `Reader` is passed as a keyword argument to a
+  `Parser`'s `readFromFile()` routine and may be used to read
+  different types of localization file formats. Currently, only a
+  `CSVReader` for reading general CSV files is available; it's only
+  available for Localization datasetTypes; and it is not accessible
+  through the GUI. Specific implmentations of various `Reader` objects
+  should follow in later versions. The `CSVReader` uses the Pandas
+  [read_csv](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html)
+  method. Any keyword argument that `read_csv()` takes may be passed
+  as a keyword argument to `readFromFile()`.
 
 ### Changed
 - `HDFDatastore` now require Python *with...as...* statements

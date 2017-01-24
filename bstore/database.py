@@ -22,16 +22,11 @@ __version__ = config.__bstore_Version__
 
 pp = pprint.PrettyPrinter(indent=4)  
 
-def _checkType(typeString):
-    if typeString not in config.__Registered_DatasetTypes__:
-        raise DatasetError('Invalid datasetType; \'{:s}\' provided.'.format(
-                                                                   typeString))
-
 """Decorators
 -------------------------------------------------------------------------------
 """
 def hdfLockCheck(writeFunc):
-    """Decorator to check whether a HDF file is locked for writing.
+    """Checks whether a HDF file is locked for writing; raises an error if not.
     
     Place this decorator before functions like build() and put() that require
     a file to be locked before writing data to the file. This prevents multiple
@@ -48,11 +43,17 @@ def hdfLockCheck(writeFunc):
 
     """
     def lockCheck(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        self : HDFDatastore instance
+        
+        """
         if not self._lock.is_locked:
             raise FileNotLocked('Error: File is not locked for writing. Use '
                                 'this Datastore inside a with...as block.')
         
-        writeFunc(self, *args, **kwargs)
+        return writeFunc(self, *args, **kwargs)
         
     return lockCheck
 
@@ -125,7 +126,7 @@ class Dataset(metaclass = ABCMeta):
     
     """
     def __init__(self, datasetIDs = {}):
-        self._data       = None        
+        self._data       = None       
         self._datasetIDs = datasetIDs
         
     @abstractmethod
@@ -185,7 +186,7 @@ class Dataset(metaclass = ABCMeta):
 """
 DatasetID = namedtuple('DatasetID', ('prefix acqID datasetType attributeOf '
                                      'channelID dateID posID sliceID'))
-"""Dataset IDs used the HDFDatastore
+"""Dataset IDs used by the HDFDatastore
 
 prefix      = The descriptive name given to the dataset by the user.
 acqID       = Acquisition ID number; an integer.
@@ -195,6 +196,7 @@ channelID   = (optional) String for the channel (color).
 dateID      = (optional) The date the dataset was acquired.
 posID       = (optional) One or two-tuple of integers.
 sliceID     = (optional) Single integer of the axial slice.
+
 """
 _optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID')
 
@@ -251,7 +253,7 @@ class HDFDatastore(Datastore):
         
         """
         self._loads()
-        self._lock.acquire(timeout = 0) # timeout = 0 -> try only once
+        self._lock.acquire(timeout = 0) # timeout = 0 -> try acquire only once
         return self
     
     def __exit__(self, *args):
@@ -295,6 +297,7 @@ class HDFDatastore(Datastore):
         return 'HDFDatastore(\'{0:s}\', widefieldPixelSize = {1:s})'.format(
                    self._dsName,
                    pxSizeStr)
+                   
     @property
     def attrPrefix(self):
         return config.__HDF_AtomID_Prefix__
@@ -330,10 +333,12 @@ class HDFDatastore(Datastore):
             
         self._checkForRegisteredTypes(list(filenameStrings.keys()))
             
-        # Obtain a list of all the files, with non-attribute files first
+        # Obtain a list of all the files, with non-attribute files first.
+        # Sorting them like this prevents errors that would occur when writing
+        # attributes to non-existent keys in the HDF file.
         files = self._buildFileList(searchDirectory, filenameStrings)
         
-        # Keep a running record of what datasets were parsed
+        # Keep a running record of what datasets were succesffully parsed
         datasets = []   
                 
         # files is an OrderedDict. Non-attributes are built before attributes.
@@ -341,9 +346,8 @@ class HDFDatastore(Datastore):
             # files[currType] returns a list of string
             for currFile in files[currType]:
                 try:
-                    parser.parseFilename(currFile, datasetType = currType)
-                    parser.dataset.data = parser.dataset.readFromFile(
-                        currFile, **kwargs)
+                    parser.parseFilename(
+                        currFile, datasetType = currType, **kwargs)
                     
                     if not dryRun:
                         self.put(parser.dataset)
@@ -419,12 +423,6 @@ class HDFDatastore(Datastore):
               
         files = OrderedDict(sorted(files.items(), key=sortKey))
         return files
-        
-    def close(self):
-        """Releases the write lock on the HDF file.
-        
-        """
-        raise NotImplementedError
     
     def _checkForRegisteredTypes(self, typeList):
         """Verifies that each type in typeList is registered.
@@ -678,7 +676,8 @@ class HDFDatastore(Datastore):
             A complete dataset.
         
         """
-        assert dsID.datasetType in config.__Registered_DatasetTypes__
+        self._checkForRegisteredTypes(config.__Registered_DatasetTypes__)
+        #assert dsID.datasetType in config.__Registered_DatasetTypes__
 
         # Ensure that the key exists        
         keyExists, hdfKey, _ = self._checkKeyExistence(
@@ -917,15 +916,6 @@ class HDFDatastore(Datastore):
 """Exceptions
 -------------------------------------------------------------------------------
 """
-class DatasetError(Exception):
-    """Error raised when a bad datasetType is passed.
-    
-    """
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-        
 class DatasetIDError(Exception):
     """Error raised when a bad or missing dataset IDs are supplied.
     

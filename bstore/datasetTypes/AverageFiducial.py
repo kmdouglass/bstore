@@ -9,6 +9,7 @@ __version__ = bstore.config.__bstore_Version__
 import bstore.database
 import pandas as pd
 import sys
+import traceback
 
 class AverageFiducial(bstore.database.Dataset):
     """Contains the average trajectory of many fiducial markers.
@@ -80,6 +81,9 @@ class AverageFiducial(bstore.database.Dataset):
                     data_columns = True, index = False)
         except:
             print("Unexpected error in put():", sys.exc_info()[0])
+            
+            if bstore.config.__Verbose__:
+                print(traceback.format_exc())
         finally:
             hdf.close()
     

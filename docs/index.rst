@@ -32,6 +32,7 @@ Using B-Store
    quickstart
    database
    analysis
+   file_io
    other_programs
    faq
    acknowledgments
