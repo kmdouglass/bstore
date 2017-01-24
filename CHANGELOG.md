@@ -9,14 +9,23 @@ All notable changes to this project will be documented in this file.
 - There are now so-called `Reader` objects for reading raw
   localization files. A `Reader` is passed as a keyword argument to a
   `Parser`'s `readFromFile()` routine and may be used to read
-  different types of localization file formats. Currently, only a
-  `CSVReader` for reading general CSV files is available; it's only
-  available for Localization datasetTypes; and it is not accessible
-  through the GUI. Specific implmentations of various `Reader` objects
-  should follow in later versions. The `CSVReader` uses the Pandas
+  different types of localization file formats.
+- Currently, `CSVReader` for reading general CSV files and
+  `JSONReader` for reading JSON data are available. For the moment,
+  these are only usable for Localization datasetTypes; they are not
+  accessible through the GUI. More specific implmentations of various
+  `Reader` objects should follow in later versions. The `CSVReader`
+  uses the Pandas
   [read_csv](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html)
   method. Any keyword argument that `read_csv()` takes may be passed
-  as a keyword argument to `readFromFile()`.
+  as a keyword argument to `readFromFile()`. Likewise, the
+  `JSONReader` uses the Pandas
+  [read_json](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html)
+  method and is similarly customizable.
+- The
+  [examples](https://github.com/kmdouglass/bstore/tree/master/examples)
+  folder now includes a Jupyter notebook demonstrating how to write
+  your own Reader.
 
 ### Changed
 - `HDFDatastore` now require Python *with...as...* statements
@@ -29,7 +38,9 @@ All notable changes to this project will be documented in this file.
 - The order of the fields in the GUI's HDFDatastore build dialog was
   changed to better match the inputs->parameters->outputs mental model
   of how the build process occurs.
-  
+
+### Fixed
+- Redundant calls to `readFromFile` inside the Parsers was removed.
 
 ## [v1.0.1]
 ## Added	
