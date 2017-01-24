@@ -72,7 +72,8 @@ class CSVReader(Reader):
     def __init__(self):
         # Create the custom call signature for this Reader
         # https://docs.python.org/3.5/library/inspect.html#inspect.Signature
-        sig = inspect.signature(pd.read_csv)
+        f   = pd.read_csv
+        sig = inspect.signature(f)
         p1  = inspect.Parameter(
             'filename', inspect.Parameter.POSITIONAL_ONLY)
             
@@ -113,6 +114,65 @@ class CSVReader(Reader):
     
     def __str__(self):
         return 'Generic CSV File Reader'
+        
+class JSONReader(Reader):
+    """Reads data from a generic JSON (CSV) file.
+    
+    This reader utilizes the Pandas read_json() function, which allows many
+    different parameters to be adjusted while reading JSON files.
+    
+    The constructor for JSONReader creates the class's custom call signature.
+    
+    References
+    ----------
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html
+    
+    """
+    def __init__(self):
+        # Create the custom call signature for this Reader
+        # https://docs.python.org/3.5/library/inspect.html#inspect.Signature
+        f   = pd.read_json
+        sig = inspect.signature(f)
+        p1  = inspect.Parameter(
+            'filename', inspect.Parameter.POSITIONAL_ONLY)
+            
+        newParams = [p1] + [param for name, param in sig.parameters.items()
+                                  if name != 'filepath_or_buffer']
+                                    
+        self._sig = sig.replace(parameters = newParams)
+    
+    def __call__(self, filename, **kwargs):
+        """Calls the JSON reading machinery.
+        
+        Parameters
+        ----------
+        filename : str, Path, or buffer object
+            The filename of the file containing the data.
+        **kwargs : dict
+            key-value arguments to pass to the csv reading machinery.
+            
+        Returns
+        -------
+        Pandas DataFrame
+            
+        """
+        # Inspect read_csv and pull out only its keyword arguments from
+        # **kwargs. This will prevent errors in passing unrecognized kwargs.
+        kwargs = {k: v for k, v in kwargs.items()
+                       if k in self.__signature__.parameters
+                       and k != 'filename'}        
+        
+        return pd.read_json(filename, **kwargs)
+    
+    def __repr__(self):
+        return('JSONReader()')
+    
+    @property
+    def __signature__(self):
+        return self._sig
+    
+    def __str__(self):
+        return 'Generic JSON File Reader'
 
 """Exceptions
 -------------------------------------------------------------------------------

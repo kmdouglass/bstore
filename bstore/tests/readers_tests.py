@@ -94,7 +94,79 @@ def test_CSVReader_Works_With_Parser():
     assert_equal(parser.dataset.data['x'].iloc[1], 7958.1)
     assert_equal(len(parser.dataset.data.columns), 9)
     assert_equal(len(parser.dataset.data), 11)
+
+def test_JSONReader_Columns_Format():
+    """JSONReader reads JSON files formatted by columns.
     
-# TODO: Write unit test for CSVReader.__signature__ by checking that 'filename'
-# is the first parameter. This can be done once Readers are combined with the
-# reworked GUI.
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html
+    
+    """
+    filePath = testDataRoot / Path('readers_test_files/json/columns')
+    filename = filePath / Path('HeLaL_Control_1.json')
+    reader = readers.JSONReader()
+    
+    # Read the data from file
+    data = reader(filename)
+    
+    # Verify data was read correctly
+    assert_equal(len(data.columns), 9)
+    assert_equal(len(data), 11)
+    
+def test_JSONReader_Index_Format():
+    """JSONReader reads JSON files formatted by index.
+    
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html
+    
+    """
+    filePath = testDataRoot / Path('readers_test_files/json/index/')
+    filename = filePath / Path('HeLaL_Control_1.json')
+    reader = readers.JSONReader()
+    
+    # Read the data from file
+    # orient is a keyword argument to Pandas read_json()
+    data = reader(filename, orient='index')
+    
+    # Verify data was read correctly
+    assert_equal(len(data.columns), 9)
+    assert_equal(len(data), 11)
+    
+def test_JSONReader_Kwargs():
+    """JSONReader passes keyword arguments to Pandas read_json() function.
+    
+    """
+    filePath = testDataRoot / Path('readers_test_files/json/columns/')
+    filename = filePath / Path('HeLaL_Control_1.json')
+    reader = readers.JSONReader()
+    
+    # Read the data from file
+    # precise_float is a keyword of the Pandas read_json() function
+    data = reader(filename, orient='columns', precise_float=True)
+    
+    # Verify data was read correctly
+    assert_equal(len(data.columns), 9)
+    assert_equal(len(data), 11)
+    
+def test_JSONReader_Works_With_Parser():
+    """JSONReader is correctly passed to readFromFile() from SimpleParser.
+    
+    """
+    filePath = testDataRoot / Path('readers_test_files/json/index/')
+    filename = filePath / Path('HeLaL_Control_1.json')
+    
+    # Initialize the Parser and Reader                        
+    parser = parsers.SimpleParser()
+    reader = readers.JSONReader()
+    
+    # reader keyword argument passes the CSVReader instance;
+    # all other keyword arguments are passed to JSONReader's __call__ function.
+    parser.parseFilename(
+        filename, datasetType='Localizations', reader=reader, orient='index')
+    
+    
+    
+    # Test a couple of the localization results
+    assert_equal(parser.dataset.data['x'].iloc[0], 6770)
+    assert_equal(parser.dataset.data['intensity'].iloc[0],4386.6)
+    assert_equal(parser.dataset.data['x'].iloc[1], 7958.1)
+    assert_equal(len(parser.dataset.data.columns), 9)
+    assert_equal(len(parser.dataset.data), 11)
