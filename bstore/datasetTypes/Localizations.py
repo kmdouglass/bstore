@@ -112,7 +112,7 @@ class Localizations(bstore.database.Dataset):
         Pandas DataFrame
 
         """
-        if 'reader' in kwargs:
+        if ('reader' in kwargs) and (kwargs['reader']):
             reader = kwargs['reader']
             return reader(str(filePath), **kwargs)
         else:

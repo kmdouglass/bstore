@@ -21,7 +21,7 @@ config.__Registered_DatasetTypes__.append('AverageFiducial')
 
 from bstore.datasetTypes.AverageFiducial import AverageFiducial
 from bstore                        import database as db
-from bstore                        import parsers
+from bstore                        import parsers, readers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
@@ -142,7 +142,8 @@ def test_HDF_Datastore_Build_with_AverageFiducial():
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
-                                            4 : 'acqID'})    
+                                            4 : 'acqID'})
+    readerDict = {'AverageFiducial': readers.CSVReader()}    
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
@@ -150,7 +151,8 @@ def test_HDF_Datastore_Build_with_AverageFiducial():
     # Build datastore
     with db.HDFDatastore(dbName) as myDB:
         myDB.build(parser, searchDirectory,
-                   filenameStrings   = {'AverageFiducial' : '_AvgFid.dat'},
+                   filenameStrings={'AverageFiducial' : '_AvgFid.dat'},
+                   readers=readerDict,
                    dryRun = False)
     
     # Test for existence of the data

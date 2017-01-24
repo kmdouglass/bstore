@@ -10,12 +10,15 @@ All notable changes to this project will be documented in this file.
   localization files. A `Reader` is passed as a keyword argument to a
   `Parser`'s `readFromFile()` routine and may be used to read
   different types of localization file formats.
+- `HDFDatastore.build()` now allows one to specify Readers for
+  different DatasetTypes via the `readers` parameter. By default, it
+  is an empty dict.
 - Currently, `CSVReader` for reading general CSV files and
   `JSONReader` for reading JSON data are available. For the moment,
-  these are only usable for Localization datasetTypes; they are not
-  accessible through the GUI. More specific implmentations of various
-  `Reader` objects should follow in later versions. The `CSVReader`
-  uses the Pandas
+  these are only usable for Localization, FiducialTracks, and
+  AverageFiducial DatasetTypes; they are not accessible through the
+  GUI. More specific implmentations of various `Reader` objects should
+  follow in later versions. The `CSVReader` uses the Pandas
   [read_csv](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html)
   method. Any keyword argument that `read_csv()` takes may be passed
   as a keyword argument to `readFromFile()`. Likewise, the

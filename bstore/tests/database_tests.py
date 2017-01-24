@@ -1,5 +1,5 @@
 # © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
-# Switzerland, Laboratory of Experimental Biophysics, 2016
+# Switzerland, Laboratory of Experimental Biophysics, 2016-2017
 # See the LICENSE.txt file for more details.
 
 """Unit tests for the database module.
@@ -19,7 +19,7 @@ from nose.tools   import assert_equal, assert_true, raises, ok_
 from bstore  import config
 config.__Registered_DatasetTypes__.append('TestType')
 
-from bstore       import database, parsers
+from bstore       import database, parsers, readers
 from pathlib      import Path
 from pandas       import DataFrame
 from numpy.random import rand
@@ -30,6 +30,7 @@ import pickle
 import h5py
 import filelock
 import bstore.datasetTypes.TestType as TestType
+import warnings
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -41,6 +42,14 @@ mdPre = config.__HDF_Metadata_Prefix__
 
 # Test data
 data = DataFrame(rand(5,2), columns = ['x', 'y'])
+
+def setup():
+    # Suppress warnings during tests to reduce noise
+    warnings.simplefilter("ignore")
+
+def teardown():
+    # Clear list of warning filters
+    warnings.resetwarnings()
 
 def test_Dataset_IDs():
     """Dataset IDs are assigned correctly.
@@ -632,3 +641,36 @@ def test_HDFDatastore_Requires_Context_Manager_During_Put():
     except:
         print("Unexpected error:", sys.exc_info()[0])
         raise
+        
+def test_HDFDatastore_Build_With_Reader():
+    """HDFDatastore.build() works when Reader objects are specified.
+    
+    """        
+    dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
+                                  'test_id_collection_temp.h5'))
+    if dsName.exists():
+        remove(str(dsName))
+    
+    temp = config.__Registered_DatasetTypes__.copy()
+    config.__Registered_DatasetTypes__ = [
+        'Localizations', 'LocMetadata', 'WidefieldImage']   
+        
+    parser = parsers.SimpleParser()
+    filenameStrings = {
+        'Localizations'  : '.csv',
+        'LocMetadata'    : '.txt',
+        'WidefieldImage' : '.tif'}
+    readersDict = {'Localizations': readers.CSVReader()}
+    
+    # Note sep and skiprows are keyword arguments of CSVReader; readTiffTags is
+    # a keyword argument for the WidefieldImage readfromFile() method
+    with database.HDFDatastore(dsName) as myDS:
+        res = myDS.build(parser, dsName.parent, filenameStrings,
+                         readers=readersDict, sep=',', skiprows=2,
+                         readTiffTags = False)
+        
+    config.__Registered_DatasetTypes__ = temp
+    if dsName.exists():
+        remove(str(dsName))
+        
+    assert_equal(len(res), 6)

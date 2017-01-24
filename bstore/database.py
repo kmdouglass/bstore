@@ -1,5 +1,5 @@
 # © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
-# Switzerland, Laboratory of Experimental Biophysics, 2016
+# Switzerland, Laboratory of Experimental Biophysics, 2016-2017
 # See the LICENSE.txt file for more details.
 
 from pathlib import PurePath, Path, PurePosixPath
@@ -315,8 +315,8 @@ class HDFDatastore(Datastore):
         return config.__HDF_AtomID_Prefix__
 
     @hdfLockCheck
-    def build(self, parser, searchDirectory, filenameStrings, dryRun=False,
-              **kwargs):
+    def build(self, parser, searchDirectory, filenameStrings, readers={},
+              dryRun=False, **kwargs):
         """Builds a datastore by traversing a directory for experimental files.
 
         Parameters
@@ -327,8 +327,15 @@ class HDFDatastore(Datastore):
             This directory and all subdirectories will be traversed.
         filenameStrings      : dict
             Dictionary of key-value pairs, where each key is the name of a
-            DataType and each value is a string contained by the end of the
+            DatasetType and each value is a string contained by the end of the
             files corresponding to that DataType.
+        readers              : dict
+            Dictionary of key-value pairs, where each key is the name of a
+            DatasetType and each value is an instance of a Reader object for
+            reading data from the corresponding files. DatasetTypes in readers
+            but not in filenameStrings are ignored; DatasetTypes in
+            filenameStrings but not in readers will use the default behavior
+            defined in each DatasetType.
         dryRun               : bool
             Test the datastore build without actually creating the datastore.
         **kwargs
@@ -355,11 +362,15 @@ class HDFDatastore(Datastore):
 
         # files is an OrderedDict. Non-attributes are built before attributes.
         for currType in files.keys():
+            # Extract the reader object for the currType if specified
+            reader = readers.get(currType)
+            
             # files[currType] returns a list of string
             for currFile in files[currType]:
                 try:
                     parser.parseFilename(
-                        currFile, datasetType=currType, **kwargs)
+                        currFile, datasetType=currType, reader=reader,
+                        **kwargs)
 
                     if not dryRun:
                         self.put(parser.dataset)

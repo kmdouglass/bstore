@@ -103,4 +103,9 @@ class AverageFiducial(bstore.database.Dataset):
         Pandas DataFrame
 
         """
-        return pd.read_csv(str(filePath))
+        if ('reader' in kwargs) and (kwargs['reader']):
+            reader = kwargs['reader']
+            return reader(str(filePath), **kwargs)
+        else:
+            # Default read behavior
+            return pd.read_csv(str(filePath))

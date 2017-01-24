@@ -23,7 +23,7 @@ config.__Registered_DatasetTypes__.append('FiducialTracks')
 #from bstore.generic_types.averageFiducial import averageFiducial
 from bstore.datasetTypes.FiducialTracks  import FiducialTracks
 from bstore                        import database as db
-from bstore                        import parsers
+from bstore                        import parsers, readers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
@@ -142,7 +142,9 @@ def test_HDF_Datastore_Build_with_fiducialtracks():
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
-                                            4 : 'acqID'})    
+                                            4 : 'acqID'})
+    readerDict = {'FiducialTracks': readers.CSVReader(),
+                  'AverageFiducial': readers.CSVReader()}
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
@@ -152,6 +154,7 @@ def test_HDF_Datastore_Build_with_fiducialtracks():
         myDB.build(parser, searchDirectory,
                    filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
                                         'AverageFiducial' : '_AvgFid.dat'},
+                   readers=readerDict,
                    dryRun = False)
     
     # Test for existence of the data
