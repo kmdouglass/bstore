@@ -644,8 +644,8 @@ class DefaultDriftComputer(ComputeTrajectories):
         super(ComputeTrajectories, self).__init__()
 
         # Column of DataFrame used to indicate what localizations are not
-        # included in a spline fit, e.g. outliers
-        self._includeColName = 'included_in_fit'
+        # included in a trajectory for a spline fit, e.g. outliers
+        self._includeColName = 'included_in_trajectory'
 
         # initial state
         self._init_coordCols = coordCols.copy()
