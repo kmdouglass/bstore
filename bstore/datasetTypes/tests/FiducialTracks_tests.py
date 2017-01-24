@@ -113,7 +113,7 @@ def test_fiducialTracks_Get_Data():
         
         # Create a new dataset containing only IDs to test getting of the data
         myNewDSID = db.DatasetID('test_prefix', 1, 'FiducialTracks', None,
-                                 None, None, None, None)
+                                 None, None, None, None, None)
         myNewDS = myDB.get(myNewDSID)
         ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
@@ -122,7 +122,8 @@ def test_fiducialTracks_Get_Data():
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)   
+        assert_equal(ids['sliceID'],                      None)
+        assert_equal(ids['replicateID'],                  None)
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)

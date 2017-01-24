@@ -76,20 +76,22 @@ def test_UnpackDatasetIDs():
     
     t1   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 1})
     t2   = TestType.TestType(datasetIDs = {'prefix' : 'HeLa', 'acqID' : 2,
-                                           'channelID' : 'A647',
-                                           'dateID'    : '2016-09-16',
-                                           'posID'     : (0,),
-                                           'sliceID'   : 1})
+                                           'channelID'   : 'A647',
+                                           'dateID'      : '2016-09-16',
+                                           'posID'       : (0,),
+                                           'sliceID'     : 1,
+                                           'replicateID' : 2})
     ids1 = myDB._unpackDatasetIDs(t1)
     ids2 = myDB._unpackDatasetIDs(t2)
     
     # Ground truths
     gt1  = dsID(prefix = 'HeLa', acqID = 1, datasetType = 'TestType',
                 attributeOf = None, channelID = None, dateID = None,
-                posID = None, sliceID = None)
+                posID = None, sliceID = None, replicateID = None)
     gt2  = dsID(prefix = 'HeLa', acqID = 2, datasetType = 'TestType',
                 attributeOf = None, channelID = 'A647',
-                dateID = '2016-09-16', posID = (0,), sliceID = 1)
+                dateID = '2016-09-16', posID = (0,), sliceID = 1,
+                replicateID = 2)
     
     assert_equal(ids1, gt1)
     assert_equal(ids2, gt2)
@@ -202,13 +204,10 @@ def test_HDFDatastore_KeyGeneration():
                   {'prefix' : 'HeLa_Control', 'acqID' : 76,
                    'channelID' : 'A750', 'dateID' : '2016-05-05',
                    'posID' : (0,2)},
-
+                   
                   {'prefix': 'HeLa_Control', 'acqID' : 76,
-                   'channelID' : 'A750', 'posID' : (0,2)}
+                   'channelID' : 'A750', 'posID' : (0,2), 'replicateID' : 5}
                  ]
-     
-    # The last one should be locResults and not locMetadata because
-    # metadata gets appended to locResults            
     keys       = [
                   'HeLa_Control/HeLa_Control_1/TestType_ChannelA647_Pos0',
                   'HeLa_Control/HeLa_Control_43/TestType_Pos0',
@@ -218,10 +217,10 @@ def test_HDFDatastore_KeyGeneration():
                       '/TestType_ChannelDAPI_Pos_003_012_Slice46',
                   'HeLa_Control/HeLa_Control_76' + \
                       '/TestType_ChannelA750_Pos_000_002',
-                  'HeLa_Control/d2016_05_05/HeLa_Control_76' + \
-                      '/TestType_ChannelA750_Pos_000_002',
                   'HeLa_Control/HeLa_Control_76' + \
-                      '/TestType_ChannelA750_Pos_000_002'
+                      '/TestType_ChannelA750_Pos_000_002_Date20160505',
+                  'HeLa_Control/HeLa_Control_76' + \
+                      '/TestType_ChannelA750_Pos_000_002_Replicate5'
                  ]
     
     dbName = 'myDB.h5'
@@ -229,6 +228,7 @@ def test_HDFDatastore_KeyGeneration():
     
     for currID, key in zip(myDatasetIDs, keys):
         ds = TestType.TestType(datasetIDs = currID)
+        print(currID)
         keyString, _ = myDatastore._genKey(ds)
         assert_equal(keyString, key)
 
@@ -239,7 +239,7 @@ def test_HDFDatastore_genDataset():
     myDB = database.HDFDatastore('test_db.h5')
     dsID = database.DatasetID
     ids  = dsID('test_prefix', 2, 'TestType', None,
-                'A647', None, (0,), 3)
+                'A647', None, (0,), 3, 46)
     
     ds = myDB._genDataset(ids)
     assert_equal(ds.datasetIDs['prefix'], 'test_prefix')
@@ -248,6 +248,7 @@ def test_HDFDatastore_genDataset():
     assert_equal(ds.datasetIDs['dateID'],          None)
     assert_equal(ds.datasetIDs['posID'],           (0,))
     assert_equal(ds.datasetIDs['sliceID'],            3)
+    assert_equal(ds.datasetIDs['replicateID'],       46)
     assert_equal(ds.datasetType,         'TestType')
     assert_equal(ds.attributeOf,                   None)
     ok_(isinstance(ds,               TestType.TestType))
@@ -291,6 +292,8 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
         assert_equal(f[keyString0].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString0].attrs[atomPre + 'sliceID'],          'None')
         assert_equal(f[keyString0].attrs[atomPre + 'datasetType'],  'TestType')
+        assert_equal(f[keyString0].attrs[atomPre + 'replicateID'],      'None')
+
         
         keyString1 = 'Cos7/Cos7_1/' + keys[1]
         assert_equal(f[keyString1].attrs[atomPre + 'acqID'],                 1)
@@ -300,8 +303,9 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
         assert_equal(f[keyString1].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString1].attrs[atomPre + 'sliceID'],          'None')
         assert_equal(f[keyString1].attrs[atomPre + 'datasetType'],  'TestType')
-        
-        keyString2 = 'Cos7/d2016_05_05/Cos7_1/' + keys[1]
+        assert_equal(f[keyString0].attrs[atomPre + 'replicateID'],      'None')
+
+        keyString2 = 'Cos7/Cos7_1/' + keys[1]
         assert_equal(f[keyString2].attrs[atomPre + 'acqID'],                 1)
         assert_equal(f[keyString2].attrs[atomPre + 'channelID'],        'A647')
         assert_equal(f[keyString2].attrs[atomPre + 'posID'][0],              1)
@@ -309,6 +313,7 @@ def test_HDFDatastore_Put_Keys_DatastoreMetadata():
         assert_equal(f[keyString2].attrs[atomPre + 'prefix'],           'Cos7')
         assert_equal(f[keyString2].attrs[atomPre + 'sliceID'],          'None')
         assert_equal(f[keyString2].attrs[atomPre + 'datasetType'],  'TestType')
+        assert_equal(f[keyString2].attrs[atomPre + 'replicateID'],      'None')
 
 def test_HDFDatastore_GetWithDate():
     """HDFDatastore.get() returns the correct Dataset with a dateID.
@@ -321,14 +326,14 @@ def test_HDFDatastore_GetWithDate():
      
     # Create an ID with empty data for retrieving the dataset     
     ds = dsID('Cos7', 1, 'TestType', None,
-                'A647', '2016-05-05', (1,2), None)
+              'A647', '2016-05-05', (1,2), None, None)
     
     # Get the data from the datastore and compare it to the input data
     retrievedDataset = myDS.get(ds)
     ok_(array_equal(retrievedDataset.data, data))
 
 def test_HDFDatastore_Iterable():
-    """HDFDatastore acts as an interable over dataset IDs.
+    """HDFDatastore acts as an iterable over dataset IDs.
     
     """
     dsName = testDataRoot / Path(('parsers_test_files/SimpleParser/'
@@ -342,7 +347,7 @@ def test_HDFDatastore_Iterable():
         'Localizations', 'LocMetadata', 'WidefieldImage']   
     
     # Create ground-truth IDs
-    gt = [dsID(name, acqID, dsType, attr, None, None, None, None)
+    gt = [dsID(name, acqID, dsType, attr, None, None, None, None, None)
           for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
           for dsType, attr in [('Localizations', None),
                                ('LocMetadata', 'Localizations'),
@@ -406,7 +411,7 @@ def test_HDFDatastore_Persistent_State():
         'Localizations', 'LocMetadata', 'WidefieldImage']   
     
     # Create ground-truth IDs
-    gt = [dsID(name, acqID, dsType, attr, None, None, None, None)
+    gt = [dsID(name, acqID, dsType, attr, None, None, None, None, None)
           for name, acqID in [('HeLaL_Control', 1), ('HeLaS_Control', 2)]
           for dsType, attr in [('Localizations', None),
                                ('LocMetadata', 'Localizations'),

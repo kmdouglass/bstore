@@ -178,7 +178,7 @@ def test_Get_Data():
             myDB.put(ds, widefieldPixelSize = (0.13, 0.13))
         
         myNewDSID = dsID('Cos7', 1, 'WidefieldImage', None,
-                         'A647', None, None, None)
+                         'A647', None, None, None, None)
         imgDS = myDB.get(myNewDSID)
         ids     = imgDS.datasetIDs
         assert_equal(ids['prefix'],                     'Cos7')
@@ -187,7 +187,8 @@ def test_Get_Data():
         assert_equal(ids['channelID'],                  'A647')
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)   
+        assert_equal(ids['sliceID'],                      None)
+        assert_equal(ids['replicateID'],                  None)
         assert_equal(imgDS.data.shape, img.shape)
     finally:
         # Remove the test datastore

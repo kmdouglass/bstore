@@ -152,7 +152,7 @@ def test_Get_Data():
         
         # Test the get() function now.
         myNewDSID = db.DatasetID('test_prefix', 1, 'LocMetadata',
-                                 'Localizations', None, None, None, None)
+                                 'Localizations', None, None, None, None, None)
         myNewDS   = myDB.get(myNewDSID)
         ids       = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
@@ -161,6 +161,7 @@ def test_Get_Data():
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
         assert_equal(ids['sliceID'],                      None)
+        assert_equal(ids['replicateID'],                  None)
         assert_equal(myNewDS.datasetType,        'LocMetadata')
         assert_equal(myNewDS.data['A'],                      2)
         assert_equal(myNewDS.data['B'],                'hello')

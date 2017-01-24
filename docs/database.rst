@@ -8,7 +8,7 @@ B-Store Datastores
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
 :revision: $Revision: 1 $
-:date: 2016-10-15
+:date: 2017-01-24
 
 :abstract:
 
@@ -96,7 +96,8 @@ channelID
     the dataset was acquired in.
 
 dateID
-    (optional) A string in the format YYYY-MM-DD.
+    (optional) A string in the format YYYY-MM-DD. This is for
+    identifying the same field of view taken on different days.
 
 posID 
     (optional) A one or two-element tuple of integers specifying the
@@ -105,6 +106,11 @@ posID
 sliceID
     (optional) An integer identifying the the axial slice of the
     dataset.
+
+replicateID
+    (optional) An integer identifying a replicate or biological
+    repeat. This is used when a dataset has the same IDs as another
+    but comes from an independent sample.
 
 .. _config.py: https://github.com/kmdouglass/bstore/blob/master/bstore/config.py
 
@@ -135,11 +141,11 @@ have the same prefix, acqID, and datasetTypes.
 A diagram that explains this hierarchy is seen below. On top, you have
 your raw data files as inputs to a parser, which both assigns dataset
 IDs and converts the data into a format suitable for insertion into
-the database. A single acquisition group is identified by a **prefix**
-(and optionally a **dateID**). Within this group, each dataset has a
-unique **acqID** and **datasetType** to set it apart from other
-datasets within the same group. Finally, the other optional IDs give
-you more control over how the data is organized within the group.
+the database. A single acquisition group is identified by a
+**prefix**. Within this group, each dataset has a unique **acqID** and
+**datasetType** to set it apart from other datasets within the same
+group. Finally, the other optional IDs give you more control over how
+the data is organized within the group.
 
 .. image:: ../images/dataset_logic.png
    :scale: 50%

@@ -111,7 +111,7 @@ def test_testType_Get_Data():
     
     # Create a new dataset containing only IDs to test getting of the data
     dsID = db.DatasetID('test_prefix', 1, 'TestType', None,
-                        None, None, None, None)   
+                        None, None, None, None, None)   
     
     myNewDS = myDB.get(dsID)
     ids     = myNewDS.datasetIDs
@@ -121,6 +121,7 @@ def test_testType_Get_Data():
     assert_equal(ids['dateID'],                None)
     assert_equal(ids['posID'],                 None)
     assert_equal(ids['sliceID'],               None)
+    assert_equal(ids['replicateID'],           None)
     assert_equal(myNewDS.datasetType,    'TestType')
     assert_equal(myNewDS.attributeOf,          None)
     assert_equal(myNewDS.data,                   42)

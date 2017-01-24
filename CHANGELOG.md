@@ -26,6 +26,14 @@ All notable changes to this project will be documented in this file.
   [examples](https://github.com/kmdouglass/bstore/tree/master/examples)
   folder now includes a Jupyter notebook demonstrating how to write
   your own Reader.
+- An explanation on how to adjust the image colormap and max/min
+  values was added to the
+  [widefield cluster overlay example](https://github.com/kmdouglass/bstore/blob/master/examples/Localization%20Overlays%20on%20Widefield%20Images.ipynb).
+  This functionality requires Matplotlib 2.0 or greater.
+- A dataset ID known as `replicateID` was added to the end of the list
+  DatasetIDs. It is an integer that is intended to denote datasets
+  with the same prefix and acquisition number but different
+  samples/biological replicates.
 
 ### Changed
 - `HDFDatastore` now require Python *with...as...* statements
@@ -38,6 +46,12 @@ All notable changes to this project will be documented in this file.
 - The order of the fields in the GUI's HDFDatastore build dialog was
   changed to better match the inputs->parameters->outputs mental model
   of how the build process occurs.
+- HDF keys generated for datasets containing a non-empty dateID were
+  changed to improve the consistency of the key naming
+  convention. Now, dateID follows sliceID in the list of optional IDs
+  that label a dataset. It is no longer injected in as an additional
+  group in a key. The `dateID` is intended to denote the exact same
+  field of view taken on different days.
 
 ### Fixed
 - Redundant calls to `readFromFile` inside the Parsers was removed.

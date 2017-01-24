@@ -112,9 +112,9 @@ def test_HDFBatchProcessor_DatasetParser():
     """
     dsID = db.DatasetID
     knownDS = [dsID('HeLaL_Control', 1, 'Localizations', None,
-                    'A647', None, (0,), None),
+                    'A647', None, (0,), None, None),
                dsID('HeLaS_Control', 2, 'Localizations', None,
-                    'A647', None, (0,), None)]
+                    'A647', None, (0,), None, None)]
                     
     assert_equal(len(bpHDF.datasetList), 2)
     
@@ -125,6 +125,7 @@ def test_HDFBatchProcessor_DatasetParser():
         assert_equal(currDS.posID,       currKnownDS.posID)
         assert_equal(currDS.prefix,      currKnownDS.prefix)
         assert_equal(currDS.sliceID,     currKnownDS.sliceID)
+        assert_equal(currDS.replicateID, currKnownDS.replicateID)
         assert_equal(currDS.datasetType, currKnownDS.datasetType)
         
 def test_HDFBatchProcess_Go():

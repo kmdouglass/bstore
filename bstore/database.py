@@ -193,7 +193,8 @@ class Dataset(metaclass=ABCMeta):
 -------------------------------------------------------------------------------
 """
 DatasetID = namedtuple('DatasetID', ('prefix acqID datasetType attributeOf '
-                                     'channelID dateID posID sliceID'))
+                                     'channelID dateID posID sliceID '
+                                     'replicateID'))
 """Dataset IDs used by the HDFDatastore
 
 prefix      = The descriptive name given to the dataset by the user.
@@ -204,9 +205,10 @@ channelID   = (optional) String for the channel (color).
 dateID      = (optional) The date the dataset was acquired.
 posID       = (optional) One or two-tuple of integers.
 sliceID     = (optional) Single integer of the axial slice.
+replicateID = (optional) Integer specifying a replicate expierment.
 
 """
-_optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID')
+_optionalIDs = ('channelID', 'dateID', 'posID', 'sliceID', 'replicateID')
 
 
 class HDFDatastore(Datastore):
@@ -570,21 +572,6 @@ class HDFDatastore(Datastore):
         splitStr = key.split(sep='/')
         prefix = splitStr[0]
 
-        # Check for a date in the second part of splitStr
-        try:
-            # [1:] cuts off the 'd' part of the string, which
-            # is needed for PyTables naming conventions. So are underscores.
-            datetimeObject = parse(splitStr[1][1:].replace('_', '-'))
-            dateID = datetimeObject.strftime('%Y-%m-%d')
-
-            # Remove this element so the remaining code
-            # with fixed indexes will not need to be changed.
-            splitStr.pop(1)
-
-        except ValueError:
-            # No date detected; don't do anything
-            dateID = None
-
         acqID = int(splitStr[1].split(sep='_')[-1])
 
         otherIDs = splitStr[2]
@@ -615,14 +602,31 @@ class HDFDatastore(Datastore):
         else:
             index = re.findall(r'\d+', sliceRaw.group(0))
             sliceID = int(index[0])
+            
+        # Obtain dateID if it exists
+        dateRaw = re.search(r'Date\d+', otherIDs)
+        if dateRaw is None:
+            dateID = None
+        else:
+            index = re.findall(r'\d+', dateRaw.group(0))
+            datetimeObject = parse(index[0])
+            dateID = datetimeObject.strftime('%Y-%m-%d')
+        
+        replicateRaw = re.search(r'Replicate\d+', otherIDs)
+        if replicateRaw is None:
+            replicateID = None
+        else:
+            index = re.findall(r'\d+', replicateRaw.group(0))
+            replicateID = int(index[0])
 
         # Build the return dataset
         returnDS = DatasetID(prefix, acqID, datasetType, None,
-                             channelID, dateID, posID, sliceID)
+                             channelID, dateID, posID, sliceID,
+                             replicateID)
         return returnDS
 
     def _genKey(self, ds):
-        """Generate a key name for a dataset. The inverse of _genAtomicID.
+        """Generate a key name for a dataset. The inverse of _genDatasetID.
 
         Parameters
         ----------
@@ -641,15 +645,8 @@ class HDFDatastore(Datastore):
         else:
             ids = ds
 
-        # 'd' and underscores are needed for PyTables naming conventions
-        if ids.dateID is not None:
-            acqKey = '/'.join([ids.prefix,
-                               'd' + ids.dateID.replace('-', '_'),
-                               ids.prefix]) + \
-                     '_' + str(ids.acqID)
-        else:
-            acqKey = '/'.join([ids.prefix, ids.prefix]) + \
-                     '_' + str(ids.acqID)
+        acqKey = '/'.join([ids.prefix, ids.prefix]) + \
+                 '_' + str(ids.acqID)
 
         otherIDs = ''
         if ids.channelID is not None:
@@ -663,6 +660,11 @@ class HDFDatastore(Datastore):
                                                             ids.posID[1])
         if ids.sliceID is not None:
             otherIDs += '_Slice{:d}'.format(ids.sliceID)
+        if ids.dateID is not None:
+            # hyphens not allowed in names for PyTables
+            otherIDs += '_Date{:s}'.format(ids.dateID.replace('-', ''))
+        if ids.replicateID is not None:
+            otherIDs += '_Replicate{:d}'.format(ids.replicateID)
 
         # If an attribute, use the name of the DatasetType that this type is
         # an attribute of.
@@ -812,7 +814,8 @@ class HDFDatastore(Datastore):
                     atom.channelID,
                     atom.dateID,
                     atom.posID,
-                    atom.sliceID)
+                    atom.sliceID,
+                    atom.replicateID)
 
         return dsIDs
 
@@ -896,7 +899,8 @@ class HDFDatastore(Datastore):
                         channelID=idDict['channelID'],
                         dateID=idDict['dateID'],
                         posID=idDict['posID'],
-                        sliceID=idDict['sliceID'])
+                        sliceID=idDict['sliceID'],
+                        replicateID=idDict['replicateID'])
 
         return ids
 
@@ -926,6 +930,8 @@ class HDFDatastore(Datastore):
             hdf[key].attrs[attrPrefix + 'prefix'] = ids.prefix
             hdf[key].attrs[attrPrefix + 'sliceID']     = \
                 'None' if ids.sliceID is None else ids.sliceID
+            hdf[key].attrs[attrPrefix + 'replicateID']     = \
+                'None' if ids.replicateID is None else ids.replicateID
             hdf[key].attrs[attrPrefix + 'datasetType'] = ds.datasetType
 
             # Current version of this software
