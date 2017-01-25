@@ -32,14 +32,13 @@ manager. `Download Anaconda for Python 3`_ (or Miniconda) and run the
 following commands in the Anaconda shell::
 
   conda update conda
-  conda config --append channels conda-forge
   conda config --append channels soft-matter
   conda create -n bstore -c kmdouglass bstore
 
-The above commands add two custom channels to the package manager
-(conda-forge and soft-matter) and give them lower priority over the
-default channel. Then, a new conda environment named bstore is created
-and the bstore package is installed from the kmdouglass channel.
+The above commands add a custom channel to the package manager
+(soft-matter) and give it lower priority over the default
+channel. Then, a new conda environment named bstore is created and the
+bstore package is installed from the kmdouglass channel.
 
 If you would like to use Jupyter Notebooks--which aren't required--,
 then be sure to run these commands after installing B-Store::
@@ -93,7 +92,8 @@ tabulated localization data and the standard `json module`_ for
 handling metadata. Images are treated as `NumPy arrays`_ whose image
 metadata can be read from tiff tags (OME-XML and Micro-Manager
 metadata are currently supported). Reading and writing from/to HDF
-files is performed with `h5py`_.
+files is performed with `h5py`_ (though Pandas uses `PyTables`_ for a
+few operations).
 
 What all this means is that if you can't do something with B-Store,
 chances are you can implement a custom solution using another Python
@@ -103,6 +103,7 @@ library.
 .. _json module: https://docs.python.org/3/library/json.html
 .. _NumPy arrays: http://docs.scipy.org/doc/numpy/reference/generated/numpy.array.html
 .. _h5py: http://www.h5py.org/
+.. _PyTables: http://www.pytables.org/
 
 Jupyter Notebook Examples
 +++++++++++++++++++++++++
@@ -237,7 +238,12 @@ The current list of options is:
    `False`. Note that this may fail to read the tif images if the
    filename does not match the metadata.
 
+**For Pythonistas**: The evaluation of the string inside this Entry is
+ performed with `ast.literal_eval()`_. It is a secure method, unlike
+ `eval()`, but can only evaluate basic Python datatypes.
+
 .. _Python dictionaries: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
+.. _ast.literal_eval(): https://docs.python.org/3/library/ast.html#ast.literal_eval
 
 Programming with B-Store
 ========================
@@ -368,13 +374,19 @@ This creates a file named myFirstDatabase.h5 that contains the 6
 datasets contained in the raw data. (If you want to investigate the
 contents of the HDF file, we recommend the `HDFView utility`_.)
 
+To specify exactly how data is read from your raw files, please see
+`Tutorial 4`_ in the examples. This will teach you how to user Readers
+to read data in custom file types into Python and subsequently place
+them inside the HDFDatastore.
+
 .. _HDFDatabase: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.database.HDFDatabase
 .. _HDFView utility: https://www.hdfgroup.org/HDF5/Tutor/hdfview.html
+.. _Tutorial 4: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%204%20-%20Writing%20custom%20readers.ipynb
 
 Batch Analysis from a B-Store Database
 ++++++++++++++++++++++++++++++++++++++
 
-The real utility of the B-Store database is that it enables batch
+Another great utility of the B-Store database is that it enables batch
 analyses of experiments containing a large number of acquisitions
 containing related but different files.
 

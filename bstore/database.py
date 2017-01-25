@@ -256,6 +256,9 @@ class HDFDatastore(Datastore):
         # Used to store a persistent copy of an HDFDatastore instance
         # in the HDF file
         self._persistenceKey = config.__Persistence_Key__
+        
+        # Read the persistence data from the HDF file
+        self._loads()
 
         # Lock file to prevent concurrent writes
         self._lock = filelock.FileLock(str(dsName) + '.lock')
@@ -729,6 +732,10 @@ class HDFDatastore(Datastore):
         except OSError:
             # File doesn't exist, so don't try to update
             pass
+        except:
+            print('Unexpected error when loading the Datastore\'s persistent '
+                  'state:', sys.exc_info()[0])
+            raise
 
     @hdfLockCheck
     def put(self, dataset, **kwargs):

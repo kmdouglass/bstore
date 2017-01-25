@@ -280,9 +280,11 @@ HDFDatastore consisted of the following properties:
     + position ID - A single integer or integer pair identifying the
       position on the sample
     + slice ID - An integer identifying the axial slice acquired
+    + replicate ID - An integer identifying the biological replicate
+      that corresponds to this dataset.
 
-The first four properties in bold are required; the last four are
-optional.
+The first four properties in bold are required; the last properties
+are optional.
 
 There are three important advantages to enforcing an interface such as
 this.
@@ -297,16 +299,16 @@ this.
        can grow and change in the future with minimal difficulty.
 
 The logic of this interface is described graphically below. The raw
-data on top pass through the Parser and into the database, where they
-are organized into acquisition groups. Each group is identified by a
-name called a prefix. Within the group, a dataset possesses an
-acquisition ID and a dataset type. An acqusition group is a set of
-datasets that were acquired during an experiment. A single dataset may
-optionally contain multiple fields of view (positions), wavelengths
-(channels), or axial slices. The database is therefore a collection of
-hierarchically arranged datasets, each belonging to a different
-acquisition group, and each uniquely identified by the conditions of
-the acquisition.
+data on top pass through the Parser and Readers objects and then into
+the datastore, where they are organized into acquisition groups. Each
+group is identified by a name called a prefix. Within the group, a
+dataset possesses an acquisition ID and a dataset type. An acqusition
+group is a set of datasets that were acquired during an experiment
+with the same prefix. A single dataset may optionally contain multiple
+fields of view (positions), wavelengths (channels), or axial
+slices. The database is therefore a collection of hierarchically
+arranged datasets, each belonging to a different acquisition group,
+and each uniquely identified by the conditions of the acquisition.
 
 .. image:: ../images/dataset_logic.png
    :scale: 50%
@@ -357,8 +359,7 @@ common and internal Python data type. This internal representation is
 temporary and is used to next write this data to HDF.
 
 Readers were introduced in version 1.1.0 and lay the groundwork for a
-more customizable interface in later versions. For this reason, they
-are present but not terribly useful in version 1.1.0.
+more customizable interface in later versions.
 
 Batch
 +++++
