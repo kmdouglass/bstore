@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'B-Store'
-copyright = '2016, Kyle M. Douglass'
+copyright = '2016-2017, Kyle M. Douglass'
 author = 'Kyle M. Douglass'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -73,9 +73,9 @@ author = 'Kyle M. Douglass'
 # built documents.
 #
 # The short X.Y version.
-version = '1.0.0'
+version = '1.1.0'
 # The full version, including alpha/beta/rc tags.
-release = '1.0.0'
+release = '1.1.0'
 
 # Napoleon settings
 napoleon_include_private_with_doc = False

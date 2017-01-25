@@ -41,7 +41,6 @@ B-Store is most easily installed from the [Anaconda Cloud package repository](ht
 ## Anaconda Package Manager
 ```sh
 conda update conda
-conda config --append channels conda-forge
 conda config --append channels soft-matter
 conda create -n bstore -c kmdouglass bstore
 ```
