@@ -7,8 +7,8 @@ Quick Start
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: Revision: 2
-:date: 2016-10-15
+:revision: Revision: 3
+:date: 2016-11-06
 
 :abstract:
 
@@ -32,14 +32,13 @@ manager. `Download Anaconda for Python 3`_ (or Miniconda) and run the
 following commands in the Anaconda shell::
 
   conda update conda
-  conda config --append channels conda-forge
   conda config --append channels soft-matter
   conda create -n bstore -c kmdouglass bstore
 
-The above commands add two custom channels to the package manager
-(conda-forge and soft-matter) and give them lower priority over the
-default channel. Then, a new conda environment named bstore is created
-and the bstore package is installed from the kmdouglass channel.
+The above commands add a custom channel to the package manager
+(soft-matter) and give it lower priority over the default
+channel. Then, a new conda environment named bstore is created and the
+bstore package is installed from the kmdouglass channel.
 
 If you would like to use Jupyter Notebooks--which aren't required--,
 then be sure to run these commands after installing B-Store::
@@ -93,7 +92,8 @@ tabulated localization data and the standard `json module`_ for
 handling metadata. Images are treated as `NumPy arrays`_ whose image
 metadata can be read from tiff tags (OME-XML and Micro-Manager
 metadata are currently supported). Reading and writing from/to HDF
-files is performed with `h5py`_.
+files is performed with `h5py`_ (though Pandas uses `PyTables`_ for a
+few operations).
 
 What all this means is that if you can't do something with B-Store,
 chances are you can implement a custom solution using another Python
@@ -103,6 +103,7 @@ library.
 .. _json module: https://docs.python.org/3/library/json.html
 .. _NumPy arrays: http://docs.scipy.org/doc/numpy/reference/generated/numpy.array.html
 .. _h5py: http://www.h5py.org/
+.. _PyTables: http://www.pytables.org/
 
 Jupyter Notebook Examples
 +++++++++++++++++++++++++
@@ -167,14 +168,18 @@ Datastore...**. The following new dialog will appear:
 .. image:: ../images/gui_screenshot_1.png
    :align: center
 
-First, use the Browse dialog to select the name and location of the
-HDF datastore file in the top-most field. Next, select what types of
-datasets should be included in the datastore. For this example, check
-**Localizations**, **LocMetadata**, and **WidefieldImage** and uncheck
-the rest. Set the filename extension of Localizations, LocMetadata,
-and WidefieldImage to **.csv**, **.txt**, and **.tif**,
-respectively. This will tell the build routine what files correspond
-to which types of datasets.
+First, choose the directory where the raw data files and
+subdirectories are located. We will use the `test files for the
+SimpleParser`_ for this example. Please note that this directory **and
+all of its subdirectories** will be searched for files ending in the
+suffix.filename_extension pattern specified in the next field.
+
+Next, select what types of datasets should be included in the
+datastore. For this example, check **Localizations**, **LocMetadata**,
+and **WidefieldImage** and uncheck the rest. Set the filename
+extension of Localizations, LocMetadata, and WidefieldImage to
+**.csv**, **.txt**, and **.tif**, respectively. This will tell the
+build routine what files correspond to which types of datasets.
 
 If your files have a special identifier in their filename, like
 **locs** for localizations, you can enter search patterns like
@@ -182,25 +187,23 @@ If your files have a special identifier in their filename, like
 files like *cells_locs_2.csv* or *Cos7_alexa647_locs.csv* would be
 found during the file search.
 
-After this, choose the directory where the raw data files and
-subdirectories are located. We will use the `test files for the
-SimpleParser`_ for this example. Please note that this directory **and
-all of its subdirectories** will be searched for files ending in the
-suffix.filename_extension pattern specified in the previous field.
+Leave the parser set to **SimpleParser**. A parser converts a filename
+into a set of DatasetIDs that will uniquely identify it inside the
+Datastore.
+
+After this, leave the Misc. options as they are. This box allows you
+to manually specify options for reading the raw data files. 'sep' for
+example is the separator between columns in a .csv file. If you have a
+tab-separated file, change ',' to '\t' (\t is the tab
+character). Change 'readTiffTags' from False to True if you have
+Micro-Manager or OME-XML metadata in your tif image files. Please note
+that this may fail if the metadata does not match the filename like,
+for example, what would happen if someone renamed the file.
 
 .. _test files for the SimpleParser: https://github.com/kmdouglass/bstore_test_files/tree/master/parsers_test_files/SimpleParser
 
-Finally, leave the Misc. options as they are. This box allows you to
-manually specify options for reading the raw data files.
-
-'sep' for example is the separator between columns in a .csv file. If
-you have a tab-separated file, change ',' to '\t' (\t is the tab
-character).
-
-Change 'readTiffTags' from False to True if you have Micro-Manager or
-OME-XML metadata in your tif image files. Please note that this may
-fail if the metadata does not match the filename like, for example,
-what would happen if someone renamed the file.
+Finally, use the Browse dialog to select the name and location of the
+HDF datastore file in the top-most field.
 
 The window should now look like this:
 
@@ -235,7 +238,12 @@ The current list of options is:
    `False`. Note that this may fail to read the tif images if the
    filename does not match the metadata.
 
+**For Pythonistas**: The evaluation of the string inside this Entry is
+ performed with `ast.literal_eval()`_. It is a secure method, unlike
+ `eval()`, but can only evaluate basic Python datatypes.
+
 .. _Python dictionaries: https://docs.python.org/3/tutorial/datastructures.html#dictionaries
+.. _ast.literal_eval(): https://docs.python.org/3/library/ast.html#ast.literal_eval
 
 Programming with B-Store
 ========================
@@ -330,11 +338,11 @@ files and subdirectories of acquisition data.::
    >>> dataDirectory = Path('bstore_test_files/parsers_test_files/SimpleParser')
    >>> parser = parsers.SimpleParser()
 
-Next, we create a HDFDatastore instance. This class is used to
-interact with and create B-Store databases.::
+Next, we create a name for the HDF file that a HDFDatastore points
+to. The HDFDatastore class will be used to interact with and create
+B-Store databases.::
 
    >>> dsName = 'myFirstDatastore.h5'
-   >>> myDS   = database.HDFDatastore(dsName)
 
 After this, we tell B-Store what types of files it should know how to
 process: ::
@@ -350,33 +358,35 @@ accidentally entered the directory tree contains SMLM data.
 
 Finally, we create the database by sending the parser, the parent
 directory of the data files, and a dictionary telling the parser how
-to find localization files to the **build** method of myDB.::
+to find localization files to the **build** method of myDS. Note that
+myDS must be created inside a *with...as...* block to ensure the file
+is properly opened and closed. The `put()` and `build()` methods of
+HDFDatastore both require the use of *with...as...* blocks; all other
+methods do not.::
 
-   >>> myDB.build(sp, dataDirectory, {'Localizations'  : '.csv',
-                                      'LocMetadata'    : '.txt',
-    	                              'WidefieldImage' : '.tif'})
+   >>> with database.HDFDatastore(dsName) as myDS:
+   >>>     myDS.build(sp, dataDirectory, {'Localizations'  : '.csv',
+                                          'LocMetadata'    : '.txt',
+    	                                  'WidefieldImage' : '.tif'})
    6 files were successfully parsed.
- 
-                            datasetType    attributeOf channelID dateID posID  sliceID
-   prefix        acqID                                                         
-   HeLaL_Control 1        Localizations           None      None   None  None     None
-                 1       WidefieldImage           None      None   None  None     None
-                 1          LocMetadata  Localizations      None   None  None     None
-   HeLaS_Control 2        Localizations           None      None   None  None     None
-                 2       WidefieldImage           None      None   None  None     None
-                 2          LocMetadata  Localizations      None   None  None     None
 
 This creates a file named myFirstDatabase.h5 that contains the 6
-datasets listed above. (If you want to investigate the contents of the
-HDF file, we recommend the `HDFView utility`_.)
+datasets contained in the raw data. (If you want to investigate the
+contents of the HDF file, we recommend the `HDFView utility`_.)
+
+To specify exactly how data is read from your raw files, please see
+`Tutorial 4`_ in the examples. This will teach you how to user Readers
+to read data in custom file types into Python and subsequently place
+them inside the HDFDatastore.
 
 .. _HDFDatabase: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.database.HDFDatabase
 .. _HDFView utility: https://www.hdfgroup.org/HDF5/Tutor/hdfview.html
+.. _Tutorial 4: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%204%20-%20Writing%20custom%20readers.ipynb
 
 Batch Analysis from a B-Store Database
 ++++++++++++++++++++++++++++++++++++++
 
-The real utility of the B-Store database is that it enables batch
+Another great utility of the B-Store database is that it enables batch
 analyses of experiments containing a large number of acquisitions
 containing related but different files.
 

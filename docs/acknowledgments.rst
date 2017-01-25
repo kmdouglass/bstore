@@ -7,13 +7,14 @@ Acknowledgments
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 1 $
-:date: 2016-08-30
+:revision: $Revision: 2 $
+:date: 2016-11-06
 
 :abstract:
 
    This is a list of people and organizations that made B-Store
-   possible.
+   possible. Many, many thanks to everyone, even those who may not
+   appear on this list, for their contributions great and small.
    
 .. meta::
    :keywords: acknowledgments
@@ -55,6 +56,7 @@ Software
 + `h5py <http://www.h5py.org/>`_
 + `scikit-learn <http://scikit-learn.org/stable/>`_
 + `tifffile <https://pypi.python.org/pypi/tifffile>`_
++ `filelock <https://pypi.python.org/pypi/filelock/>`_
 
 
 

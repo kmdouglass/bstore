@@ -308,7 +308,8 @@ def test_PositionParser_BadParse():
     f = 'HeLaL.tif' # No acqID; file shouldn't parse
                              
     parser = parsers.PositionParser(positionIDs = {0 : 'prefix',
-                                                   1 : None, 2: 'acqID'})
+                                                   1 : None,
+                                                   2 : 'acqID'})
     # Note: There are more position IDs than there are actual positions in f
     parser.parseFilename(f)
                          

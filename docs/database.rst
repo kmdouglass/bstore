@@ -8,7 +8,7 @@ B-Store Datastores
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
 :revision: $Revision: 1 $
-:date: 2016-10-15
+:date: 2017-01-24
 
 :abstract:
 
@@ -42,23 +42,23 @@ Datasets
 ========
 
 A `Dataset`_ is a single, generalized dataset that can be stored in a
-B-Store dataset. It is "general" in the sense that it can represent
+B-Store datastore. It is "general" in the sense that it can represent
 one of a few different types of data (e.g. localizations, metadata, or
 widefield images). A specific type of dataset is called a
-`DatasetType`. A DatasetType knows how to read raw input files from
-the disk and how to get and put data of its own type from and into a
-datastore. Unlike the Datastore, which sorts and organizes Datasets,
-the DatasetType encapsulates all the knowledge about data input and
-output.
+`DatasetType`. A DatasetType knows what readers it may use to read raw
+input files from the disk and how to get and put data of its own type
+from and into a datastore. Unlike the Datastore, which sorts and
+organizes Datasets, the DatasetType encapsulates all the knowledge
+about data input and output.
 
-There are currently five dataset types (their raw input types are
-listed in parantheses):
+There are currently five dataset types (examples of their raw input
+are in paranetheses):
 
 1. Localizations (tabulated localization data in raw text, csv format)
 2. LocMetadata (information about how the localizations were generated
    in JSON format)
-3. WidefieldImage (gray scale images; supports reading OME-XML
-   metadata and Micro-Manager metadata)
+3. WidefieldImage (gray scale images; contains OME-XML metadata and
+   Micro-Manager metadata)
 4. FiducialTracks (localizations belonging to individual fiducials in
    csv format)
 5. AverageFiducial (the average drift trajectory from many fiducials)
@@ -96,7 +96,8 @@ channelID
     the dataset was acquired in.
 
 dateID
-    (optional) A string in the format YYYY-MM-DD.
+    (optional) A string in the format YYYY-MM-DD. This is for
+    identifying the same field of view taken on different days.
 
 posID 
     (optional) A one or two-element tuple of integers specifying the
@@ -105,6 +106,11 @@ posID
 sliceID
     (optional) An integer identifying the the axial slice of the
     dataset.
+
+replicateID
+    (optional) An integer identifying a replicate or biological
+    repeat. This is used when a dataset has the same IDs as another
+    but comes from an independent sample.
 
 .. _config.py: https://github.com/kmdouglass/bstore/blob/master/bstore/config.py
 
@@ -134,10 +140,10 @@ have the same prefix, acqID, and datasetTypes.
 
 A diagram that explains this hierarchy is seen below. On top, you have
 your raw data files as inputs to a parser, which both assigns dataset
-IDs and converts the data into a format suitable for insertion into
-the database. A single acquisition group is identified by a **prefix**
-(and optionally a **dateID**). Within this group, each dataset has a
-unique **acqID** and **datasetType** to set it apart from other
+IDs based on the files' filename. A Reader converts the data into a
+format suitable for insertion into the database. A single acquisition
+group is identified by a **prefix**. Within this group, each dataset
+has a unique **acqID** and **datasetType** to set it apart from other
 datasets within the same group. Finally, the other optional IDs give
 you more control over how the data is organized within the group.
 
@@ -148,12 +154,9 @@ you more control over how the data is organized within the group.
 The Role of Parsers in Datastores
 ---------------------------------
 
-As mentioned above, a B-Store parser is an object that performs two
-roles:
-
-1. Assign dataset IDs to a dataset
-2. Convert the data in the dataset into a format that may be inserted
-   into a B-Store database
+As mentioned above, a B-Store parser is an object that assigns dataset
+IDs to a dataset based on the filename of the file containing the
+data.
 
 Since different labs often have very different ways to generate their
 data, parsers were designed to be very flexible objects. The only
@@ -174,6 +177,15 @@ example`_.
 
 .. _Parser metaclass: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.parsers.Parser
 .. _Jupyter notebook example: https://github.com/kmdouglass/bstore/blob/master/examples/Tutorial%203%20-%20Writing%20custom%20parsers.ipynb
+
+The Role of Readers in Datastores
+---------------------------------
+
+Readers do the actual work of reading the data inside a file into
+memory. When building a Datastore, a different reader may be specified
+for each dataset to allow B-Store to read data from a large range of
+file formats. Generic readers like CSVReader and JSONReader are
+provided for reading from generic file formats.
 
 HDF Datastores
 ==============
@@ -228,33 +240,42 @@ this image because it's stored as attributes of the
 Localizations_ChannelA647_Pos0 group.) Each dataset has two optional
 identifiers: a **channelID** of A647 and a **posID** of 0. The dataset
 keys--if they are specified--follow the format
-**datasetType_channelID_posID_sliceID**. Because no sliceID is
-specified, it is absent from the name of the group.
+**datasetType_channelID_posID_sliceID_dateID_replicateID**. Because no
+sliceID, dateID, or replicateID is specified, they are absent from the
+name of the group.
 
-If the **dateID** is specified, then another layer of the hierarchy
-will be found between the acquisition parent group and the individual
-acquisitions within the group. This feature allows experiments from
-the same sample but different days to be identified. For example, if a
-dateID of '2016-06-30' is specified for the HeLaL_Control group, then
-the key to the localizations becomes::
+Date ID's are specified as strings in the format 'YYYY-MM-DD'.
 
-  HeLaL_Control/d2016_06_30/HeLaL_Control_1/Localizations_ChannelA647_Pos0
+Position ID's support single integer ID's as one-tuples `(0,)` and two
+integer ID's as two-tuples `(1,4)`.
 
-The 'd' signifies a date and underscores are used in the HDF group
-name to satisfy the natural naming conventions of `PyTables`_. In
-general, you won't have to worry about this somewhat strange
-formatting and simply always specify your dateIDs as 'YYYY-MM-DD' when
-creating your datasets. The HDFDatabase class will take care of the
-format conversions for you.
+Example of a full HDFDatastore key
+++++++++++++++++++++++++++++++++++
+
+A HDFDatastore key using all the ID's possible looks like::
+
+  HeLa_Control/HeLa_Control_76/Localizations_ChannelA750_Pos1_Slice5_Date20161211_Replicate5
+
+The dataset IDs matching this key are **prefix**: HeLaControl,
+**acqID**: 76, **datasetType**: Localizations, **channelID**: A750,
+**posID**: 1, **sliceID**: 5, **dateID**: 20161211,
+**replicateID**: 5.
+
+If posID was specified with two integers, such as `(1,4)`, it the
+corresponding part of the key would look like `Pos_001_004`.
+
+The dateID only has hyphens between the year, month, and day in
+Python; they are removed when writing to the HDF datastore.
 
 .. _PyTables: http://www.pytables.org/
 
 As seen in the next figure, the actual localization data is stored as
 a table inside the Localizations_ChannelA647_Pos0 group. Metadata is
 attached as `HDF attributes`_ of the group; their values are in
-`JSON`_ format. All SMLM metadata starts with the string defined in
-the variable __HDF_Metadata_Prefix__ in `config.py`_; this variable is
-currently set to 'SMLM_Metadata_'.
+`JSON`_ format. Attributes have the same key as the dataset they
+belong to; if this dataset does not exist in the HDF file, neither
+will the metadata attributes.  All attributes start with the string
+defined in the variable __HDF_Metadata_Prefix__ in `config.py`_.
 
 .. image:: ../images/database_example_2.png
    :align: center

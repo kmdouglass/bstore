@@ -23,7 +23,7 @@ config.__Registered_DatasetTypes__.append('FiducialTracks')
 #from bstore.generic_types.averageFiducial import averageFiducial
 from bstore.datasetTypes.FiducialTracks  import FiducialTracks
 from bstore                        import database as db
-from bstore                        import parsers
+from bstore                        import parsers, readers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
@@ -75,8 +75,8 @@ def test_fiducialTracks_Put_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
         
         key = 'test_prefix/test_prefix_1/FiducialTracks'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
@@ -108,12 +108,12 @@ def test_fiducialTracks_Get_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDSID = myDB.dsID('test_prefix', 1, 'FiducialTracks', None,
-                              None, None, None, None)
+        myNewDSID = db.DatasetID('test_prefix', 1, 'FiducialTracks', None,
+                                 None, None, None, None, None)
         myNewDS = myDB.get(myNewDSID)
         ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
@@ -122,7 +122,8 @@ def test_fiducialTracks_Get_Data():
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)   
+        assert_equal(ids['sliceID'],                      None)
+        assert_equal(ids['replicateID'],                  None)
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -138,20 +139,23 @@ def test_HDF_Datastore_Build_with_fiducialtracks():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
-                                            4 : 'acqID'})    
+                                            4 : 'acqID'})
+    readerDict = {'FiducialTracks': readers.CSVReader(),
+                  'AverageFiducial': readers.CSVReader()}
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
-                                    'AverageFiducial' : '_AvgFid.dat'},
-               dryRun = False)
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
+                                        'AverageFiducial' : '_AvgFid.dat'},
+                   readers=readerDict,
+                   dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
@@ -191,7 +195,6 @@ def test_HDF_Datastore_Query_with_FiducialTracks():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build_Avg.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
@@ -201,10 +204,11 @@ def test_HDF_Datastore_Query_with_FiducialTracks():
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
-                                   'AverageFiducial' : '_AvgFid.dat'},
-               dryRun = False)
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings   = {'FiducialTracks'  : '_Fids.dat',
+                                       'AverageFiducial' : '_AvgFid.dat'},
+                   dryRun = False)
     
     results = myDB.query(datasetType = 'FiducialTracks')
     

@@ -21,7 +21,7 @@ config.__Registered_DatasetTypes__.append('Localizations')
 
 from bstore.datasetTypes.Localizations  import Localizations
 from bstore                        import database as db
-from bstore                        import parsers
+from bstore                        import parsers, readers
 from pathlib                       import Path
 from os                            import remove
 from os.path                       import exists
@@ -73,8 +73,8 @@ def test_Put_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
         
         key = 'test_prefix/test_prefix_1/Localizations'
         with h5py.File(str(pathToDB / Path('test_db.h5')), 'r') as hdf:
@@ -106,12 +106,12 @@ def test_Get_Data():
         if exists(str(pathToDB / Path('test_db.h5'))):
             remove(str(pathToDB / Path('test_db.h5')))
         
-        myDB = db.HDFDatastore(pathToDB / Path('test_db.h5'))
-        myDB.put(ds)
+        with db.HDFDatastore(pathToDB / Path('test_db.h5')) as myDB:
+            myDB.put(ds)
         
         # Create a new dataset containing only IDs to test getting of the data
-        myNewDSID = myDB.dsID('test_prefix', 1, 'Localizations', None,
-                              None, None, None, None)
+        myNewDSID = db.DatasetID('test_prefix', 1, 'Localizations', None,
+                                 None, None, None, None, None)
         myNewDS = myDB.get(myNewDSID)
         ids     = myNewDS.datasetIDs
         assert_equal(ids['prefix'],              'test_prefix')
@@ -120,7 +120,8 @@ def test_Get_Data():
         assert_equal(ids['channelID'],                    None)
         assert_equal(ids['dateID'],                       None)
         assert_equal(ids['posID'],                        None)
-        assert_equal(ids['sliceID'],                      None)   
+        assert_equal(ids['sliceID'],                      None)
+        assert_equal(ids['replicateID'],                  None)
         assert_equal(myNewDS.data.loc[0, 'A'], 1)
         assert_equal(myNewDS.data.loc[1, 'A'], 2)
         assert_equal(myNewDS.data.loc[0, 'B'], 3)
@@ -136,19 +137,21 @@ def test_HDF_Datastore_Build():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
-                                            4 : 'acqID'})   
+                                            4 : 'acqID'})
+    readerDict = {'Localizations': readers.CSVReader()}
     
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
     # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings  = {'Localizations' : '_DC.dat'},
-               dryRun = False)
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings  = {'Localizations' : '_DC.dat'},
+                   readers=readerDict,
+                   dryRun = False)
     
     # Test for existence of the data
     with h5py.File(str(dbName), mode = 'r') as hdf:
@@ -186,7 +189,6 @@ def test_HDF_Datastore_Query_with_Localizations():
     dbName   = testDataRoot / Path('database_test_files/myDB_Build.h5')
     if dbName.exists():
         remove(str(dbName))
-    myDB = db.HDFDatastore(dbName)
     parser = parsers.PositionParser(positionIDs = {
                                             1 : 'prefix', 
                                             3 : 'channelID', 
@@ -195,10 +197,11 @@ def test_HDF_Datastore_Query_with_Localizations():
     # Directory to traverse for acquisition files
     searchDirectory = testDataRoot / Path('test_experiment_2')
     
-    # Build datastore
-    myDB.build(parser, searchDirectory,
-               filenameStrings  = {'Localizations'  : '_DC.dat'},
-               dryRun = False)
+     # Build datastore
+    with db.HDFDatastore(dbName) as myDB:
+        myDB.build(parser, searchDirectory,
+                   filenameStrings  = {'Localizations'  : '_DC.dat'},
+                   dryRun = False)
     
     results = myDB.query(datasetType = 'Localizations')
     

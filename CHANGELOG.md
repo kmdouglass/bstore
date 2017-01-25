@@ -1,8 +1,66 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [v1.0.1]
+## [v1.1.0]
 ### Added
+- `HDFDatastore` objects are now persistent; their state is saved to
+  the HDF file every time a dataset is put into the datastore, which
+  includes datastore builds.
+- There are now so-called `Reader` objects for reading raw
+  localization files. A `Reader` is passed as a keyword argument to a
+  `Parser`'s `readFromFile()` routine and may be used to read
+  different types of localization file formats.
+- `HDFDatastore.build()` now allows one to specify Readers for
+  different DatasetTypes via the `readers` parameter. By default, it
+  is an empty dict.
+- Currently, `CSVReader` for reading general CSV files and
+  `JSONReader` for reading JSON data are available. For the moment,
+  these are only usable for Localization, FiducialTracks, and
+  AverageFiducial DatasetTypes; they are not accessible through the
+  GUI. More specific implmentations of various `Reader` objects should
+  follow in later versions. The `CSVReader` uses the Pandas
+  [read_csv](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html)
+  method. Any keyword argument that `read_csv()` takes may be passed
+  as a keyword argument to `readFromFile()`. Likewise, the
+  `JSONReader` uses the Pandas
+  [read_json](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html)
+  method and is similarly customizable.
+- The
+  [examples](https://github.com/kmdouglass/bstore/tree/master/examples)
+  folder now includes a Jupyter notebook demonstrating how to write
+  your own Reader.
+- An explanation on how to adjust the image colormap and max/min
+  values was added to the
+  [widefield cluster overlay example](https://github.com/kmdouglass/bstore/blob/master/examples/Localization%20Overlays%20on%20Widefield%20Images.ipynb).
+  This functionality requires Matplotlib 2.0 or greater.
+- A dataset ID known as `replicateID` was added to the end of the list
+  DatasetIDs. It is an integer that is intended to denote datasets
+  with the same prefix and acquisition number but different
+  samples/biological replicates.
+
+### Changed
+- `HDFDatastore` now require Python *with...as...* statements
+  (i.e. `HDFDatastore`'s are now context managers) when putting
+  datasets or building a datastore. The reason for this is that it's
+  easier to lock the HDF file when it's used as a context manager,
+  preventing multiple HDFDatastore objects that point to the same file
+  from going out of sync with the persistent representation inside the
+  file.
+- The order of the fields in the GUI's HDFDatastore build dialog was
+  changed to better match the inputs->parameters->outputs mental model
+  of how the build process occurs.
+- HDF keys generated for datasets containing a non-empty dateID were
+  changed to improve the consistency of the key naming
+  convention. Now, dateID follows sliceID in the list of optional IDs
+  that label a dataset. It is no longer injected in as an additional
+  group in a key. The `dateID` is intended to denote the exact same
+  field of view taken on different days.
+
+### Fixed
+- Redundant calls to `readFromFile` inside the Parsers was removed.
+
+## [v1.0.1]
+## Added	
 - Added a unit test for the OverlayClusters multiprocessor.
 
 ### Fixed
@@ -178,6 +236,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/kmdouglass/bstore/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/kmdouglass/bstore/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/kmdouglass/bstore/compare/v0.1.1...v0.2.0

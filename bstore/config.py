@@ -1,4 +1,4 @@
-__bstore_Version__ = 'v1.0.0-757bcd3'
+__bstore_Version__ = 'v1.1.0-dev'
 
 """__HDF_AtomID_Prefix__ : str
     String that precedes all attributes marking dataset
@@ -70,3 +70,8 @@ __Registered_DatasetTypes__ = ['Localizations']
     Controls how much detail is provided when errors occur.
 """
 __Verbose__ = False
+
+"""__Persistence_Key__ : str
+    The location in the HDF file where the HDFDatastore object's state is kept.
+"""
+__Persistence_Key__ = '/bstore'

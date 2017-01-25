@@ -6,3 +6,4 @@ bstore/tests/test_files/*
 *__pycache__*
 *~
 docs/_build/*
+.coverage

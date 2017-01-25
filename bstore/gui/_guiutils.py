@@ -6,10 +6,12 @@
 
 from tkinter.messagebox import showerror
 
+
 class CatchExceptions:
     """Decorator for catching exceptions in GUI functions.
-    
+
     """
+
     def __init__(self, function):
         self.function = function
 
@@ -17,6 +19,6 @@ class CatchExceptions:
         try:
             return self.function(*args)
         except Exception as e:
-            showerror(title = 'B-Store Error',
-                      message = 'An error occurred in B-Store\n\n%s' % e)    
+            showerror(title='B-Store Error',
+                      message='An error occurred in B-Store\n\n%s' % e)
             print("Error: %s" % e)
