@@ -81,17 +81,18 @@ the GitHub repository, then install the new version as before.
 
 ## Troubleshooting
 
-### Anaconda cannot find update-to-date version in win-64 channels
+### Anaconda cannot find up-to-date version in win-64 channels
 
 The Anaconda package manager can sometimes have difficulties when
 finding the most up-to-date version of B-Store for Windows x64 (the
 same problem has not been observed on Linux x64 systems). This will be
 apparent when, using the directions listed above, `conda` will ask you
-to verify the version of the packages to install. If the `conda`
-indicates that it wants to install a version of B-Store that is less
-than the most up-to-date version listed at the top of this README
-file, then try downgrading conda. Version 4.2.x has been known to fix
-this problem.
+to verify the version of the packages to install. If during the
+install `conda` indicates that it wants to install a version of
+B-Store that is less than the most up-to-date version listed at the
+top of this README file, then try downgrading conda. Version 4.2.x has
+been known to fix this problem, whereas versions 4.3.7 and 4.3.8 have
+been found to cause the problem.
 
 In the root conda environment, enter the command:
 
