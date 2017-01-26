@@ -259,7 +259,7 @@ class PositionParser(Parser):
         # buttons are clicked.
         self._configuredByGUI = False
 
-        dsIDs = db.HDFDatastore.dsID._fields  # Extract dataset ID names
+        dsIDs = db.DatasetID._fields  # Extract dataset ID names
         options = [x for x in dsIDs
                    if x != 'datasetType' and x != 'attributeOf']
         options.append('field separator')
@@ -321,7 +321,7 @@ class PositionParser(Parser):
             super().__init__(**kwargs)
             self.positionIDs = positionIDs
 
-            dsIDs = db.HDFDatastore.dsID._fields  # Extract dataset ID names
+            dsIDs = db.DatasetID._fields  # Extract dataset ID names
             options = [x for x in dsIDs
                        if x != 'datasetType' and x != 'attributeOf']
 

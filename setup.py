@@ -9,7 +9,7 @@ config = {
     'url'             : 'https://github.com/kmdouglass/bstore',
     'download_url'    : 'https://github.com/kmdouglass/bstore',
     'author_email'    : 'kyle.m.douglass@gmail.com',
-    'version'         : '1.1.0',
+    'version'         : '1.1.1',
     'packages'        : find_packages(),
     'scripts'         : ['bin/bstore'],
     'name'            : 'bstore'

@@ -79,6 +79,26 @@ If instead you installed B-Store from source using pip, simply
 uninstall your current version, download or pull the latest code from
 the GitHub repository, then install the new version as before.
 
+## Troubleshooting
+
+### Anaconda cannot find update-to-date version in win-64 channels
+
+The Anaconda package manager can sometimes have difficulties when
+finding the most up-to-date version of B-Store for Windows x64 (the
+same problem has not been observed on Linux x64 systems). This will be
+apparent when, using the directions listed above, `conda` will ask you
+to verify the version of the packages to install. If the `conda`
+indicates that it wants to install a version of B-Store that is less
+than the most up-to-date version listed at the top of this README
+file, then try downgrading conda. Version 4.2.x has been known to fix
+this problem.
+
+In the root conda environment, enter the command:
+
+```sh
+conda install conda=4.2.16
+```
+
 # What is B-Store?
 
 [B-Store](https://github.com/kmdouglass/bstore) is a lightweight data

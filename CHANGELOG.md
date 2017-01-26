@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [v1.1.1]
+### Fixed
+- The PositionParser configuration window was unable to find the
+  DatasetID fields of HDFDatastore. This is now fixed.
+
 ## [v1.1.0]
 ### Added
 - `HDFDatastore` objects are now persistent; their state is saved to
@@ -236,7 +241,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.1.1...HEAD
+[v1.1.1]: https://github.com/kmdouglass/bstore/compare/v1.1.0...v1.1.1
 [v1.1.0]: https://github.com/kmdouglass/bstore/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/kmdouglass/bstore/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/kmdouglass/bstore/compare/v0.2.1...v1.0.0
