@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Changed
+- The version number contained in the `bstore.__version__` string is
+  now formatted to contain only the major/minor/patch numbers: for
+  example, **1.1.1** instead of **v1.1.1-f7129fe**.
+
 ## [v1.1.1]
 ### Fixed
 - The PositionParser configuration window was unable to find the
