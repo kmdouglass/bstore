@@ -904,10 +904,10 @@ class DefaultDriftComputer(ComputeTrajectories):
         # Set the y-axis based on the average spline
         minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()
         minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max()
-        minxy -= 45
-        maxxy += 45
-        minyy -= 45
-        maxyy += 45
+        minxy -= 50
+        maxxy += 50
+        minyy -= 50
+        maxyy += 50
 
         if self.fiducialLocs is None:
             raise ZeroFiducials(
@@ -1126,6 +1126,8 @@ class FiducialDriftCorrect(DriftCorrect):
             # in fiducialLocs. This relies on all functions preceding this
             # line to not modify the index column of the input df.
             procdf = df[~df.index.isin(fiducialLocs.index.levels[0])]
+        else:
+            procdf = df
 
         # Compute the final drift trajectory
         frames = self._frameCol
