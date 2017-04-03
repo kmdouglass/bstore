@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - The `FiducialDriftCorrect` processor no longer raises an error when
   the `removeFiducials` parameter is set to `False`.
+- Clusters with too few data points were causing computation of some
+  cluster statistics with the `ComputeClusterStats` processor to
+  fail. In particular, the convex hull and eccentricity were
+  susceptible to these errors. NaN's are now returned instead when the
+  computation for a cluster fails.
 
 ## [v1.1.1]
 ### Fixed

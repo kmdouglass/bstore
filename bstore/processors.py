@@ -454,14 +454,18 @@ class ComputeClusterStats:
         ecc   : float
             The eccentricity of the group of localizations.
         """
-        # Compute the covariance matrix  and its eigevalues
-        Mcov = np.cov(group[coordinates].as_matrix(),
-                      rowvar=0,
-                      bias=1)
-
-        eigs = np.linalg.eigvals(Mcov)
-
-        ecc = np.max(eigs) / min(eigs)
+        try:
+            # Compute the covariance matrix  and its eigevalues
+            Mcov = np.cov(group[coordinates].as_matrix(),
+                          rowvar=0,
+                          bias=1)
+            eigs = np.linalg.eigvals(Mcov)
+            ecc = np.max(eigs) / min(eigs)
+        except:
+            print('Warning: Error occurred during eccentricity computation. '
+                  'Returning NaN instead.')
+            ecc = np.nan
+            
         return ecc
 
     def _convexHull(self, group, coordinates):
@@ -489,14 +493,15 @@ class ComputeClusterStats:
                    'Cannot compute convex hull. Returning NaN instead.'))
             return np.nan
 
-        points = group[coordinates].as_matrix()
-        output = qconvex('FA', points)
-
         # Find output volume
         try:
+            points = group[coordinates].as_matrix()
+            output = qconvex('FA', points)
             volume = [vol for vol in output if 'Total volume:' in vol][0]
             volume = float(re.findall(r'[-+]?[0-9]*\.?[0-9]+', volume)[0])
         except:
+            print(('Warning: Error occurred during convhex hull computation. '
+                   'Returning NaN instead.'))
             volume = np.nan
 
         return volume
