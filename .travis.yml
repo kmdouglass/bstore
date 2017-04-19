@@ -30,11 +30,11 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy matplotlib scikit-learn pytables h5py pandas
   - source activate test-environment
   - conda install -c soft-matter trackpy
+  - conda install -c kmdouglass tifffile=0.10.0
 
   # Install third party packages from pip
   - easy_install pyhull
   - pip install filelock
-  - pip install tifffile
 
   # Install this library
   - python setup.py install
