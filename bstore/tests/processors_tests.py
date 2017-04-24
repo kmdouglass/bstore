@@ -33,7 +33,7 @@ def test_DriftCorrection():
     # Tell the drift corrector where the fiducials are.
     # Normally, these methods are not directly accessed by users; this is why
     # we need to handle renaming of columns.
-    dc._fidRegions = [
+    dc._regions = [
         {'xMin' : 730,
          'xMax' : 870,
          'yMin' : 730,
@@ -91,7 +91,7 @@ def test_DriftCorrection_dropTrajectories():
     # Tell the drift corrector where the fiducials are.
     # Normally, these methods are not directly access by users; this is why
     # we need to handle renaming of columns.
-    dc._fidRegions = [
+    dc._regions = [
         {'xMin' : 730,
          'xMax' : 870,
          'yMin' : 730,
@@ -154,7 +154,7 @@ def test_DriftCorrection_MaxRadius():
     # Tell the drift corrector where the fiducials are.
     # Normally, these methods are not directly accessed by users; this is why
     # we need to handle renaming of columns.
-    dc._fidRegions = [
+    dc._regions = [
         {'xMin' : 730,
          'xMax' : 870,
          'yMin' : 730,

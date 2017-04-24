@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 - The version number contained in the `bstore.__version__` string is
   now formatted to contain only the major/minor/patch numbers: for
   example, **1.1.1** instead of **v1.1.1-f7129fe**.
+- The code for visualing local densities of localizations and
+  selecting regions of interest has been separated from
+  `FiducialDriftCorrect` and moved into a new processor class called
+  `SelectLocalizations`. `FiducialDriftCorrect` inherits from this new
+  class and will work exactly as before. This change will allow other
+  processors to reuse the visualization code.
 
 ### Fixed
 - The `FiducialDriftCorrect` processor no longer raises an error when
