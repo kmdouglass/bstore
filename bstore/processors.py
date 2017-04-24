@@ -171,6 +171,152 @@ class MergeStats(metaclass=ABCMeta):
             / photons.apply(np.sqrt).sum()
 
         return wAvg
+    
+"""
+Base classes
+-------------------------------------------------------------------------------
+"""
+
+
+class SelectLocalizations:
+    """Interactively select localizations using rectangular ROI's.
+    
+    This class is used to display an image containing information about the
+    local density of localizations within a dataset. From this image, a user
+    may interactively select regions containing localizations for further
+    analysis, such as when performing fiducial drift corrections.
+    
+    """
+    def __init__(self):
+        # Setup the class fields
+        self._fidRegions = [{'xMin': None, 'xMax': None,
+                             'yMin': None, 'yMax': None}]
+            
+    def doInteractiveSearch(self, df, gridSize=100, unitConvFactor=1. / 1000,
+                            unitLabel='microns'):
+        """Interactively find regions in the histogram images.
+
+        Allows the user to select regions and extract localizations.
+
+        Parameters
+        ----------
+        df             : Pandas DataFrame
+            Data to visualize and search for fiducials.
+        gridSize       : float
+            The size of the hexagonal grid in the 2D histogram.
+        unitConvFactor : float
+            Conversion factor for plotting the 2D histogram in different units
+            than the data. Most commonly used to convert nanometers to microns.
+            In this case, there are unitConvFactor = 1/1000 nm/micron.
+        unitLabel      : str
+            Unit label for the histogram. This is only used for labeling the
+            axes of the 2D histogram; users may change this depending on the
+            units of their data and unitConvFactor.
+
+        """
+        # Reset the fiducial regions
+        self._fidRegions = [{'xMin': None, 'xMax': None,
+                             'yMin': None, 'yMax': None}]
+
+        def onClose(event):
+            """Run when the figure closes.
+
+            """
+            fig.canvas.stop_event_loop()
+
+        def onSelect(eclick, erelease):
+            pass
+
+        def toggleSelector(event, processor):
+            """Handles user input.
+
+            """
+            if event.key in [' ']:
+                # Clear fiducial regions list if they are not empty
+                #(Important for when multiple search regions are selected.)
+                if not self._fidRegions[0]['xMin']:
+                    # Convert _fidRegions to empty list ready for appending
+                    self._fidRegions = []
+
+                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
+                processor._fidRegions.append({'xMin': xMin / unitConvFactor,
+                                              'xMax': xMax / unitConvFactor,
+                                              'yMin': yMin / unitConvFactor,
+                                              'yMax': yMax / unitConvFactor})
+
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('close_event', onClose)
+
+        im = ax.hexbin(df[self._coordCols[0]] * unitConvFactor,
+                       df[self._coordCols[1]] * unitConvFactor,
+                       gridsize=gridSize, cmap=plt.cm.YlOrRd_r)
+        ax.set_xlabel(r'x-position, ' + unitLabel)
+        ax.set_ylabel(r'y-position, ' + unitLabel)
+        ax.invert_yaxis()
+
+        cb = plt.colorbar(im)
+        cb.set_label('Counts')
+
+        toggleSelector.RS = RectangleSelector(ax,
+                                              onSelect,
+                                              drawtype='box',
+                                              useblit=True,
+                                              button=[1, 3],  # l/r only
+                                              spancoords='data',
+                                              interactive=True)
+        plt.connect('key_press_event',
+                    lambda event: toggleSelector(event, self))
+
+        # Make figure full screen
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+        plt.show()
+
+        # Suppress the MatplotlibDeprecationWarning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig.canvas.start_event_loop_default()
+
+    def _extractLocsFromRegions(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+
+        Returns
+        -------
+        locsInRegions : Pandas DataFrame
+            DataFrame containing localizations only within the select regions.
+
+        """
+        # If search regions are not defined, raise an error
+        if not self._fidRegions[0]['xMin']:
+            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
+
+        locsInRegions = []
+        numRegions = len(self._fidRegions)
+        for regionNumber in range(numRegions):
+            xMin = self._fidRegions[regionNumber]['xMin']
+            xMax = self._fidRegions[regionNumber]['xMax']
+            yMin = self._fidRegions[regionNumber]['yMin']
+            yMax = self._fidRegions[regionNumber]['yMax']
+
+            # Isolate the localizations within the current region
+            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
+                                  (df[self._coordCols[0]] < xMax) &
+                                  (df[self._coordCols[1]] > yMin) &
+                                  (df[self._coordCols[1]] < yMax)].copy()
+
+            # Add a multi-index identifying the region number
+            locsInCurrRegion['region_id'] = regionNumber
+            locsInCurrRegion.set_index(['region_id'], append=True,
+                                       inplace=True)
+
+            locsInRegions.append(locsInCurrRegion)
+
+        return pd.concat(locsInRegions)
 
 """
 Concrete classes
@@ -1035,7 +1181,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         self.zeroFrame = self._init_zeroFrame
 
 
-class FiducialDriftCorrect(DriftCorrect):
+class FiducialDriftCorrect(DriftCorrect, SelectLocalizations):
     """Correct localizations for lateral drift using fiducials.
 
     Parameters
@@ -1083,12 +1229,6 @@ class FiducialDriftCorrect(DriftCorrect):
         else:
             self.driftComputer = DefaultDriftComputer(coordCols=coordCols,
                                                       frameCol=frameCol)
-
-        # Setup the class fields
-        self._fidRegions = [{'xMin': None,
-                             'xMax': None,
-                             'yMin': None,
-                             'yMax': None}]
 
     def __call__(self, df):
         """Find the localizations and perform the drift correction.
@@ -1203,136 +1343,12 @@ class FiducialDriftCorrect(DriftCorrect):
 
         return corrdf
 
-    def doInteractiveSearch(self, df, gridSize=100, unitConvFactor=1. / 1000,
-                            unitLabel='microns'):
-        """Interactively find fiducials in the histogram images.
-
-        Allows the user to select regions in which to search for fiducials.
-
-        Parameters
-        ----------
-        df             : Pandas DataFrame
-            Data to visualize and search for fiducials.
-        gridSize       : float
-            The size of the hexagonal grid in the 2D histogram.
-        unitConvFactor : float
-            Conversion factor for plotting the 2D histogram in different units
-            than the data. Most commonly used to convert nanometers to microns.
-            In this case, there are unitConvFactor = 1/1000 nm/micron.
-        unitLabel      : str
-            Unit label for the histogram. This is only used for labeling the
-            axes of the 2D histogram; users may change this depending on the
-            units of their data and unitConvFactor.
-
-        """
-        # Reset the fiducial regions
-        self._fidRegions = [{'xMin': None, 'xMax': None,
-                             'yMin': None, 'yMax': None}]
-
-        def onClose(event):
-            """Run when the figure closes.
-
-            """
-            fig.canvas.stop_event_loop()
-
-        def onSelect(eclick, erelease):
-            pass
-
-        def toggleSelector(event, processor):
-            """Handles user input.
-
-            """
-            if event.key in [' ']:
-                # Clear fiducial regions list if they are not empty
-                #(Important for when multiple search regions are selected.)
-                if not self._fidRegions[0]['xMin']:
-                    # Convert _fidRegions to empty list ready for appending
-                    self._fidRegions = []
-
-                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
-                processor._fidRegions.append({'xMin': xMin / unitConvFactor,
-                                              'xMax': xMax / unitConvFactor,
-                                              'yMin': yMin / unitConvFactor,
-                                              'yMax': yMax / unitConvFactor})
-
-        fig, ax = plt.subplots()
-        fig.canvas.mpl_connect('close_event', onClose)
-
-        im = ax.hexbin(df[self._coordCols[0]] * unitConvFactor,
-                       df[self._coordCols[1]] * unitConvFactor,
-                       gridsize=gridSize, cmap=plt.cm.YlOrRd_r)
-        ax.set_xlabel(r'x-position, ' + unitLabel)
-        ax.set_ylabel(r'y-position, ' + unitLabel)
-        ax.invert_yaxis()
-
-        cb = plt.colorbar(im)
-        cb.set_label('Counts')
-
-        toggleSelector.RS = RectangleSelector(ax,
-                                              onSelect,
-                                              drawtype='box',
-                                              useblit=True,
-                                              button=[1, 3],  # l/r only
-                                              spancoords='data',
-                                              interactive=True)
-        plt.connect('key_press_event',
-                    lambda event: toggleSelector(event, self))
-
-        # Make figure full screen
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
-        plt.show()
-
-        # Suppress the MatplotlibDeprecationWarning
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            fig.canvas.start_event_loop_default()
-
-    def _extractLocsFromRegions(self, df):
-        """Reduce the size of the search area for automatic fiducial detection.
-
-        Parameters
-        ----------
-        df           : Pandas DataFrame
-            DataFrame that will be spatially filtered.
-
-        Returns
-        -------
-        locsInRegions : Pandas DataFrame
-            DataFrame containing localizations only within the select regions.
-
-        """
-        # If search regions are not defined, raise an error
-        if not self._fidRegions[0]['xMin']:
-            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
-
-        locsInRegions = []
-        numRegions = len(self._fidRegions)
-        for regionNumber in range(numRegions):
-            xMin = self._fidRegions[regionNumber]['xMin']
-            xMax = self._fidRegions[regionNumber]['xMax']
-            yMin = self._fidRegions[regionNumber]['yMin']
-            yMax = self._fidRegions[regionNumber]['yMax']
-
-            # Isolate the localizations within the current region
-            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
-                                  (df[self._coordCols[0]] < xMax) &
-                                  (df[self._coordCols[1]] > yMin) &
-                                  (df[self._coordCols[1]] < yMax)].copy()
-
-            # Add a multi-index identifying the region number
-            locsInCurrRegion['region_id'] = regionNumber
-            locsInCurrRegion.set_index(['region_id'], append=True,
-                                       inplace=True)
-
-            locsInRegions.append(locsInCurrRegion)
-
-        return pd.concat(locsInRegions)
-
     def readSettings(self):
+        # TODO
         raise(NotImplementedError)
 
     def writeSettings(self):
+        # TODO
         raise(NotImplementedError)
 
 
@@ -1623,6 +1639,149 @@ class MergeFangTS(MergeStats):
         procdf.reset_index(particleCol, inplace=True)
 
         return procdf
+    
+    
+class SelectLocalizations:
+    """Interactively select localizations using rectangular ROI's.
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    """
+    def __init__(self):
+        # Setup the class fields
+        self._fidRegions = [{'xMin': None, 'xMax': None,
+                             'yMin': None, 'yMax': None}]
+            
+    def doInteractiveSearch(self, df, gridSize=100, unitConvFactor=1. / 1000,
+                            unitLabel='microns'):
+        """Interactively find regions in the histogram images.
+
+        Allows the user to select regions and extract localizations.
+
+        Parameters
+        ----------
+        df             : Pandas DataFrame
+            Data to visualize and search for fiducials.
+        gridSize       : float
+            The size of the hexagonal grid in the 2D histogram.
+        unitConvFactor : float
+            Conversion factor for plotting the 2D histogram in different units
+            than the data. Most commonly used to convert nanometers to microns.
+            In this case, there are unitConvFactor = 1/1000 nm/micron.
+        unitLabel      : str
+            Unit label for the histogram. This is only used for labeling the
+            axes of the 2D histogram; users may change this depending on the
+            units of their data and unitConvFactor.
+
+        """
+        # Reset the fiducial regions
+        self._fidRegions = [{'xMin': None, 'xMax': None,
+                             'yMin': None, 'yMax': None}]
+
+        def onClose(event):
+            """Run when the figure closes.
+
+            """
+            fig.canvas.stop_event_loop()
+
+        def onSelect(eclick, erelease):
+            pass
+
+        def toggleSelector(event, processor):
+            """Handles user input.
+
+            """
+            if event.key in [' ']:
+                # Clear fiducial regions list if they are not empty
+                #(Important for when multiple search regions are selected.)
+                if not self._fidRegions[0]['xMin']:
+                    # Convert _fidRegions to empty list ready for appending
+                    self._fidRegions = []
+
+                xMin, xMax, yMin, yMax = toggleSelector.RS.extents
+                processor._fidRegions.append({'xMin': xMin / unitConvFactor,
+                                              'xMax': xMax / unitConvFactor,
+                                              'yMin': yMin / unitConvFactor,
+                                              'yMax': yMax / unitConvFactor})
+
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('close_event', onClose)
+
+        im = ax.hexbin(df[self._coordCols[0]] * unitConvFactor,
+                       df[self._coordCols[1]] * unitConvFactor,
+                       gridsize=gridSize, cmap=plt.cm.YlOrRd_r)
+        ax.set_xlabel(r'x-position, ' + unitLabel)
+        ax.set_ylabel(r'y-position, ' + unitLabel)
+        ax.invert_yaxis()
+
+        cb = plt.colorbar(im)
+        cb.set_label('Counts')
+
+        toggleSelector.RS = RectangleSelector(ax,
+                                              onSelect,
+                                              drawtype='box',
+                                              useblit=True,
+                                              button=[1, 3],  # l/r only
+                                              spancoords='data',
+                                              interactive=True)
+        plt.connect('key_press_event',
+                    lambda event: toggleSelector(event, self))
+
+        # Make figure full screen
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+        plt.show()
+
+        # Suppress the MatplotlibDeprecationWarning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig.canvas.start_event_loop_default()
+
+    def _extractLocsFromRegions(self, df):
+        """Reduce the size of the search area for automatic fiducial detection.
+
+        Parameters
+        ----------
+        df           : Pandas DataFrame
+            DataFrame that will be spatially filtered.
+
+        Returns
+        -------
+        locsInRegions : Pandas DataFrame
+            DataFrame containing localizations only within the select regions.
+
+        """
+        # If search regions are not defined, raise an error
+        if not self._fidRegions[0]['xMin']:
+            raise ZeroFiducialRegions('Error: Identified no fiducial regions.')
+
+        locsInRegions = []
+        numRegions = len(self._fidRegions)
+        for regionNumber in range(numRegions):
+            xMin = self._fidRegions[regionNumber]['xMin']
+            xMax = self._fidRegions[regionNumber]['xMax']
+            yMin = self._fidRegions[regionNumber]['yMin']
+            yMax = self._fidRegions[regionNumber]['yMax']
+
+            # Isolate the localizations within the current region
+            locsInCurrRegion = df[(df[self._coordCols[0]] > xMin) &
+                                  (df[self._coordCols[0]] < xMax) &
+                                  (df[self._coordCols[1]] > yMin) &
+                                  (df[self._coordCols[1]] < yMax)].copy()
+
+            # Add a multi-index identifying the region number
+            locsInCurrRegion['region_id'] = regionNumber
+            locsInCurrRegion.set_index(['region_id'], append=True,
+                                       inplace=True)
+
+            locsInRegions.append(locsInCurrRegion)
+
+        return pd.concat(locsInRegions)
+    
 
 """Exceptions
 -------------------------------------------------------------------------------
