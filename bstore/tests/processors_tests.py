@@ -45,11 +45,11 @@ def test_DriftCorrection():
          ]
          
     # Extract fiducials from the localizations
-    fiducialLocs = dc._extractLocsFromRegions(locs)
-    dc.driftComputer.fiducialLocs = fiducialLocs
+    regionLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.regionLocs = regionLocs
     
     # Did we find the trajectories?
-    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+    assert_equal(regionLocs.index.levels[1].max(), 1)
 
     # Correct the localizations
     dc.interactiveSearch = False
@@ -102,11 +102,11 @@ def test_DriftCorrection_dropTrajectories():
           'yMax' : 1600}
          ]
     # Extract fiducials from the localizations
-    fiducialLocs = dc._extractLocsFromRegions(locs)
-    dc.driftComputer.fiducialLocs = fiducialLocs
+    regionLocs = dc._extractLocsFromRegions(locs)
+    dc.driftComputer.regionLocs = regionLocs
     
     # Did we find the trajectories?
-    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+    assert_equal(regionLocs.index.levels[1].max(), 1)
     
     # Correct the localizations
     dc.interactiveSearch = False
@@ -166,12 +166,12 @@ def test_DriftCorrection_MaxRadius():
          ]
          
     # Extract fiducials from the localizations
-    fiducialLocs = dc._extractLocsFromRegions(locs)
+    regionLocs = dc._extractLocsFromRegions(locs)
     dc.driftComputer.maxRadius    = 50 # radius is only 50 nm large
-    dc.driftComputer.fiducialLocs = fiducialLocs
+    dc.driftComputer.regionLocs = regionLocs
     
     # Did we find the trajectories?
-    assert_equal(fiducialLocs.index.levels[1].max(), 1)
+    assert_equal(regionLocs.index.levels[1].max(), 1)
 
     # Correct the localizations
     dc.interactiveSearch = False
@@ -208,7 +208,7 @@ def test_DriftCorrection_MaxRadius():
     # only test an approximate number of localizations.
     # I independently determined that fiducial region 0 has 8837 localizations
     # that are 50 nm away or less from the center. Region 1 has 9809.
-    x = dc.driftComputer.fiducialLocs
+    x = dc.driftComputer.regionLocs
     assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(
         0, level='region_id', drop_level=False)), 8837)
     assert_equal(len(x.loc[x[dc.driftComputer._includeColName] ==True].xs(

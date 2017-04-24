@@ -26,12 +26,16 @@ __version__ = config.__bstore_Version__
 
 
 class ComputeTrajectories(metaclass=ABCMeta):
-    """Basic functionality for computing drift trajectories from fiducials.
+    """Basic functionality for computing trajectories from localizations.
+    
+    This is used to compute trajectories from regions of a dataset containing
+    localizations, such as fiducial drift trajectories (position vs. frame
+    number)or astigmatic calibration curves (PSF width vs. z).
 
     Attributes
     ----------
-    fiducialLocs : Pandas DataFrame
-        The localizations for individual fiducials.
+    regionLocs : Pandas DataFrame
+        The localizations for individual regions.
 
     """
 
@@ -39,38 +43,38 @@ class ComputeTrajectories(metaclass=ABCMeta):
         """Initializes the trajectory computer.
 
         """
-        self._fiducialData = None
+        self._regionData = None
 
     @property
-    def fiducialLocs(self):
+    def regionLocs(self):
         """DataFrame holding the localizations for individual fiducials.
 
         """
-        return self._fiducialData
+        return self._regionData
 
-    @fiducialLocs.setter
-    def fiducialLocs(self, fiducialData):
+    @regionLocs.setter
+    def regionLocs(self, regionData):
         """Checks that the fiducial localizations are formatted correctly.
 
         """
-        if fiducialData is not None:
-            assert 'region_id' in fiducialData.index.names, \
-                'fiducialLocs DataFrame requires index named "region_id"'
+        if regionData is not None:
+            assert 'region_id' in regionData.index.names, \
+                'regionLocs DataFrame requires index named "region_id"'
 
             # Sort the multi-index to allow slicing
-            fiducialData.sort_index(inplace=True)
+            regionData.sort_index(inplace=True)
 
-        self._fiducialData = fiducialData
+        self._regionData = regionData
 
-    def clearFiducialLocs(self):
+    def clearRegionLocs(self):
         """Clears any currently held localization data.
 
         """
-        self._fiducialData = None
+        self._regionData = None
 
     @abstractmethod
-    def computeDriftTrajectory(self):
-        """Computes the drift trajectory.
+    def computeTrajectory(self):
+        """Computes the trajectory.
 
         """
         pass
@@ -378,12 +382,19 @@ class CalibrateAstigmatism(SelectLocalizations):
     
     Parameters
     ----------
-    coordCols : list str
+    interactiveSearch : bool
+        Determines whether the user will interactively find fiducials.
+        Setting this to False means that fiducials are found automatically,
+        although this is not always reliable.
+    coordCols : list of str
         List of strings identifying the x- and y-coordinate column names
         in that order.
+    sigmaCols : list of str
+        List of strings identifying the column names containing the PSF widths
+        in x and y.
     zCol      : str
         Name of the column identifying the z-coordinate values.
-    astigComputer: AstigComputer
+    astigmatismComputer: AstigComputer
         Algorithm for computing astigmatic calibration curves.
         
     Attributes
@@ -391,16 +402,20 @@ class CalibrateAstigmatism(SelectLocalizations):
     
     
     """
-    def __init__(self, coordCols=['x', 'y'], zCol='z',
-                 astigmatismComputer=None):
+    def __init__(self, interactiveSearch=True, coordCols=['x', 'y'],
+                 sigmaCols=['sigma_x', 'sigma_y'], zCol='z', startz=None,
+                 stopz=None, astigmatismComputer=None):
+        self.interactiveSearch = interactiveSearch
+        
         self._coordCols = coordCols
+        self._sigmaCols = sigmaCols
         self._zCol      = zCol
         
         if astigmatismComputer:
             self.astigmatismComputer = astigmatismComputer
         else:
             self.astigmatismComputer = DefaultAstigmatismComputer(
-                                           coordCols=coordCols, zCol=zCol)
+                                           sigmaCols=sigmaCols, zCol=zCol)
     
     def __call__(self, df):
         """Computes the astigmatic calibration curves from user-selected beads.
@@ -415,14 +430,22 @@ class CalibrateAstigmatism(SelectLocalizations):
         # TODO
         
         """
-        self.doInteractiveSearch(df)
+        if self.interactiveSearch:
+            self.doInteractiveSearch(df)
 
-        try:
-            locs = self._extractLocsFromRegions(df)
-        except ZeroFiducialRegions:
-            print('No regions containing localizations identified. '
-                  'Returning original DataFrame.')
-            return df
+            try:
+                locs = self._extractLocsFromRegions(df)
+            except ZeroFiducialRegions:
+                print('No regions containing localizations identified. '
+                      'Returning original DataFrame.')
+                self.astigmatismComputer.clearRegionLocs()
+                return df
+        else:
+            locs = self.astigmatismComputer.regionLocs
+        
+        z = self._zCol
+        self.calibrationCurve = \
+            self.astigmatismComputer.computeTrajectory(locs)
 
 class CleanUp:
     """Performs regular clean up routines on imported data.
@@ -757,23 +780,96 @@ class ConvertHeader:
         return procdf
 
 
-class DefaultAstigmatismComputer:
+class DefaultAstigmatismComputer(ComputeTrajectories):
     """Default algorithm for computing astigmatic calibration curves.
     
     Parameters
     ----------
-    coordCols : list str
+    coordCols : list of str
         List of strings identifying the x- and y-coordinate column names
         in that order.
+    sigmaCols : list of str
+        List of strings identifying the column names containing the PSF widths
+        in x and y.
     zCol      : str
-        Name of the column identifying the z-coordinate values.    
+        Name of the column identifying the z-coordinate values.
+    smoothingWindowSize : float
+        Moving average window size in slices for spline fitting.
+    smoothingFilterSize : float
+        Moving average Gaussian kernel width in slices for spline fitting.
+    useTrajectories : list of int or empty list
+        List of integers corresponding to the fiducial trajectories to use
+        when computing the average trajectory. If [], all trajectories
+        are used.
+    startz    : float
+        The start point of the z-fitting range.
+    stopz     : float
+        The end point of the z-fitting range.
     
     """
-    def __init__(self, coordCols=['x','y'], zCol='z'):
-        self.coordCols = coordCols
-        self.zCol      = zCol
+    def __init__(self, coordCols=['x','y'], sigmaCols=['sigma_x', 'sigma_y'],
+                 zCol='z', smoothingWindowSize=5, smoothingFilterSize=3,
+                 useTrajectories=[], startz=None, stopz=None):
+        self.coordCols           = coordCols
+        self.sigmaCols           = sigmaCols
+        self.zCol                = zCol
+        self.smoothingWindowSize = smoothingWindowSize
+        self.smoothingFilterSize = smoothingFilterSize
+        self.useTrajectories     = useTrajectories
+        self.startz = startz
+        self.stopz  = stopz
+        super(ComputeTrajectories, self).__init__()
         
-    def computeAstigmatism(self, locs, startz, stopz):
+        # Column of DataFrame used to indicate what localizations are not
+        # included in a trajectory for a spline fit, e.g. outliers
+        self._includeColName = 'included_in_trajectory'
+        
+    def combineCurves(self, startz, stopz):
+        """Average the splines from different fiducials together.
+
+        Parameters
+        ----------
+        startz : float
+            Minimum frame number in full dataset
+        stopz  : float
+            Maximum frame number in full dataset
+
+        """
+        zPos = np.linspace(startz, stopz, num=100)
+        numSplines = len(self.splines)
+
+        # Evalute each x and y spline at every frame position
+        fullRangeSplines = {'xS': np.array([self.splines[i]['xS'](zPos)
+                                            for i in range(numSplines)]),
+                            'yS': np.array([self.splines[i]['yS'](zPos)
+                                            for i in range(numSplines)])}
+
+        # Create the mask area if only certain fiducials are to be averaged
+        if not self.useTrajectories:
+            mask = np.arange(numSplines)
+        else:
+            mask = self.useTrajectories
+
+        # Compute the average over spline values
+        avgSpline = {'xS': [], 'yS': []}
+
+        try:
+            for key in avgSpline.keys():
+                avgSpline[key] = np.mean(fullRangeSplines[key][mask], axis=0)
+        except IndexError:
+            raise UseTrajectoryError(
+                'At least one of the indexes inside '
+                'useTrajectories does not match a known fiducial '
+                'index. The maximum fiducial index is {0:d}.'
+                ''.format(
+                    numSplines - 1))
+        
+        # Append z positions to avgSpline
+        avgSpline['z'] = zPos
+
+        self.avgSpline = pd.DataFrame(avgSpline)
+        
+    def computeTrajectory(self, locs):
         """Computes the final drift trajectory from fiducial localizations.
 
         Parameters
@@ -790,14 +886,215 @@ class DefaultAstigmatismComputer:
         TODO
 
         """
-        self.clearFiducialLocs()
-        self.fiducialLocs = locs
-        self._removeOutliers()
+        z = self.zCol
+        if self.startz:
+            startz = self.startz
+        else:
+            startz = locs[z].min()
+        
+        if self.stopz:
+            stopz = self.stopz
+        else:
+            stopz  = locs[z].max()
+        
+        self.clearRegionLocs()
+        self.regionLocs = locs
+        self._removeOutliers(startz, stopz)
         self.fitCurves()
-        self.combineCurves(startFrame, stopFrame)
+        self.combineCurves(startz, stopz)
 
         return self.avgSpline
+
+    def fitCurves(self):
+        """Fits individual splines to each z-scan.
+
+        """
+        print('Performing spline fits...')
+        # Check whether trajectories already exist
+        if self.regionLocs is None:
+            raise ZeroRegions('Zero regions containing beads are currently '
+                              'saved with this processor.')
+
+        self.splines = []
+        regionIDIndex = self.regionLocs.index.names.index('region_id')
+        x = self.sigmaCols[0]
+        y = self.sigmaCols[1]
+        z = self.zCol
         
+        # rid is an integer
+        for rid in self.regionLocs.index.levels[regionIDIndex]:
+            # Get localizations from inside the current region matching rid
+            # and that passed the _removeOutliers() step
+            currRegionLocs = self.regionLocs.xs(
+                rid, level='region_id', drop_level=False)
+
+            # Use only those fiducials within a certain radius of the
+            # cluster of localization's center of mass
+            currRegionLocs = currRegionLocs.loc[
+                currRegionLocs[self._includeColName]]
+            
+            windowSize = self.smoothingWindowSize
+            sigma = self.smoothingFilterSize
+    
+            # Determine the appropriate weighting factors
+            _, varx = self._movingAverage(currRegionLocs[x],
+                                          windowSize=windowSize,
+                                          sigma=sigma)
+            _, vary = self._movingAverage(currRegionLocs[y],
+                                          windowSize=windowSize,
+                                          sigma=sigma)
+    
+            # Perform spline fits. Extrapolate using boundary values (const)
+            extrapMethod = 'extrapolate'
+            xSpline = UnivariateSpline(currRegionLocs[z].as_matrix(),
+                                       currRegionLocs[x].as_matrix(),
+                                       w=1 / np.sqrt(varx),
+                                       ext=extrapMethod)
+            ySpline = UnivariateSpline(currRegionLocs[z].as_matrix(),
+                                       currRegionLocs[y].as_matrix(),
+                                       w=1 / np.sqrt(vary),
+                                       ext=extrapMethod)
+    
+            # Append results to class field splines
+            self.splines.append({'xS': xSpline,
+                                 'yS': ySpline})
+
+    def _movingAverage(self, series, windowSize=100, sigma=3):
+        """Estimate the weights for the smoothing spline.
+
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in axial slices.
+        sigma      : int
+            Size of the Gaussian averaging kernel in axial slices.
+
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the sumoving window.
+
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+
+        """
+        b = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b / b.sum())
+        var = filters.convolve1d(np.power(series - average, 2), b / b.sum())
+        return average, var
+    
+    def plotCurves(self, splineNumber=None):
+        """Make a plot of each bead's z-stack and the average spline fit.
+
+        plotBeads(splineNumber = None) allows the user to check the
+        individual beads and their fits against the average spline fit.
+
+        Parameters
+        ----------
+        splineNumber : int
+            Index of the spline to plot. (0-index)
+
+        """
+        x = self.sigmaCols[0]
+        y = self.sigmaCols[1]
+        
+        # Set the y-axis based on the average spline
+        minxy, maxxy = self.regionLocs[x].min(), self.regionLocs[x].max()
+        minyy, maxyy = self.regionLocs[y].min(), self.regionLocs[y].max()
+        minxy -= 50
+        maxxy += 50
+        minyy -= 50
+        maxyy += 50
+
+        if self.regionLocs is None:
+            raise ZeroRegions(
+                'Zero regions are currently saved with this processor.')
+
+        if splineNumber is None:
+            # Plot all trajectories and splines
+            startIndex = 0
+            stopIndex = len(self.splines)
+        else:
+            # Plot only the input trajectory and spline
+            startIndex = splineNumber
+            stopIndex = splineNumber + 1
+
+        for fid in range(startIndex, stopIndex):
+            fig, (axx, axy) = plt.subplots(nrows=2, ncols=1, sharex=True)
+            locs = self.regionLocs.xs(fid, level='region_id',
+                                        drop_level=False)
+
+            # Filter out localizations that are outliers
+            outliers = locs.loc[locs[self._includeColName] == False]
+            locs = locs.loc[locs[self._includeColName]]
+
+            if (fid in self.useTrajectories) or (not self.useTrajectories):
+                markerColor = 'blue'
+            else:
+                markerColor = '#999999'  # gray
+
+            axx.plot(locs[self.zCol],
+                     locs[x],
+                     '.',
+                     color=markerColor,
+                     alpha=0.5)
+            axx.plot(outliers[self.zCol],
+                     outliers[x],
+                     'x',
+                     color='#999999',
+                     alpha=0.5)
+            axx.plot(self.avgSpline['z'],
+                     self.avgSpline['xS'],
+                     linewidth=3,
+                     color='red')
+            axx.set_ylabel('Wx')
+            axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
+            axx.set_ylim((minxy, maxxy))
+
+            axy.plot(locs[self.zCol],
+                     locs[y],
+                     '.',
+                     color=markerColor,
+                     alpha=0.5)
+            axy.plot(outliers[self.zCol],
+                     outliers[y],
+                     'x',
+                     color='#999999',
+                     alpha=0.5)
+            axy.plot(self.avgSpline['z'],
+                     self.avgSpline['yS'],
+                     linewidth=3,
+                     color='red')
+            axy.set_xlabel('z-position')
+            axy.set_ylabel('Wy')
+            axy.set_ylim((minyy, maxyy))
+            plt.show()
+        
+    def _removeOutliers(self, startz, stopz):
+        """
+        Removes localizations lying outside the z-fitting range.
+
+        Parameters
+        ----------
+        startz : float
+        stopz  : float
+        
+        """
+        z = self.zCol
+        self.regionLocs[self._includeColName] = True
+        self.regionLocs.loc[
+                (self.regionLocs[z] < startz) | (self.regionLocs[z] > stopz),
+                 self._includeColName
+        ] = False
+    
+    def reset(self, startz, stopz):
+        # TODO: Write this method
+        pass
 
 class DefaultDriftComputer(ComputeTrajectories):
     """The default algorithm for computing a drift trajectory.
@@ -843,7 +1140,7 @@ class DefaultDriftComputer(ComputeTrajectories):
     coordCols           : list str
         List of strings identifying the x- and y-coordinate column names
         in that order.
-    fiducialLocs        : Pandas DataFrame
+    regionLocs        : Pandas DataFrame
         DataFrame with a 'region_id' column denoting localizations from
         different regions of the original dataset. This is created by the
         parent ComputeTrajectories class.
@@ -861,9 +1158,9 @@ class DefaultDriftComputer(ComputeTrajectories):
     splines             : list of dict of 2x UnivariateSpline, 2x int
         Individual splines fit to the fiducial trajectories. Key names are
         'xS', 'yS', 'minFrame', and 'maxFrame'.
-    useTrajectories : list of int or None
+    useTrajectories : list of int or empty list
         List of integers corresponding to the fiducial trajectories to use
-        when computing the average trajectory. If None, all trajectories
+        when computing the average trajectory. If [], all trajectories
         are used.
     zeroFrame       : int
         Frame where all individual drift trajectories are equal to zero.
@@ -885,7 +1182,7 @@ class DefaultDriftComputer(ComputeTrajectories):
         self.useTrajectories = useTrajectories
         self.zeroFrame = zeroFrame
         super(ComputeTrajectories, self).__init__()
-
+        
         # Column of DataFrame used to indicate what localizations are not
         # included in a trajectory for a spline fit, e.g. outliers
         self._includeColName = 'included_in_trajectory'
@@ -955,12 +1252,12 @@ class DefaultDriftComputer(ComputeTrajectories):
         self.avgSpline = pd.DataFrame(avgSpline)
         self.avgSpline.set_index('frame', inplace=True)
 
-    def computeDriftTrajectory(self, fiducialLocs, startFrame, stopFrame):
+    def computeTrajectory(self, regionLocs, startFrame, stopFrame):
         """Computes the final drift trajectory from fiducial localizations.
 
         Parameters
         ----------
-        fiducialLocs    : Pandas DataFrame
+        regionLocs    : Pandas DataFrame
             DataFrame containing the localizations belonging to fiducials.
         startFrame      : int
             The minimum frame number in the full dataset.
@@ -976,13 +1273,13 @@ class DefaultDriftComputer(ComputeTrajectories):
 
         Notes
         -----
-        computeDriftTrajectory() requires the start and stop frames
+        computeTrajectory() requires the start and stop frames
         because the fiducial localizations may not span the full range
         of frames in the dataset.
 
         """
-        self.clearFiducialLocs()
-        self.fiducialLocs = fiducialLocs
+        self.clearRegionLocs()
+        self.regionLocs = regionLocs
         self._removeOutliers()
         self.fitCurves()
         self.combineCurves(startFrame, stopFrame)
@@ -1046,21 +1343,21 @@ class DefaultDriftComputer(ComputeTrajectories):
         """
         print('Performing spline fits...')
         # Check whether fiducial trajectories already exist
-        if self.fiducialLocs is None:
-            raise ZeroFiducials('Zero fiducials are currently saved '
+        if self.regionLocs is None:
+            raise ZeroRegions('Zero fiducials are currently saved '
                                 'with this processor.')
 
         self.splines = []
-        regionIDIndex = self.fiducialLocs.index.names.index('region_id')
+        regionIDIndex = self.regionLocs.index.names.index('region_id')
         x = self.coordCols[0]
         y = self.coordCols[1]
         frameID = self.frameCol
 
         # fid is an integer
-        for fid in self.fiducialLocs.index.levels[regionIDIndex]:
+        for fid in self.regionLocs.index.levels[regionIDIndex]:
             # Get localizations from inside the current region matching fid
             # and that passed the _removeOutliers() step
-            currRegionLocs = self.fiducialLocs.xs(
+            currRegionLocs = self.regionLocs.xs(
                 fid, level='region_id', drop_level=False)
 
             # Use only those fiducials within a certain radius of the
@@ -1152,8 +1449,8 @@ class DefaultDriftComputer(ComputeTrajectories):
         minyy -= 50
         maxyy += 50
 
-        if self.fiducialLocs is None:
-            raise ZeroFiducials(
+        if self.regionLocs is None:
+            raise ZeroRegions(
                 'Zero fiducials are currently saved with this processor.')
 
         x = self.coordCols[0]
@@ -1170,7 +1467,7 @@ class DefaultDriftComputer(ComputeTrajectories):
 
         for fid in range(startIndex, stopIndex):
             fig, (axx, axy) = plt.subplots(nrows=2, ncols=1, sharex=True)
-            locs = self.fiducialLocs.xs(fid, level='region_id',
+            locs = self.regionLocs.xs(fid, level='region_id',
                                         drop_level=False)
 
             # Filter out localizations that are outliers
@@ -1231,15 +1528,15 @@ class DefaultDriftComputer(ComputeTrajectories):
         """
         x = self.coordCols[0]
         y = self.coordCols[1]
-        self.fiducialLocs[self._includeColName] = True
+        self.regionLocs[self._includeColName] = True
 
         maxRadius = self.maxRadius
         if not maxRadius:
             return
 
         # Change the region_id from an index to a normal column
-        self.fiducialLocs.reset_index(level='region_id', inplace=True)
-        groups = self.fiducialLocs.groupby('region_id')
+        self.regionLocs.reset_index(level='region_id', inplace=True)
+        groups = self.regionLocs.groupby('region_id')
         temp = []
         for _, group in groups:
             # Make a copy to avoid the warning about modifying slices
@@ -1254,11 +1551,11 @@ class DefaultDriftComputer(ComputeTrajectories):
             temp.append(group)
 
         # Aggregate the filtered groups, reset the index, then recreate
-        # self.fiducialLocs with the filtered localizations
+        # self.regionLocs with the filtered localizations
         temp = pd.concat(temp)
         temp.set_index(
             ['region_id'], append=True, inplace=True)
-        self.fiducialLocs = temp
+        self.regionLocs = temp
 
     def reset(self):
         """Resets the drift computer to its initial state.
@@ -1341,28 +1638,28 @@ class FiducialDriftCorrect(DriftCorrect, SelectLocalizations):
 
             # Extract the localizations inside the regions just identified
             try:
-                fiducialLocs = self._extractLocsFromRegions(df)
+                regionLocs = self._extractLocsFromRegions(df)
             except ZeroFiducialRegions:
                 print('No regions with fiducials identified. '
                       'Returning original DataFrame.')
                 # Ensure any localizations are cleared from the drift computer
-                self.driftComputer.clearFiducialLocs()
+                self.driftComputer.clearRegionLocs()
                 return df
         else:
             # If the interactive search was set to false, then the drift
             # corrector has already been called and the regions saved in the
             # drift computer. Read them back from the computer instead of
             # looking for them again in the raw localizations.
-            fiducialLocs = self.driftComputer.fiducialLocs
+            regionLocs = self.driftComputer.regionLocs
 
         # Add clustering of localizations here if needed
 
         # Remove localizations inside the search regions from the DataFrame
         if self._removeFiducials:
             # Removes rows from the df DataFrame that have the same index rows
-            # in fiducialLocs. This relies on all functions preceding this
+            # in regionLocs. This relies on all functions preceding this
             # line to not modify the index column of the input df.
-            procdf = df[~df.index.isin(fiducialLocs.index.levels[0])]
+            procdf = df[~df.index.isin(regionLocs.index.levels[0])]
         else:
             procdf = df
 
@@ -1371,9 +1668,9 @@ class FiducialDriftCorrect(DriftCorrect, SelectLocalizations):
         startFrame = procdf[frames].min()
         stopFrame = procdf[frames].max()
         self.driftTrajectory = \
-            self.driftComputer.computeDriftTrajectory(fiducialLocs,
-                                                      startFrame,
-                                                      stopFrame)
+            self.driftComputer.computeTrajectory(regionLocs,
+                                                 startFrame,
+                                                 stopFrame)
 
         procdf = self.correctLocalizations(procdf)
 
@@ -1750,8 +2047,8 @@ class UseTrajectoryError(Exception):
         return repr(self.value)
 
 
-class ZeroFiducials(Exception):
-    """Raised when zero fiducials are present during drift correction.
+class ZeroRegions(Exception):
+    """Raised when zero regions are present during trajectory computation.
 
     """
 

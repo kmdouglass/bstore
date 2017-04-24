@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Two new processors, `CalibrateAstigmatism` and
+  `DefaultAstigmatismComputer` were created for computing
+  astigmatism-based 3D calibration curves to localize molecules in
+  three dimensions.
+
 ### Changed
 - The version number contained in the `bstore.__version__` string is
   now formatted to contain only the major/minor/patch numbers: for
