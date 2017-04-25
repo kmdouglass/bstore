@@ -2,7 +2,7 @@
 # Switzerland, Laboratory of Experimental Biophysics, 2016
 # See the LICENSE.txt file for more details.
 
-from nose.tools import *
+from nose.tools import ok_, assert_equal
 from bstore import processors as proc
 from bstore import config
 import pandas as pd
@@ -15,6 +15,72 @@ testDataRoot = Path(config.__Path_To_Test_Data__)
 pathToTestData = testDataRoot / Path('processor_test_files') \
                               / Path('test_localizations_with_fiducials.csv')
 locs = pd.read_csv(str(pathToTestData))
+
+# astigmatism test data
+pathToAstigData = testDataRoot \
+                  / Path('processor_test_files') \
+                  / Path('sequence-as-stack-Beads-AS-Exp_Localizations.csv')
+                  
+def test_ComputeZPosition():
+    """ComputeZPosition finds the z-positions from a given z-function.
+    
+    """
+    df    = pd.DataFrame({'Wx': np.array([9, 4, 1]),
+                          'Wy': np.array([1, 4, 9])})
+    zFunc = lambda x: 2 * x
+    zCol  = 'zz'
+    
+    cz    = proc.ComputeZPosition(zFunc, zCol=zCol, sigmaCols=['Wx', 'Wy'])
+    
+    # Compute z positions
+    procdf = cz(df)
+    
+    # ground truth
+    gt = df.copy()
+    gt[zCol] = np.array([16, 0, -16])
+    
+    ok_(zCol in procdf)
+    ok_(procdf.equals(gt))
+
+def test_Reset_AstigmatismComputer():
+    """The reset method of the DefaultAstigmatismComputer works.
+    
+    """
+    dca = proc.DefaultAstigmatismComputer(
+              coordCols=['x','y'], sigmaCols=['sigma_x', 'sigma_y'],
+              zCol='z', smoothingWindowSize=5, smoothingFilterSize=3,
+              useTrajectories=[], startz=None, stopz=None)
+    
+    # Change its properties
+    dca.coordCols           = ['xx', 'yy']
+    dca.sigmaCols           = ['sx', 'sy']
+    dca.zCol                = 'zz'
+    dca.smoothingWindowSize = 10
+    dca.smoothingFilterSize = 5
+    dca.useTrajectories     = [1,2]
+    dca.startz              = 6
+    dca.stopz               = 12
+    
+    assert_equal(dca.coordCols, ['xx', 'yy'])
+    assert_equal(dca.sigmaCols, ['sx', 'sy'])
+    assert_equal(dca.zCol, 'zz')
+    assert_equal(dca.smoothingWindowSize, 10)
+    assert_equal(dca.smoothingFilterSize, 5)
+    assert_equal(dca.useTrajectories, [1,2])
+    assert_equal(dca.startz, 6)
+    assert_equal(dca.stopz, 12)
+    
+    # Reset
+    dca.reset()
+    
+    assert_equal(dca.coordCols, ['x', 'y'])
+    assert_equal(dca.sigmaCols, ['sigma_x', 'sigma_y'])
+    assert_equal(dca.zCol, 'z')
+    assert_equal(dca.smoothingWindowSize, 5)
+    assert_equal(dca.smoothingFilterSize, 3)
+    assert_equal(dca.useTrajectories, [])
+    assert_equal(dca.startz, None)
+    assert_equal(dca.stopz, None)
 
 def test_FiducialDriftCorrect_Instantiation():
     """The FiducialDriftCorrect processor has the required methods and fields.

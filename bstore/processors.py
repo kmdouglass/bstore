@@ -12,7 +12,7 @@ from sklearn.cluster import DBSCAN
 from operator import *
 from scipy.signal import gaussian
 from scipy.ndimage import filters
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, interp1d
 from matplotlib.widgets import RectangleSelector
 from bstore import config
 from bstore.parsers import FormatMap
@@ -44,6 +44,104 @@ class ComputeTrajectories(metaclass=ABCMeta):
 
         """
         self._regionData = None
+        
+    def _plotCurves(self, curveNumber=None, coordCols=['x', 'y'],
+                    horizontalLabels=['', 'time'], verticalLabels=['x', 'y'],
+                    title='trajectories', splineCols=['t','x','y'],
+                    offsets=[0,0], ylims=[-100, 500, -100, 500]):
+        """Make a plot of each region's trajectory and the average spline fit.
+
+        plotCurves allows the user to check the trajectories of localizations
+        and their fits against the average spline fit.
+
+        Parameters
+        ----------
+        curveNumber      : int
+            Index of the spline to plot. (0-index)
+        coordCols        : list of string
+            The column names corresponding to the trajectory's dependent
+            variable (e.g. time or z-position) and the localizations' x- and
+            y-coordinates (order is t, x, y).
+        horizontalLabels : list of string
+            The labels for the x-axes of each trajectory plot.
+        verticalLabels   : list of string
+            The labels for the y-axes for each trajectory (order is
+            x-trajectory, then y).
+        title : str
+            The title of each plot.
+        splineCols : list of str
+            The column names of the average spline DataFrame that correspond to
+            the trajectory's dependent variable (i.e. z-position or frame
+            number,) the localizations' x-coordinates, and the localizaitons'
+            y-coordinates, respectively.
+        offsets : list of int
+            The vertical offsets to apply to the curves.
+        ylims   : list of float
+            The y-limits of the two trajectory plots (order is min and max of 
+            x-trajectory, then min and max of the y-trajectory).
+
+        """
+        t, x, y                    = coordCols
+        xHorzLabel, yHorzLabel     = horizontalLabels
+        xVertLabel, yVertLabel     = verticalLabels
+        ts, xs, ys                 = splineCols
+        x0, y0                     = offsets
+        minxy, maxxy, minyy, maxyy = ylims
+
+        if self.regionLocs is None:
+            raise ZeroRegions(
+                'Zero regions are currently saved with this processor.')
+
+        fig, (axx, axy) = plt.subplots(nrows=2, ncols=1, sharex=True)
+        locs = self.regionLocs.xs(curveNumber, level='region_id',
+                                  drop_level=False)
+
+        # Filter out localizations that are outliers
+        outliers = locs.loc[locs[self._includeColName] == False]
+        locs = locs.loc[locs[self._includeColName]]
+
+        if (curveNumber in self.useTrajectories) or (not self.useTrajectories):
+            markerColor = 'blue'
+        else:
+            markerColor = '#999999' # gray
+
+        axx.plot(locs[t],
+                 locs[x] - x0,
+                 '.',
+                 color=markerColor,
+                 alpha=0.5)
+        axx.plot(outliers[t],
+                 outliers[x] - x0,
+                 'x',
+                 color='#999999',
+                 alpha=0.5)
+        axx.plot(self.avgSpline[ts],
+                 self.avgSpline[xs],
+                 linewidth=2,
+                 color='orange')
+        axx.set_xlabel(xHorzLabel)
+        axx.set_ylabel(xVertLabel)
+        axx.set_title('{0:s}, Region number: {1:d}'.format(title, curveNumber))
+        axx.set_ylim((minxy, maxxy))
+
+        axy.plot(locs[t],
+                 locs[y] - y0,
+                 '.',
+                 color=markerColor,
+                 alpha=0.5)
+        axy.plot(outliers[t],
+                 outliers[y] - y0,
+                 'x',
+                 color='#999999',
+                 alpha=0.5)
+        axy.plot(self.avgSpline[ts],
+                 self.avgSpline[ys],
+                 linewidth=2,
+                 color='orange')
+        axy.set_xlabel(yHorzLabel)
+        axy.set_ylabel(yVertLabel)
+        axy.set_ylim((minyy, maxyy))
+        plt.show()
 
     @property
     def regionLocs(self):
@@ -78,6 +176,35 @@ class ComputeTrajectories(metaclass=ABCMeta):
 
         """
         pass
+    
+    def _movingAverage(self, series, windowSize=100, sigma=3):
+        """Estimate the weights for smoothing splines.
+
+        Parameters
+        ----------
+        series     : array of int
+            Discrete samples from a time series.
+        windowSize : int
+            Size of the moving average window in axial slices.
+        sigma      : int
+            Size of the Gaussian averaging kernel in axial slices.
+
+        Returns
+        -------
+        average : float
+            The moving window average.
+        var     : float
+            The variance of the data within the sumoving window.
+
+        References
+        ----------
+        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
+
+        """
+        b = gaussian(windowSize, sigma)
+        average = filters.convolve1d(series, b / b.sum())
+        var = filters.convolve1d(np.power(series - average, 2), b / b.sum())
+        return average, var
 
     @abstractmethod
     def reset(self):
@@ -343,9 +470,12 @@ class AddColumn:
 
     Attributes
     ----------
-    columnName   : str
+    calibrationCurve : func
+        The calibration curve that returns z-position for a given difference of
+        PSF widths
+    columnName       : str
         The name of the new column.
-    defaultValue : mixed datatype
+    defaultValue     : mixed datatype
         The default value to assign to each row of the new column.
 
     """
@@ -406,6 +536,7 @@ class CalibrateAstigmatism(SelectLocalizations):
                  sigmaCols=['sigma_x', 'sigma_y'], zCol='z', startz=None,
                  stopz=None, astigmatismComputer=None):
         self.interactiveSearch = interactiveSearch
+        self.calibrationCurve  = None
         
         self._coordCols = coordCols
         self._sigmaCols = sigmaCols
@@ -427,7 +558,9 @@ class CalibrateAstigmatism(SelectLocalizations):
             
         Returns
         -------
-        # TODO
+        df : DataFrame
+            The same Pandas DataFrame object is returned because the original
+            localizations are not modified.
         
         """
         if self.interactiveSearch:
@@ -443,9 +576,31 @@ class CalibrateAstigmatism(SelectLocalizations):
         else:
             locs = self.astigmatismComputer.regionLocs
         
-        z = self._zCol
         self.calibrationCurve = \
             self.astigmatismComputer.computeTrajectory(locs)
+            
+        self.calibrationCurve = self._computeCalibrationCurve()
+        
+        return df
+    
+    def _computeCalibrationCurve(self):
+        """Computes the 3D astigmatic calibration curve from average splines.
+        
+        Returns
+        -------
+        f : func
+            The calibration curve that returns the z-position for a given
+            difference in PSF widths.
+        
+        """
+        avgSpline  = self.astigmatismComputer.avgSpline
+        widthDiffs = avgSpline['xS'] - avgSpline['yS']
+        zPos       = avgSpline['z']
+        
+        f = interp1d(widthDiffs, zPos, kind='cubic', bounds_error=False,
+                     fill_value=np.NaN, assume_sorted=False)
+        
+        return f
 
 class CleanUp:
     """Performs regular clean up routines on imported data.
@@ -724,6 +879,49 @@ class ComputeClusterStats:
             volume = np.nan
 
         return volume
+    
+class ComputeZPosition:
+    """Computes the localizations' z-positions from a calibration curve.
+    
+    Parameters
+    ----------
+    zFunc     : func
+        A function mapping
+    zCol      : str
+        The name to assign to the new column of z-positions.
+    sigmaCols : list of str
+        The column names containing the PSF widths in the x- and y-directions,
+        respectively.
+    
+    """
+    def __init__(self, zFunc, zCol='z', sigmaCols=['sigma_x, sigma_y']):
+        self.zFunc     = zFunc
+        self.zCol      = zCol
+        self.sigmaCols = sigmaCols
+    
+    def __call__(self, df):
+        """ Applies zFunc to the localizations to produce the z-positions.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame object.
+
+        Returns
+        -------
+        procdf : DataFrame
+            A DataFrame object with the same information but new column names.
+            
+        """
+        procdf = df.copy()
+        x, y = self.sigmaCols
+        
+        locWidths = df[x] - df[y]
+        zPos      = self.zFunc(locWidths)
+        
+        procdf[self.zCol] = zPos
+        
+        return procdf
 
 
 class ConvertHeader:
@@ -824,6 +1022,17 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         # included in a trajectory for a spline fit, e.g. outliers
         self._includeColName = 'included_in_trajectory'
         
+        # initial state
+        self._init_coordCols           = coordCols.copy()
+        self._init_sigmaCols           = sigmaCols.copy()
+        self._init_zCol                = zCol
+        self._init_smoothingWindowSize = smoothingWindowSize
+        self._init_smoothingFilterSize = smoothingFilterSize
+        self._init_useTrajectories     = useTrajectories.copy()
+        self._init_startz              = startz
+        self._init_stopz               = stopz
+        
+        
     def combineCurves(self, startz, stopz):
         """Average the splines from different fiducials together.
 
@@ -883,7 +1092,9 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
 
         Returns
         -------
-        TODO
+        avgSpline : Pandas DataFrame
+            A dataframe containing z-positions and PSF widths in x- and y- for
+            calibrating an astigmatic imaging measurement.
 
         """
         z = self.zCol
@@ -958,122 +1169,55 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
             # Append results to class field splines
             self.splines.append({'xS': xSpline,
                                  'yS': ySpline})
-
-    def _movingAverage(self, series, windowSize=100, sigma=3):
-        """Estimate the weights for the smoothing spline.
-
-        Parameters
-        ----------
-        series     : array of int
-            Discrete samples from a time series.
-        windowSize : int
-            Size of the moving average window in axial slices.
-        sigma      : int
-            Size of the Gaussian averaging kernel in axial slices.
-
-        Returns
-        -------
-        average : float
-            The moving window average.
-        var     : float
-            The variance of the data within the sumoving window.
-
-        References
-        ----------
-        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
-
-        """
-        b = gaussian(windowSize, sigma)
-        average = filters.convolve1d(series, b / b.sum())
-        var = filters.convolve1d(np.power(series - average, 2), b / b.sum())
-        return average, var
     
-    def plotCurves(self, splineNumber=None):
+    def plotBeads(self, curveNumber=None):
         """Make a plot of each bead's z-stack and the average spline fit.
 
-        plotBeads(splineNumber = None) allows the user to check the
-        individual beads and their fits against the average spline fit.
+        plotBeads allows the user to check the individual beads and
+        their fits against the average spline fit.
 
         Parameters
         ----------
-        splineNumber : int
+        curveNumber : int
             Index of the spline to plot. (0-index)
 
         """
-        x = self.sigmaCols[0]
-        y = self.sigmaCols[1]
+        coordCols = [
+            self.zCol, 
+            self.sigmaCols[0],
+            self.sigmaCols[1]
+        ]
+        horizontalLabels = ['', 'z-position']
+        verticalLabels = ['Wx', 'Wy']
+        title = 'Avg. spline and bead'
+        splineCols = ['z', 'xS', 'yS']
+        
         
         # Set the y-axis based on the average spline
-        minxy, maxxy = self.regionLocs[x].min(), self.regionLocs[x].max()
-        minyy, maxyy = self.regionLocs[y].min(), self.regionLocs[y].max()
+        minxy, maxxy = self.regionLocs[self.sigmaCols[0]].min(), \
+                       self.regionLocs[self.sigmaCols[0]].max()
+        minyy, maxyy = self.regionLocs[self.sigmaCols[1]].min(), \
+                       self.regionLocs[self.sigmaCols[1]].max()
         minxy -= 50
         maxxy += 50
         minyy -= 50
         maxyy += 50
+        ylims = [minxy, maxxy, minyy, maxyy]
 
-        if self.regionLocs is None:
-            raise ZeroRegions(
-                'Zero regions are currently saved with this processor.')
-
-        if splineNumber is None:
+        if curveNumber is None:
             # Plot all trajectories and splines
             startIndex = 0
             stopIndex = len(self.splines)
         else:
             # Plot only the input trajectory and spline
-            startIndex = splineNumber
-            stopIndex = splineNumber + 1
+            startIndex = curveNumber
+            stopIndex  = curveNumber + 1
 
+        offsets=[0,0] # No offsets for these plots
         for fid in range(startIndex, stopIndex):
-            fig, (axx, axy) = plt.subplots(nrows=2, ncols=1, sharex=True)
-            locs = self.regionLocs.xs(fid, level='region_id',
-                                        drop_level=False)
-
-            # Filter out localizations that are outliers
-            outliers = locs.loc[locs[self._includeColName] == False]
-            locs = locs.loc[locs[self._includeColName]]
-
-            if (fid in self.useTrajectories) or (not self.useTrajectories):
-                markerColor = 'blue'
-            else:
-                markerColor = '#999999'  # gray
-
-            axx.plot(locs[self.zCol],
-                     locs[x],
-                     '.',
-                     color=markerColor,
-                     alpha=0.5)
-            axx.plot(outliers[self.zCol],
-                     outliers[x],
-                     'x',
-                     color='#999999',
-                     alpha=0.5)
-            axx.plot(self.avgSpline['z'],
-                     self.avgSpline['xS'],
-                     linewidth=3,
-                     color='red')
-            axx.set_ylabel('Wx')
-            axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
-            axx.set_ylim((minxy, maxxy))
-
-            axy.plot(locs[self.zCol],
-                     locs[y],
-                     '.',
-                     color=markerColor,
-                     alpha=0.5)
-            axy.plot(outliers[self.zCol],
-                     outliers[y],
-                     'x',
-                     color='#999999',
-                     alpha=0.5)
-            axy.plot(self.avgSpline['z'],
-                     self.avgSpline['yS'],
-                     linewidth=3,
-                     color='red')
-            axy.set_xlabel('z-position')
-            axy.set_ylabel('Wy')
-            axy.set_ylim((minyy, maxyy))
-            plt.show()
+            self._plotCurves(fid, coordCols, horizontalLabels,
+                             verticalLabels, title, splineCols,
+                             offsets, ylims)
         
     def _removeOutliers(self, startz, stopz):
         """
@@ -1092,9 +1236,18 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
                  self._includeColName
         ] = False
     
-    def reset(self, startz, stopz):
-        # TODO: Write this method
-        pass
+    def reset(self):
+        """Resets the astigmatism computer to its initial state.
+    
+        """
+        self.coordCols           = self._init_coordCols.copy()
+        self.sigmaCols           = self._init_sigmaCols.copy()
+        self.zCol                = self._init_zCol
+        self.smoothingWindowSize = self._init_smoothingWindowSize
+        self.smoothingFilterSize = self._init_smoothingFilterSize
+        self.useTrajectories     = self._init_useTrajectories.copy()
+        self.startz              = self._init_startz
+        self.stopz               = self._init_stopz
 
 class DefaultDriftComputer(ComputeTrajectories):
     """The default algorithm for computing a drift trajectory.
@@ -1250,7 +1403,6 @@ class DefaultDriftComputer(ComputeTrajectories):
         avgSpline['frame'] = frames
 
         self.avgSpline = pd.DataFrame(avgSpline)
-        self.avgSpline.set_index('frame', inplace=True)
 
     def computeTrajectory(self, regionLocs, startFrame, stopFrame):
         """Computes the final drift trajectory from fiducial localizations.
@@ -1400,47 +1552,28 @@ class DefaultDriftComputer(ComputeTrajectories):
                                  'minFrame': minFrame,
                                  'maxFrame': maxFrame})
 
-    def _movingAverage(self, series, windowSize=100, sigma=3):
-        """Estimate the weights for the smoothing spline.
-
-        Parameters
-        ----------
-        series     : array of int
-            Discrete samples from a time series.
-        windowSize : int
-            Size of the moving average window in frames (or time).
-        sigma      : int
-            Size of the Gaussian averaging kernel in frames (or time).
-
-        Returns
-        -------
-        average : float
-            The moving window average.
-        var     : float
-            The variance of the data within the sumoving window.
-
-        References
-        ----------
-        http://www.nehalemlabs.net/prototype/blog/2014/04/12/how-to-fix-scipys-interpolating-spline-default-behavior/
-
-        """
-        b = gaussian(windowSize, sigma)
-        average = filters.convolve1d(series, b / b.sum())
-        var = filters.convolve1d(np.power(series - average, 2), b / b.sum())
-        return average, var
-
-    def plotFiducials(self, splineNumber=None):
+    def plotFiducials(self, curveNumber=None):
         """Make a plot of each fiducial track and the average spline fit.
 
-        plotFiducials(splineNumber = None) allows the user to check the
-        individual fiducial tracks against the average spline fit.
+        plotFiducials allows the user to check the individual fiducial tracks
+        against the average spline fit.
 
         Parameters
         ----------
-        splineNumber : int
+        curveNumber : int
             Index of the spline to plot. (0-index)
 
         """
+        coordCols = [
+            self.frameCol,
+            self.coordCols[0],
+            self.coordCols[1]
+        ]
+        horizontalLabels = ['', 'Frame number']
+        verticalLabels   = ['x-position', 'y-position']
+        title            = 'Avg. spline and fiducial'
+        splineCols       = ['frame', 'xS', 'yS']
+        
         # Set the y-axis based on the average spline
         minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()
         minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max()
@@ -1448,75 +1581,29 @@ class DefaultDriftComputer(ComputeTrajectories):
         maxxy += 50
         minyy -= 50
         maxyy += 50
-
-        if self.regionLocs is None:
-            raise ZeroRegions(
-                'Zero fiducials are currently saved with this processor.')
-
-        x = self.coordCols[0]
-        y = self.coordCols[1]
-
-        if splineNumber is None:
+        ylims  = [minxy, maxxy, minyy, maxyy]
+        
+        if curveNumber is None:
             # Plot all trajectories and splines
             startIndex = 0
-            stopIndex = len(self.splines)
+            stopIndex  = len(self.splines)
         else:
             # Plot only the input trajectory and spline
-            startIndex = splineNumber
-            stopIndex = splineNumber + 1
+            startIndex = curveNumber
+            stopIndex  = curveNumber + 1
 
         for fid in range(startIndex, stopIndex):
-            fig, (axx, axy) = plt.subplots(nrows=2, ncols=1, sharex=True)
             locs = self.regionLocs.xs(fid, level='region_id',
-                                        drop_level=False)
+                                      drop_level=False)
 
-            # Filter out localizations that are outliers
-            outliers = locs.loc[locs[self._includeColName] == False]
+            # Filter out localizations that are outliers and find
+            # offsets
             locs = locs.loc[locs[self._includeColName]]
+            offsets = self._computeOffsets(locs)
 
-            x0, y0 = self._computeOffsets(locs)
-
-            if (fid in self.useTrajectories) or (not self.useTrajectories):
-                markerColor = 'blue'
-            else:
-                markerColor = '#999999'  # gray
-
-            axx.plot(locs[self.frameCol],
-                     locs[x] - x0,
-                     '.',
-                     color=markerColor,
-                     alpha=0.5)
-            axx.plot(outliers[self.frameCol],
-                     outliers[x] - x0,
-                     'x',
-                     color='#999999',
-                     alpha=0.5)
-            axx.plot(self.avgSpline.index,
-                     self.avgSpline['xS'],
-                     linewidth=3,
-                     color='red')
-            axx.set_ylabel('x-position')
-            axx.set_title('Avg. spline and fiducial number: {0:d}'.format(fid))
-            axx.set_ylim((minxy, maxxy))
-
-            axy.plot(locs[self.frameCol],
-                     locs[y] - y0,
-                     '.',
-                     color=markerColor,
-                     alpha=0.5)
-            axy.plot(outliers[self.frameCol],
-                     outliers[y] - y0,
-                     'x',
-                     color='#999999',
-                     alpha=0.5)
-            axy.plot(self.avgSpline.index,
-                     self.avgSpline['yS'],
-                     linewidth=3,
-                     color='red')
-            axy.set_xlabel('Frame number')
-            axy.set_ylabel('y-position')
-            axy.set_ylim((minyy, maxyy))
-            plt.show()
+            self._plotCurves(fid, coordCols, horizontalLabels,
+                             verticalLabels, title, splineCols,
+                             offsets, ylims)
 
     def _removeOutliers(self):
         """Removes outlier localizations from fiducial tracks before fitting.

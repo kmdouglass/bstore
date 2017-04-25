@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
   `DefaultAstigmatismComputer` were created for computing
   astigmatism-based 3D calibration curves to localize molecules in
   three dimensions.
+- There is a new processor called `ComputeZPosition` that takes the
+  calibration curve from `CalibrateAstigmatism` and computes the
+  z-positions of localizations with x and y PSF widths.
 
 ### Changed
 - The version number contained in the `bstore.__version__` string is
@@ -18,6 +21,11 @@ All notable changes to this project will be documented in this file.
   `SelectLocalizations`. `FiducialDriftCorrect` inherits from this new
   class and will work exactly as before. This change will allow other
   processors to reuse the visualization code.
+- The code for visualizing the fiducial trajectories in time and bead
+  trajectories in z was consolidated into the `ComputeTrajectories`
+  metaclass. This makes the drift correction and astigmatism
+  calibration more in line with the DRY principle (Don't Repeat
+  Yourself).
 
 ### Fixed
 - The `FiducialDriftCorrect` processor no longer raises an error when
