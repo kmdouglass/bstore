@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - There is a new processor called `ComputeZPosition` that takes the
   calibration curve from `CalibrateAstigmatism` and computes the
   z-positions of localizations with x and y PSF widths.
+- A 3D astigmatic imaging example notebook was added to the *examples*
+  folder to explain how to use the new functionality.
 
 ### Changed
 - The version number contained in the `bstore.__version__` string is

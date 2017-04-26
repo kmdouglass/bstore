@@ -1006,7 +1006,7 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
     
     """
     def __init__(self, coordCols=['x','y'], sigmaCols=['sigma_x', 'sigma_y'],
-                 zCol='z', smoothingWindowSize=5, smoothingFilterSize=3,
+                 zCol='z', smoothingWindowSize=20, smoothingFilterSize=3,
                  useTrajectories=[], startz=None, stopz=None):
         self.coordCols           = coordCols
         self.sigmaCols           = sigmaCols
@@ -1085,10 +1085,6 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         ----------
         locs        : Pandas DataFrame
             DataFrame containing the localizations belonging to beads.
-        startz      : float
-            The minimum z-position to fit.
-        stopz       : float
-            The maximum z-position to fit.
 
         Returns
         -------
