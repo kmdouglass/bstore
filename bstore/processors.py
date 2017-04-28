@@ -13,6 +13,7 @@ from operator import *
 from scipy.signal import gaussian
 from scipy.ndimage import filters
 from scipy.interpolate import UnivariateSpline, interp1d
+from scipy.optimize import minimize
 from matplotlib.widgets import RectangleSelector
 from bstore import config
 from bstore.parsers import FormatMap
@@ -470,9 +471,6 @@ class AddColumn:
 
     Attributes
     ----------
-    calibrationCurve : func
-        The calibration curve that returns z-position for a given difference of
-        PSF widths
     columnName       : str
         The name of the new column.
     defaultValue     : mixed datatype
@@ -529,14 +527,23 @@ class CalibrateAstigmatism(SelectLocalizations):
         
     Attributes
     ----------
-    
+    interactiveSearch : bool
+        Determines whether the user will interactively find fiducials.
+        Setting this to False means that fiducials are found automatically,
+        although this is not always reliable.
+    astigmatismComputer: AstigComputer
+        Algorithm for computing astigmatic calibration curves.
+    calibrationCurves : func, func
+        The calibration curves for astigmatic 3D imaging. The first
+        element contains the PSF width in x as a function of z and
+        the second contains the width in y as a function of z.
     
     """
     def __init__(self, interactiveSearch=True, coordCols=['x', 'y'],
                  sigmaCols=['sigma_x', 'sigma_y'], zCol='z', startz=None,
                  stopz=None, astigmatismComputer=None):
         self.interactiveSearch = interactiveSearch
-        self.calibrationCurve  = None
+        self.calibrationCurves = None
         
         self._coordCols = coordCols
         self._sigmaCols = sigmaCols
@@ -576,31 +583,36 @@ class CalibrateAstigmatism(SelectLocalizations):
         else:
             locs = self.astigmatismComputer.regionLocs
         
-        self.calibrationCurve = \
-            self.astigmatismComputer.computeTrajectory(locs)
+        _ = self.astigmatismComputer.computeTrajectory(locs)
             
-        self.calibrationCurve = self._computeCalibrationCurve()
+        self.calibrationCurves = self._computeCalibrationCurves()
         
         return df
     
-    def _computeCalibrationCurve(self):
+    def _computeCalibrationCurves(self):
         """Computes the 3D astigmatic calibration curve from average splines.
         
         Returns
         -------
-        f : func
-            The calibration curve that returns the z-position for a given
-            difference in PSF widths.
+        fx : func
+            The calibration curve that returns the the width in x as
+            a function of z.
+        fy : func
+            The calibration curve that returns the the width in y as
+            a function of z.
         
         """
         avgSpline  = self.astigmatismComputer.avgSpline
-        widthDiffs = avgSpline['xS'] - avgSpline['yS']
+        xS, yS     = avgSpline['xS'], avgSpline['yS']
         zPos       = avgSpline['z']
         
-        f = interp1d(widthDiffs, zPos, kind='cubic', bounds_error=False,
-                     fill_value=np.NaN, assume_sorted=False)
         
-        return f
+        fx = interp1d(zPos, xS, kind='cubic', bounds_error=False,
+                      fill_value=np.NaN, assume_sorted=False)
+        fy = interp1d(zPos, yS, kind='cubic', bounds_error=False,
+                      fill_value=np.NaN, assume_sorted=False)
+        
+        return fx, fy
 
 class CleanUp:
     """Performs regular clean up routines on imported data.
@@ -881,23 +893,45 @@ class ComputeClusterStats:
         return volume
     
 class ComputeZPosition:
-    """Computes the localizations' z-positions from a calibration curve.
+    """Computes the localizations' z-positions from calibration curves.
     
     Parameters
     ----------
     zFunc     : func
-        A function mapping
+        Function(s) mapping the PSF widths onto Z. Supply this 
+        argument as a tuple in the order (fx, fy).
     zCol      : str
         The name to assign to the new column of z-positions.
     sigmaCols : list of str
         The column names containing the PSF widths in the x- and y-directions,
         respectively.
+    fittype   : str
+        String indicating the type of fit to use when deriving the z-positions.
+        Can be either 'huang', which minimizes a distance-like objective
+        function, or 'diff', which interpolates a curve based on the difference
+        between PSF widths in x and y.
+    scalingFactor : float
+        A scaling factor that multiples the computed z-values to account for
+        a refractive index mismatch at the coverslip. See [1] for more details.
+        This can safely be left at one and the computed z-values rescaled later
+        if you are uncertain about the value to use.
+        
+    References
+    ----------
+    [1] Huang, et al., Science 319, 810-813 (2008)
     
     """
-    def __init__(self, zFunc, zCol='z', sigmaCols=['sigma_x, sigma_y']):
-        self.zFunc     = zFunc
-        self.zCol      = zCol
-        self.sigmaCols = sigmaCols
+    def __init__(self, zFunc, zCol='z', sigmaCols=['sigma_x, sigma_y'],
+                 fittype='diff', scalingFactor=1):
+        self.zFunc         = zFunc
+        self.zCol          = zCol
+        self.sigmaCols     = sigmaCols
+        self.fittype       = fittype
+        self.scalingFactor = scalingFactor
+        
+        # This is the calibration curve computed when fittype='diff' and is
+        # used internally for error checking and testing.
+        self._f = None
     
     def __call__(self, df):
         """ Applies zFunc to the localizations to produce the z-positions.
@@ -913,16 +947,75 @@ class ComputeZPosition:
             A DataFrame object with the same information but new column names.
             
         """
-        procdf = df.copy()
-        x, y = self.sigmaCols
+        x, y   = self.sigmaCols
+        fx, fy = self.zFunc
         
-        locWidths = df[x] - df[y]
-        zPos      = self.zFunc(locWidths)
-        
-        procdf[self.zCol] = zPos
-        
+        if self.fittype == 'diff':
+            procdf = self._diff(df.copy(), x, y, fx, fy)
+        elif self.fittype == 'huang':
+            procdf = self._huang(df.copy(), x, y, fx, fy)
+            
+        procdf[self.zCol] *= self.scalingFactor
+            
         return procdf
-
+    
+    def _diff(self, df, x, y, fx, fy):
+        """Determines the z-position from the difference in x- and y-widths.
+        
+        In this approach, the two calibration curves are sampled, subtracted
+        from one another, and then reinterpolated to produce a function
+        representing the axial position as a function of the difference between
+        the PSF widths in x and y.
+        
+        In general, it is much faster than the optimization routine used in
+        Huang et al., Science 2008.
+        
+        """
+        # Get minimum and maximum z-positions contained in calibration curves.
+        # This is required to define the bounds on the sampling domain.
+        zMin, zMax = np.min([fx.x, fy.x]), np.max([fx.x, fy.x])
+        zSamples = np.linspace(zMin, zMax, num=150)
+        
+        # Create the function representing the difference between calibration
+        # curves.
+        def dW(fx, fy):
+            return lambda z: fx(z) - fy(z)
+        
+        f = interp1d(dW(fx, fy)(zSamples), zSamples, bounds_error=False,
+                     fill_value=np.NaN, assume_sorted=False)
+        self._f = f
+        
+        # Compute the z-positions from this interpolated curve
+        locWidths = df[x] - df[y]
+        z = f(locWidths)
+        
+        df[self.zCol] = z
+        return df
+    
+    def _huang(self, df, x, y, fx, fy):
+        """Determines the z-position by objective minimization.
+        
+        This routine can be very slow, especially for large datasets. It is
+        recommended to try it on a very slow dataset first.
+        
+        References
+        ----------
+        1. Huang et al., Science 319, 810-813 (2008)
+        
+        """
+        # Create the objective function for the distance between the data and
+        # calibration curves.
+        def D(z, wx, wy):
+            return np.sqrt((wx**0.5 - fx(z)**0.5)**2 + \
+                           (wy**0.5 - fy(z)**0.5)**2)
+        
+        # Create the objective function to minimize
+        def fmin(wx, wy):
+            res = minimize(lambda z: D(z, wx, wy), [0], bounds=[(-600,600)])
+            return res.x[0]
+        
+        df[self.zCol] = df.apply(lambda row: fmin(row[x], row[y]), axis=1)
+        return df
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
