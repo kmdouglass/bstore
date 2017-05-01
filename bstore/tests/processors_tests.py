@@ -27,6 +27,9 @@ def test_ComputeZPosition():
     """
     df    = pd.DataFrame({'Wx': np.array([9, 4, 1]),
                           'Wy': np.array([1, 4, 9])})
+    
+    # f1 and f2 are made up calibration curves that result in a dW vs. z curve
+    # of x/2.
     class f1:
         x = np.array([-16, 0, 16])
         def __call__(self, x):
