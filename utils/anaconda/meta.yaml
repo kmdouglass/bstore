@@ -19,11 +19,11 @@ requirements:
     - nose
     - numpy
     - scipy
-    - matplotlib 2.0.0
+    - matplotlib 2.0.1
     - scikit-learn
     - pytables
     - h5py
-    - pandas
+    - pandas 0.19.2
     - trackpy 0.3.2
     - tifffile 0.10.0
     - nb_conda

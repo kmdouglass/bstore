@@ -1,6 +1,6 @@
 nose
 scikit-learn
-pandas
+pandas=0.19.2
 trackpy
 numpy
 scipy
@@ -8,4 +8,4 @@ matplotlib
 h5py
 tables
 python-dateutil
-tifffile==0.9.0
+tifffile==0.10.0
