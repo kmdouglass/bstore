@@ -27,7 +27,20 @@ def test_ComputeZPosition():
     """
     df    = pd.DataFrame({'Wx': np.array([9, 4, 1]),
                           'Wy': np.array([1, 4, 9])})
-    zFunc = lambda x: 2 * x
+    
+    # f1 and f2 are made up calibration curves that result in a dW vs. z curve
+    # of x/2.
+    class f1:
+        x = np.array([-16, 0, 16])
+        def __call__(self, x):
+            return -x/2 + 5
+        
+    class f2:
+        x = np.array([-16, 0, 16])
+        def __call__(self, x):
+            return 5
+        
+    zFunc = (f1(), f2())
     zCol  = 'zz'
     
     cz    = proc.ComputeZPosition(zFunc, zCol=zCol, sigmaCols=['Wx', 'Wy'])
@@ -37,7 +50,7 @@ def test_ComputeZPosition():
     
     # ground truth
     gt = df.copy()
-    gt[zCol] = np.array([16, 0, -16])
+    gt[zCol] = np.array([-16.0, 0.0, 16.0])
     
     ok_(zCol in procdf)
     ok_(procdf.equals(gt))

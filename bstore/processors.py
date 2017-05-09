@@ -13,6 +13,7 @@ from operator import *
 from scipy.signal import gaussian
 from scipy.ndimage import filters
 from scipy.interpolate import UnivariateSpline, interp1d
+from scipy.optimize import minimize
 from matplotlib.widgets import RectangleSelector
 from bstore import config
 from bstore.parsers import FormatMap
@@ -470,9 +471,6 @@ class AddColumn:
 
     Attributes
     ----------
-    calibrationCurve : func
-        The calibration curve that returns z-position for a given difference of
-        PSF widths
     columnName       : str
         The name of the new column.
     defaultValue     : mixed datatype
@@ -524,19 +522,39 @@ class CalibrateAstigmatism(SelectLocalizations):
         in x and y.
     zCol      : str
         Name of the column identifying the z-coordinate values.
-    astigmatismComputer: AstigComputer
+    astigmatismComputer: ComputeTrajectories
         Algorithm for computing astigmatic calibration curves.
+    wobbleComputer: ComputeTrajectories
+        Algorithm for computing wobble calibration curves.
         
     Attributes
     ----------
-    
+    interactiveSearch : bool
+        Determines whether the user will interactively find fiducials.
+        Setting this to False means that fiducials are found automatically,
+        although this is not always reliable.
+    astigmatismComputer: AstigComputer
+        Algorithm for computing astigmatic calibration curves.
+    calibrationCurves : func, func
+        The calibration curves for astigmatic 3D imaging. The first
+        element contains the PSF width in x as a function of z and
+        the second contains the width in y as a function of z.
+    wobbleCurves : func, func
+        The wobble curves for astigmatic 3D imaging. These map the PSF centroid
+        positions as a function of z. See Ref. 1 for more information.
+        
+    References
+    ----------
+    1. Carlini, et al., "Correction of a Depth-Dependent Lateral Distortion in
+    3D Super-Resolution Imaging," PLoS One 10(11):e0142949 (2015).
     
     """
     def __init__(self, interactiveSearch=True, coordCols=['x', 'y'],
                  sigmaCols=['sigma_x', 'sigma_y'], zCol='z', startz=None,
-                 stopz=None, astigmatismComputer=None):
+                 stopz=None, astigmatismComputer=None, wobbleComputer=None):
         self.interactiveSearch = interactiveSearch
-        self.calibrationCurve  = None
+        self.calibrationCurves = None
+        self.wobbleCurves      = None
         
         self._coordCols = coordCols
         self._sigmaCols = sigmaCols
@@ -546,7 +564,16 @@ class CalibrateAstigmatism(SelectLocalizations):
             self.astigmatismComputer = astigmatismComputer
         else:
             self.astigmatismComputer = DefaultAstigmatismComputer(
+                                           coordCols=coordCols, 
                                            sigmaCols=sigmaCols, zCol=zCol)
+            
+        if wobbleComputer:
+            self.wobbleComputer = wobbleComputer
+        else:
+            self.wobbleComputer = DefaultAstigmatismComputer(
+                                      coordCols=coordCols, sigmaCols=coordCols,
+                                      zCol=zCol, zeroz=0)            
+        
     
     def __call__(self, df):
         """Computes the astigmatic calibration curves from user-selected beads.
@@ -563,6 +590,15 @@ class CalibrateAstigmatism(SelectLocalizations):
             localizations are not modified.
         
         """
+        # Update the wobble computer to match the same fitting range as the
+        # astigmatism computer. This prevents problems with the display of bead
+        # fits where the points not included in the astigmatism curve fits
+        # reflected the wobble computer settings.   
+        print(('Setting wobble fiting range to the match the astigmatism fit '
+               'range. startz and stopz are set in the astigmatism computer.'))
+        self.wobbleComputer.startz = self.astigmatismComputer.startz
+        self.wobbleComputer.stopz  = self.astigmatismComputer.stopz
+        
         if self.interactiveSearch:
             self.doInteractiveSearch(df)
 
@@ -572,35 +608,51 @@ class CalibrateAstigmatism(SelectLocalizations):
                 print('No regions containing localizations identified. '
                       'Returning original DataFrame.')
                 self.astigmatismComputer.clearRegionLocs()
+                self.wobbleComputer.clearRegionLocs()
                 return df
         else:
             locs = self.astigmatismComputer.regionLocs
         
-        self.calibrationCurve = \
-            self.astigmatismComputer.computeTrajectory(locs)
-            
-        self.calibrationCurve = self._computeCalibrationCurve()
+        # This returns the average splines, but we don't need them.
+        _ = self.astigmatismComputer.computeTrajectory(locs)
+        _ = self.wobbleComputer.computeTrajectory(locs)
+        
+        self.calibrationCurves = self._computeCalibrationCurves(
+                                     self.astigmatismComputer.avgSpline)
+        self.wobbleCurves      = self._computeCalibrationCurves(
+                                     self.wobbleComputer.avgSpline)
         
         return df
     
-    def _computeCalibrationCurve(self):
+    def _computeCalibrationCurves(self, avgSpline):
         """Computes the 3D astigmatic calibration curve from average splines.
+        
+        Parameters
+        ----------
+        avgSpline : Pandas DataFrame
+            The averaged spline fits to bead data.
         
         Returns
         -------
-        f : func
-            The calibration curve that returns the z-position for a given
-            difference in PSF widths.
+        fx : func
+            The calibration curve that returns the the width in x as
+            a function of z.
+        fy : func
+            The calibration curve that returns the the width in y as
+            a function of z.
         
         """
-        avgSpline  = self.astigmatismComputer.avgSpline
-        widthDiffs = avgSpline['xS'] - avgSpline['yS']
+        xS, yS     = avgSpline['xS'], avgSpline['yS']
         zPos       = avgSpline['z']
         
-        f = interp1d(widthDiffs, zPos, kind='cubic', bounds_error=False,
-                     fill_value=np.NaN, assume_sorted=False)
         
-        return f
+        fx = interp1d(zPos, xS, kind='cubic', bounds_error=False,
+                      fill_value=np.NaN, assume_sorted=False)
+        fy = interp1d(zPos, yS, kind='cubic', bounds_error=False,
+                      fill_value=np.NaN, assume_sorted=False)
+        
+        return fx, fy
+    
 
 class CleanUp:
     """Performs regular clean up routines on imported data.
@@ -881,23 +933,55 @@ class ComputeClusterStats:
         return volume
     
 class ComputeZPosition:
-    """Computes the localizations' z-positions from a calibration curve.
+    """Computes the localizations' z-positions from calibration curves.
     
     Parameters
     ----------
-    zFunc     : func
-        A function mapping
-    zCol      : str
+    zFunc         : func
+        Function(s) mapping the PSF widths onto Z. Supply this 
+        argument as a tuple in the order (fx, fy).
+    zCol          : str
         The name to assign to the new column of z-positions.
-    sigmaCols : list of str
+    coordCols     : list of str
+        The x- and y-coordinate column names, in that order. This is only used
+        for the wobble correction if wobbleFunc is not None.
+    sigmaCols     : list of str
         The column names containing the PSF widths in the x- and y-directions,
         respectively.
+    fittype       : str
+        String indicating the type of fit to use when deriving the z-positions.
+        Can be either 'huang', which minimizes a distance-like objective
+        function, or 'diff', which interpolates a curve based on the difference
+        between PSF widths in x and y.
+    scalingFactor : float
+        A scaling factor that multiples the computed z-values to account for
+        a refractive index mismatch at the coverslip. See [1] for more details.
+        This can safely be left at one and the computed z-values rescaled later
+        if you are uncertain about the value to use.
+    wobbleFunc    : func
+        Function(s) mapping the PSF centroids onto Z. Supply this 
+        argument as a tuple in the order (fx, fy). See [2] for more details.
+        
+    References
+    ----------
+    1. Huang, et al., Science 319, 810-813 (2008)
+    2. Carlini, et al., PLoS One 10(11):e0142949 (2015).
     
     """
-    def __init__(self, zFunc, zCol='z', sigmaCols=['sigma_x, sigma_y']):
-        self.zFunc     = zFunc
-        self.zCol      = zCol
-        self.sigmaCols = sigmaCols
+    def __init__(self, zFunc, zCol='z', coordCols=['x', 'y'],
+                 sigmaCols=['sigma_x, sigma_y'],
+                 fittype='diff', scalingFactor=1, wobbleFunc = None):
+        self.zFunc         = zFunc
+        self.zCol          = zCol
+        self.coordCols     = coordCols
+        self.sigmaCols     = sigmaCols
+        self.fittype       = fittype
+        self.scalingFactor = scalingFactor
+        self.wobbleFunc    = wobbleFunc
+        
+        # This is the calibration curve computed when fittype='diff' and is
+        # used internally for error checking and testing.
+        self._f = None
     
     def __call__(self, df):
         """ Applies zFunc to the localizations to produce the z-positions.
@@ -913,16 +997,112 @@ class ComputeZPosition:
             A DataFrame object with the same information but new column names.
             
         """
-        procdf = df.copy()
-        x, y = self.sigmaCols
+        x, y   = self.sigmaCols
+        fx, fy = self.zFunc
         
-        locWidths = df[x] - df[y]
-        zPos      = self.zFunc(locWidths)
+        if self.fittype == 'diff':
+            procdf = self._diff(df, x, y, fx, fy)
+        elif self.fittype == 'huang':
+            procdf = self._huang(df, x, y, fx, fy)
+            
+        procdf[self.zCol] *= self.scalingFactor
         
-        procdf[self.zCol] = zPos
-        
+        if self.wobbleFunc:
+            procdf = self._wobble(procdf)
+            
         return procdf
-
+    
+    def _diff(self, df, x, y, fx, fy):
+        """Determines the z-position from the difference in x- and y-widths.
+        
+        In this approach, the two calibration curves are sampled, subtracted
+        from one another, and then reinterpolated to produce a function
+        representing the axial position as a function of the difference between
+        the PSF widths in x and y.
+        
+        In general, it is much faster than the optimization routine used in
+        Huang et al., Science 2008.
+        
+        """
+        df = df.copy() #  Prevents overwriting input DataFrame
+        
+        # Get minimum and maximum z-positions contained in calibration curves.
+        # This is required to define the bounds on the sampling domain.
+        zMin, zMax = np.min([fx.x, fy.x]), np.max([fx.x, fy.x])
+        zSamples = np.linspace(zMin, zMax, num=150)
+        
+        # Create the function representing the difference between calibration
+        # curves.
+        def dW(fx, fy):
+            return lambda z: fx(z) - fy(z)
+        
+        f = interp1d(dW(fx, fy)(zSamples), zSamples, bounds_error=False,
+                     fill_value=np.NaN, assume_sorted=False)
+        self._f = f
+        
+        # Compute the z-positions from this interpolated curve
+        locWidths = df[x] - df[y]
+        z = f(locWidths)
+        
+        df[self.zCol] = z
+        return df
+    
+    def _huang(self, df, x, y, fx, fy):
+        """Determines the z-position by objective minimization.
+        
+        This routine can be very slow, especially for large datasets. It is
+        recommended to try it on a very slow dataset first.
+        
+        """
+        df = df.copy() # Prevents overwriting input DataFrame
+        
+        # Create the objective function for the distance between the data and
+        # calibration curves.
+        def D(z, wx, wy):
+            return np.sqrt((wx**0.5 - fx(z)**0.5)**2 + \
+                           (wy**0.5 - fy(z)**0.5)**2)
+        
+        # Create the objective function to minimize
+        def fmin(wx, wy):
+            res = minimize(lambda z: D(z, wx, wy), [0], bounds=[(-600,600)])
+            return res.x[0]
+        
+        df[self.zCol] = df.apply(lambda row: fmin(row[x], row[y]), axis=1)
+        return df
+    
+    def _wobble(self, df):
+        """Corrects localizations for wobble.
+        
+        This function takes a DataFrame of localizations whose z-positions were
+        already computed and determines the x- and y-corrections necessary to
+        correct for an axial dependence of the centriod position. It then
+        applies these corrections and returns the processed DataFrame.
+        
+        Parameters
+        ----------
+        df : DataFrame
+            A Pandas DataFrame containing the localizations.
+            
+        Returns
+        -------
+        df : DataFrame
+            The wobble-corrected DataFrame.
+        
+        """
+        df     = df.copy() # Prevents overwriting input DataFrame
+        x, y   = self.coordCols
+        zLocs  = df[self.zCol]
+        fx, fy = self.wobbleFunc
+        
+        xc = fx(zLocs)
+        yc = fy(zLocs)
+        
+        df['dx'] = xc
+        df['dy'] = yc
+        df[x] = df[x] - xc
+        df[y] = df[y] - yc
+        
+        return df
 
 class ConvertHeader:
     """Converts the column names in a localization file to a different format.
@@ -1003,11 +1183,16 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         The start point of the z-fitting range.
     stopz     : float
         The end point of the z-fitting range.
+    zeroz     : None or float
+        The z-position corresponding to the focal plane. This is used only for
+        the calculation of the wobble curves and NOT the astigmatism curves.
+        Set to None if this computer is intended to compute astigmatism curves;
+        set to a number to compute wobble curves.
     
     """
     def __init__(self, coordCols=['x','y'], sigmaCols=['sigma_x', 'sigma_y'],
                  zCol='z', smoothingWindowSize=20, smoothingFilterSize=3,
-                 useTrajectories=[], startz=None, stopz=None):
+                 useTrajectories=[], startz=None, stopz=None, zeroz = None):
         self.coordCols           = coordCols
         self.sigmaCols           = sigmaCols
         self.zCol                = zCol
@@ -1016,6 +1201,7 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         self.useTrajectories     = useTrajectories
         self.startz = startz
         self.stopz  = stopz
+        self.zeroz  = zeroz
         super(ComputeTrajectories, self).__init__()
         
         # Column of DataFrame used to indicate what localizations are not
@@ -1031,6 +1217,7 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         self._init_useTrajectories     = useTrajectories.copy()
         self._init_startz              = startz
         self._init_stopz               = stopz
+        self._init_zeroz               = zeroz
         
         
     def combineCurves(self, startz, stopz):
@@ -1111,6 +1298,57 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         self.combineCurves(startz, stopz)
 
         return self.avgSpline
+    
+    def _computeOffsets(self, locs):
+        """Compute the offsets for bead trajectories to align curves at z=0.
+
+        Parameters
+        ----------
+        locs : Pandas DataFrame
+            Localizations from a single bead region.
+
+        Returns
+        -------
+        x0, y0 : tuple of int
+            The offsets to subtract from the localizations belonging to a
+            bead.
+
+        """
+        avgOffset = 10
+        x, y = self.coordCols[0], self.coordCols[1]
+        startFrame, stopFrame = locs[self.zCol].min(), \
+            locs[self.zCol].max()
+            
+        # Convert None's to infinity for comparison
+        if self.startz == None:
+            startz = -np.inf
+        else:
+            startz = self.startz
+        if self.stopz == None:
+            stopz = np.inf
+        else:
+            stopz = self.stopz
+        
+
+        if self.zeroz > stopz or self.zeroz < startz:
+            warnings.warn(('Warning: zeroz ({0:d}) is outside the '
+                           'allowable range of frame numbers in this dataset '
+                           '({1:d} - {2:d}). Try a different zeroz value.'
+                           ''.format(self.zeroz, startFrame + avgOffset,
+                                     stopFrame - avgOffset)))
+
+        # Average the localizations around the zeroz value
+        x0 = locs[(locs[self.zCol] > self.zeroz - avgOffset)
+                & (locs[self.zCol] < self.zeroz + avgOffset)][x].mean()
+        y0 = locs[(locs[self.zCol] > self.zeroz - avgOffset)
+                & (locs[self.zCol] < self.zeroz + avgOffset)][y].mean()
+
+        if (x0 is np.nan) or (y0 is np.nan):
+            warnings.warn('Could not determine an offset value; '
+                          'setting offsets to zero.')
+            x0, y0 = 0, 0
+
+        return x0, y0
 
     def fitCurves(self):
         """Fits individual splines to each z-scan.
@@ -1142,23 +1380,30 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
             
             windowSize = self.smoothingWindowSize
             sigma = self.smoothingFilterSize
+            
+            # Shift the localization(s) at zeroz to (x = 0, y = 0) by
+            # subtracting its value at frame number zeroFrame
+            if self.zeroz is not None:
+                x0, y0 = self._computeOffsets(currRegionLocs)
+            else:
+                x0, y0 = 0, 0
     
             # Determine the appropriate weighting factors
-            _, varx = self._movingAverage(currRegionLocs[x],
+            _, varx = self._movingAverage(currRegionLocs[x] - x0,
                                           windowSize=windowSize,
                                           sigma=sigma)
-            _, vary = self._movingAverage(currRegionLocs[y],
+            _, vary = self._movingAverage(currRegionLocs[y] - y0,
                                           windowSize=windowSize,
                                           sigma=sigma)
     
             # Perform spline fits. Extrapolate using boundary values (const)
             extrapMethod = 'extrapolate'
             xSpline = UnivariateSpline(currRegionLocs[z].as_matrix(),
-                                       currRegionLocs[x].as_matrix(),
+                                       currRegionLocs[x].as_matrix() - x0,
                                        w=1 / np.sqrt(varx),
                                        ext=extrapMethod)
             ySpline = UnivariateSpline(currRegionLocs[z].as_matrix(),
-                                       currRegionLocs[y].as_matrix(),
+                                       currRegionLocs[y].as_matrix() - y0,
                                        w=1 / np.sqrt(vary),
                                        ext=extrapMethod)
     
@@ -1184,16 +1429,14 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
             self.sigmaCols[1]
         ]
         horizontalLabels = ['', 'z-position']
-        verticalLabels = ['Wx', 'Wy']
+        verticalLabels = ['x', 'y']
         title = 'Avg. spline and bead'
         splineCols = ['z', 'xS', 'yS']
         
         
         # Set the y-axis based on the average spline
-        minxy, maxxy = self.regionLocs[self.sigmaCols[0]].min(), \
-                       self.regionLocs[self.sigmaCols[0]].max()
-        minyy, maxyy = self.regionLocs[self.sigmaCols[1]].min(), \
-                       self.regionLocs[self.sigmaCols[1]].max()
+        minxy, maxxy = self.avgSpline['xS'].min(), self.avgSpline['xS'].max()
+        minyy, maxyy = self.avgSpline['yS'].min(), self.avgSpline['yS'].max()
         minxy -= 50
         maxxy += 50
         minyy -= 50
@@ -1211,6 +1454,14 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
 
         offsets=[0,0] # No offsets for these plots
         for fid in range(startIndex, stopIndex):
+            locs = self.regionLocs.xs(fid, level='region_id', drop_level=False)
+            locs = locs.loc[locs[self._includeColName]]
+            
+            if self.zeroz is not None:
+                offsets = self._computeOffsets(locs)
+            else:
+                offsets = (0, 0)
+            
             self._plotCurves(fid, coordCols, horizontalLabels,
                              verticalLabels, title, splineCols,
                              offsets, ylims)
@@ -1244,6 +1495,7 @@ class DefaultAstigmatismComputer(ComputeTrajectories):
         self.useTrajectories     = self._init_useTrajectories.copy()
         self.startz              = self._init_startz
         self.stopz               = self._init_stopz
+        self.zeroz               = self._init_zeroz
 
 class DefaultDriftComputer(ComputeTrajectories):
     """The default algorithm for computing a drift trajectory.
@@ -1463,20 +1715,10 @@ class DefaultDriftComputer(ComputeTrajectories):
                                      stopFrame - avgOffset)))
 
         # Average the localizations around the zeroFrame value
-        x0 = locs[
-            (locs[
-                self.frameCol] > self.zeroFrame -
-                avgOffset) & (
-                locs[
-                    self.frameCol] < self.zeroFrame +
-                avgOffset)][x].mean()
-        y0 = locs[
-            (locs[
-                self.frameCol] > self.zeroFrame -
-                avgOffset) & (
-                locs[
-                    self.frameCol] < self.zeroFrame +
-                avgOffset)][y].mean()
+        x0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][x].mean()
+        y0 = locs[(locs[self.frameCol] > self.zeroFrame - avgOffset)
+                & (locs[self.frameCol] < self.zeroFrame + avgOffset)][y].mean()
 
         if (x0 is np.nan) or (y0 is np.nan):
             warnings.warn('Could not determine an offset value; '
@@ -1589,8 +1831,7 @@ class DefaultDriftComputer(ComputeTrajectories):
             stopIndex  = curveNumber + 1
 
         for fid in range(startIndex, stopIndex):
-            locs = self.regionLocs.xs(fid, level='region_id',
-                                      drop_level=False)
+            locs = self.regionLocs.xs(fid, level='region_id', drop_level=False)
 
             # Filter out localizations that are outliers and find
             # offsets
