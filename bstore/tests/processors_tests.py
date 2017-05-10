@@ -8,6 +8,7 @@ from bstore import config
 import pandas as pd
 from pathlib import Path
 import numpy as np
+import numpy.testing as npt
 
 testDataRoot = Path(config.__Path_To_Test_Data__)
 
@@ -20,6 +21,51 @@ locs = pd.read_csv(str(pathToTestData))
 pathToAstigData = testDataRoot \
                   / Path('processor_test_files') \
                   / Path('sequence-as-stack-Beads-AS-Exp_Localizations.csv')
+pathToCalCurves = testDataRoot \
+                  / Path('processor_test_files') \
+                  / Path('calibration_curves.csv')
+
+def test_DefaultAstigmatismComputer():
+    """The DefaultAstigmatismComputer always returns the same calibrations.
+    
+    """
+    df = pd.read_csv(str(pathToCalCurves))
+    ca = proc.CalibrateAstigmatism(coordCols=['x [nm]', 'y [nm]'],
+                                   sigmaCols=['sigma_x [nm]', 'sigma_y [nm]'],
+                                   zCol='z [nm]')
+    
+    # Prevents the user-driven selection of beads
+    ca.interactiveSearch = False
+    
+    # Manually select the bead and assign the processor's ROI
+    ca._regions = [{'xMin' : df['x [nm]'].min() - 10,
+                    'xMax' : df['x [nm]'].max() + 10,
+                    'yMin' : df['y [nm]'].min() - 10,
+                    'yMax' : df['y [nm]'].max() + 10}]
+    regionLocs = ca._extractLocsFromRegions(df)
+    ca.astigmatismComputer.regionLocs = regionLocs
+    
+    # Did we find the one trajectory?
+    assert_equal(regionLocs.index.levels[1].max(), 0)
+    
+    _ = ca(df)
+    
+    # Were the calibration curves computed correctly?
+    # Ground truth:
+    z  = np.arange(-800, 800, 10.0)
+    wx = 0.0005 * (z - 150)**2 + 150
+    wy = 0.0005 * (z + 150)**2 + 150
+    x = np.linspace(-25, 25, num=len(z))
+    y = np.linspace(-30, 30, num=len(z))
+    
+    # Checks that the spline calibration curves equal the ground truth to
+    # within the number of decimal places specified by "decimal"                  
+    npt.assert_almost_equal(ca.calibrationCurves[0](z), wx, decimal=2)
+    npt.assert_almost_equal(ca.calibrationCurves[1](z), wy, decimal=2)
+    
+    # Checks spline wobble curves (atol means absolute tolerance of 1 nm)
+    npt.assert_allclose(ca.wobbleCurves[0](z), x, atol=1)
+    npt.assert_allclose(ca.wobbleCurves[1](z), y, atol=1)
                   
 def test_ComputeZPosition():
     """ComputeZPosition finds the z-positions from a given z-function.
