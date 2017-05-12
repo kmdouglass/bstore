@@ -2043,11 +2043,12 @@ class FiducialDriftCorrect(DriftCorrect, SelectLocalizations):
 
         x = self._coordCols[0]
         y = self._coordCols[1]
+        
+        # Change frame to an index
+        driftTrajectory = self.driftComputer.avgSpline.set_index(keys='frame')
 
-        xc = self.driftComputer.avgSpline.lookup(corrdf.frame,
-                                                 ['xS'] * corrdf.frame.size)
-        yc = self.driftComputer.avgSpline.lookup(corrdf.frame,
-                                                 ['yS'] * corrdf.frame.size)
+        xc = driftTrajectory.lookup(corrdf.frame, ['xS'] * corrdf.frame.size)
+        yc = driftTrajectory.lookup(corrdf.frame, ['yS'] * corrdf.frame.size)
 
         corrdf['dx'] = xc
         corrdf['dy'] = yc
