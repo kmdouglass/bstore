@@ -360,6 +360,10 @@ class OverlayClusters:
     pixelSize       : float
         The physical size of a pixel. For converting the localization units
         to pixels.
+    showAll         : boolean
+        If False, only localizations for the current cluster will be displayed.
+        If True, all localizations will be displayed, though the current
+        cluster will appear in a different color.
     xShift          : float
        Offset to apply to the localizations and clusters in x.
     yShift          : float
@@ -376,6 +380,7 @@ class OverlayClusters:
                  coordCenterCols=['x_center', 'y_center'],
                  filterCol=None,
                  pixelSize=108,
+                 showAll=False,
                  xShift=0,
                  yShift=0,
                  zoomSize=21):
@@ -386,6 +391,7 @@ class OverlayClusters:
         self.coordCenterCols = coordCenterCols
         self.filterCol = filterCol
         self.pixelSize = pixelSize
+        self.showAll = showAll
         self.xShift = xShift
         self.yShift = yShift
         self.zoomSize = zoomSize
@@ -440,6 +446,8 @@ class OverlayClusters:
             stats = statsComp(locs)
 
             # Ignore the filter and annotate columns
+            print(('stats DataFrame was not provided. Ignorning filter and '
+                   'annotation columns if they were provided...'))
             self.filterCol = None
             self.annotateCol = None
 
@@ -577,11 +585,8 @@ class OverlayClusters:
             self._clusterIDs = stats[stats.index != -1].index.unique()
         elif not self.filterCol:
             # 0 cannot be an annotation because of this line
-            self._clusterIDs = stats[
-                (stats.index != -
-                 1) & (
-                    stats[
-                        self.annotateCol])].index.unique()
+            self._clusterIDs = stats[(stats.index != -1) & 
+                (stats[self.annotateCol])].index.unique()
         elif not self.annotateCol:
             self._clusterIDs = stats[(stats.index != -1)
                                      & (stats[self.filterCol])].index.unique()
@@ -612,7 +617,7 @@ class OverlayClusters:
         if wfImage is None:
             centerColor = 'black'
         else:
-            centerColor = 'white'
+            centerColor = 'yellow'
 
         if self.filterCol is None:
             plotx = (stats.loc[:, xc] - self.xShift) / self.pixelSize
@@ -640,11 +645,10 @@ class OverlayClusters:
         # Draw the cluster centers
         if wfImage is not None:
             ax0.imshow(wfImage,
-                       cmap='inferno',
-                       interpolation='nearest',
-                       #vmin          = np.max(wfImage) / 3,
-                       vmax=np.max(wfImage) / 2)
-            # vmax          = np.max(wfImage))
+                       cmap='gray_r',
+                       interpolation='nearest')
+                       #vmin  = np.max(wfImage) / 3,
+                       #vmax=np.max(wfImage) / 2)
 
         ax0.scatter(plotx,
                     ploty,
@@ -665,30 +669,44 @@ class OverlayClusters:
         ax0.set_aspect('equal')
 
         # Draw the zoomed region of the current cluster
-        self._clusterLocs, = ax1.plot([], [], '.c')
+        self._clusterLocs, = ax1.plot([], [], '.b', markersize=2, alpha=0.25)
         if wfImage is not None:
             ax1.imshow(wfImage,
-                       cmap='inferno',
-                       interpolation='nearest',
+                       cmap='gray_r',
+                       interpolation='nearest')
                        #vmin          = np.max(wfImage) / 3,
-                       vmax=np.max(wfImage) / 2)
-            # vmax          = np.max(wfImage))
-        # Plot unclustered localizations
-        # Half a pixel is subtracted because matplotlib places the first
-        # pixel's center at (0,0), rather than its corner.
-        ax1.scatter((locs[locs[idCol] == -1][x] - self.xShift)
-                    / self.pixelSize - 0.5,
-                    (locs[locs[idCol] == -1][y] - self.yShift)
-                    / self.pixelSize - 0.5,
-                    s=4,
-                    color='magenta')
+                       #vmax=np.max(wfImage) / 2)
+        
+        
+        
+        # Plot all localizations if desired
+        if self.showAll:
+            ax1.scatter((locs[x] - self.xShift)
+                        / self.pixelSize - 0.5,
+                        (locs[y] - self.yShift)
+                        / self.pixelSize - 0.5,
+                        s=1,
+                        color='green',
+                        marker='x',
+                        alpha=0.25)
+        else:
+            # Plot only unclustered localizations (id = -1)
+            ax1.scatter((locs[locs[idCol] == -1][x] - self.xShift)
+                        / self.pixelSize - 0.5,
+                        (locs[locs[idCol] == -1][y] - self.yShift)
+                        / self.pixelSize - 0.5,
+                        s=1,
+                        color='green',
+                        marker='x',
+                        alpha=0.25)
+            
 
         # Plot the cluster centers
         # Constants of 0.5 is explained a few lines above.
         ax1.scatter(plotx - 0.5,
                     ploty - 0.5,
                     s=30,
-                    color='green')
+                    color='yellow')
         ax1.set_xlabel('x-position, pixel')
         ax1.set_ylabel('y-position, pixel')
         ax1.set_aspect('equal')

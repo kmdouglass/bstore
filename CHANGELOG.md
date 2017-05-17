@@ -30,6 +30,11 @@ All notable changes to this project will be documented in this file.
   metaclass. This makes the drift correction and astigmatism
   calibration more in line with the DRY principle (Don't Repeat
   Yourself).
+- The visualizations in the OverlayClusters multiprocessor are now
+  improved to better facilitate the visual comparison between the
+  localizations and widefield images. A `showAll` property was also
+  added for making a scatter plot of all the localizations in the
+  display, rather than just the current cluster.
 
 ### Fixed
 - The `FiducialDriftCorrect` processor no longer raises an error when
