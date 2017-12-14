@@ -305,7 +305,7 @@ class MergeStats(metaclass=ABCMeta):
         return wAvg
     
 """
-Base classes
+Utility classes
 -------------------------------------------------------------------------------
 """
 
