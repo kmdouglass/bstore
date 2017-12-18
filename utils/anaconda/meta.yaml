@@ -1,21 +1,21 @@
 # conda build <DIR_WITH_THIS_FILE> --channel soft-matter --channel kmdouglass
 package:
   name: bstore
-  version: "1.1.1"
+  version: "1.2.0"
 
 source:
-  git_rev: v1.1.1
+  git_rev: v1.2.0
   git_url: https://github.com/kmdouglass/bstore.git
 
 requirements:
   build:
-    - python
+    - python 3.5.2
     - setuptools
     - conda
     - nose
 
   run:
-    - python
+    - python 3.5.2
     - nose
     - numpy
     - scipy
