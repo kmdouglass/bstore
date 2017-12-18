@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [v1.2.1]
+### Fixed
+- Fixed a versioning problem related to missing files from the
+  previous release.
+
 ## [v1.2.0]
 ### Added
 - Two new processors, `CalibrateAstigmatism` and
@@ -285,7 +290,8 @@ All notable changes to this project will be documented in this file.
 - Fixed broken links in README.md.
 - Added tables dependency for Windows builds.
 
-[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/kmdouglass/bstore/compare/v1.2.1...HEAD
+[v1.2.1]: https://github.com/kmdouglass/bstore/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/kmdouglass/bstore/compare/v1.1.1...v1.2.0
 [v1.1.1]: https://github.com/kmdouglass/bstore/compare/v1.1.0...v1.1.1
 [v1.1.0]: https://github.com/kmdouglass/bstore/compare/v1.0.1...v1.1.0
