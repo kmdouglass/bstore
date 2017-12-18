@@ -1,7 +1,7 @@
 # B-Store
 [![Build Status](https://travis-ci.org/kmdouglass/bstore.svg?branch=master)](https://travis-ci.org/kmdouglass/bstore)
 [![Anaconda-Server Badge](https://anaconda.org/kmdouglass/bstore/badges/version.svg)](https://anaconda.org/kmdouglass/bstore)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1117822.svg)](https://doi.org/10.5281/zenodo.1117822)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1117843.svg)](https://doi.org/10.5281/zenodo.1117843)
 
 Lightweight data management and analysis tools for single-molecule microscopy.
 
@@ -41,9 +41,8 @@ If you find B-Store useful, please consider citing it by referencing
 the DOI of the specific version in use. For example:
 
 > Douglass, Kyle M., Sieben, Christian, Berliner, Niklas, & Manley,
-> Suliana. (2017, December 18). kmdouglass/bstore: Astigmatic 3D
-> Analysis Capabilities (Version
-> v1.2.0). Zenodo. http://doi.org/10.5281/zenodo.1117822
+> Suliana. (2017, December 18). B-Store (Version
+> v1.2.1). Zenodo. https://doi.org/10.5281/zenodo.1117843
 
 # Installation
 B-Store is most easily installed from the [Anaconda Cloud package repository](https://anaconda.org/kmdouglass/bstore). If you don't already have Anaconda installed, you may download it for Python 3.5 and greater from https://www.continuum.io/downloads. Once installed, run the commands from the terminal listed below for your system. (If you're on Windows, use the Anaconda Prompt that is supplied with Anaconda.)
