@@ -13,6 +13,13 @@ All notable changes to this project will be documented in this file.
   coordinate, and zCoordinate. They do not necessarily need to use the
   arguments, but they must accept them.
 
+### Fixed
+- The event loop associated with interactive windows from
+  OverlayClusters was not terminating as it should have been when the
+  window was closed. This was caused by a deprecation of the
+  `start_event_loop_default()` method in matplotlib 2.1 and is now
+  fixed by using the more recent `start_event_loop()` method.
+
 ## [v1.2.1]
 ### Fixed
 - Fixed a versioning problem related to missing files from the
