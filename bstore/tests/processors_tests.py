@@ -461,8 +461,8 @@ def test_ClusterStats_CustomStats():
                / Path('processor_test_files/test_cluster_stats.csv')
     data       = pd.read_csv(str(pathToData))
     
-    # Define a custom statistic to compute
-    def VarTimesTwo(group, coordinates):
+    # Define a custom statistic to compute.
+    def VarTimesTwo(group, coordinates, zCoord):
         # Multiples each localization position by 2, then computes
         # the sum of the variances. This is silly but serves as an example.
         variances = group[coordinates].apply(lambda x: x * 2).var(ddof=0)
@@ -477,6 +477,33 @@ def test_ClusterStats_CustomStats():
     ok_('var_times_two' in stats, 'Error: New column name not in DataFrame.')
     assert_equal(stats['var_times_two'].iloc[0].round(2),                 1.60)
     assert_equal(stats['var_times_two'].iloc[1].round(2),                16.00)
+
+def test_ClusterStats_CustomStats_AxialCoord():
+    """ComputeClusterStats can proces z-coordinates correctly.
+
+    """
+    # Load the data and add a column with z-position data
+    pathToData = testDataRoot \
+               / Path('processor_test_files/test_cluster_stats.csv')
+    data       = pd.read_csv(str(pathToData))
+    data['z [nm]']  = 150
+
+    # Define a function to compute the average z-position.
+    def meanZ(group, coordinates, zCoord):
+        # We won't use the xy coordinates.
+        return group[zCoord].mean()
+
+    customStats = {'mean_z' : meanZ }
+
+    statProc = proc.ComputeClusterStats(
+                   coordCols=['x [nm]', 'y [nm]'],
+                   zCoord='z [nm]',
+                   statsFunctions = customStats)
+
+    stats = statProc(data)
+    ok_('mean_z' in stats, 'Error: mean_z column not in DataFrame.')
+    assert_equal(stats['mean_z'].iloc[0].round(2), 150.00)
+    assert_equal(stats['mean_z'].iloc[1].round(2), 150.00)
     
 def test_MergeFang_Stats():
     """Merger correctly merges localizations from the same molecule.

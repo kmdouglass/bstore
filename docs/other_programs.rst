@@ -7,8 +7,8 @@ Using B-Store with Other Software
 :Author: Kyle M. Douglass
 :Contact: kyle.m.douglass@gmail.com
 :organization: École Polytechnique Fédérale de Lausanne (EPFL)
-:revision: $Revision: 0 $
-:date: 2016-08-11
+:revision: $Revision: 1 $
+:date: 2018-04-24
 
 :abstract:
 
@@ -55,5 +55,5 @@ writes OME-XML metadata, simply specify the pixel size in the
 ``widefieldPixelSize`` attribute described above.
 
 .. _HDFDatabase: http://b-store.readthedocs.io/en/latest/bstore.html#bstore.database.HDFDatabase
-.. _HDF5 Plugin for ImageJ and Fiji: http://lmb.informatik.uni-freiburg.de/resources/opensource/imagej_plugins/hdf5.html
+.. _HDF5 Plugin for ImageJ and Fiji: https://github.com/fiji/HDF5_Vibez
 

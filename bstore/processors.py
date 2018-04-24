@@ -759,8 +759,10 @@ class ComputeClusterStats:
     idLabel          : str
         The column name containing cluster ID's.
     coordCols        : list of string
-        A list containing the column names containing the localization
-        coordinates.
+        A list containing the column names containing the transverse
+        localization coordinates.
+    zCoord           : str
+        The column name of the axial coordinate.
     statsFunctions   : dict of name/function pairs
         A dictionary containing column names and functions for computing
         custom statistics from the clustered localizations. The keys in
@@ -775,6 +777,7 @@ class ComputeClusterStats:
 
     def __init__(self, idLabel='cluster_id',
                  coordCols=['x', 'y'],
+                 zCoord='z',
                  statsFunctions=None):
         self._idLabel = idLabel
         self._statsFunctions = {'radius_of_gyration': self._radiusOfGyration,
@@ -782,6 +785,7 @@ class ComputeClusterStats:
                                 'convex_hull': self._convexHull}
 
         self.coordCols = coordCols
+        self.zCoord = zCoord
 
         # Add the input functions to the defaults if they were supplied
         if statsFunctions:
@@ -817,7 +821,7 @@ class ComputeClusterStats:
         # the column name to the dictionary key
         tempResultsCustom = []
         for name, func in self._statsFunctions.items():
-            temp = groups.apply(func, self.coordCols)
+            temp = groups.apply(func, self.coordCols, self.zCoord)
             temp.name = name  # The name of the column is now the dictionary key
             tempResultsCustom.append(temp)
 
@@ -842,7 +846,7 @@ class ComputeClusterStats:
 
         return procdf
 
-    def _radiusOfGyration(self, group, coordinates):
+    def _radiusOfGyration(self, group, coordinates, zCoordinate):
         """Computes the radius of gyration of a grouped cluster.
 
         Parameters
@@ -850,13 +854,20 @@ class ComputeClusterStats:
         group       : Pandas GroupBy
             The clustered localizations.
         coordinates : list of str
-            The columns to use for performing the computation; typically these
-            containg the localization coordinates.
+            The columns to use for performing the computation; 
+            typically these containg the localization coordinates.
+        zCoordinate : str
+            The column title of the axial coordinate.
 
         Returns
         -------
         Rg    : float
             The radius of gyration of the group of localizations.
+
+        Notes
+        -----
+        This currently only uses the transverse coordinates and
+        ignores the z-coordinate.
 
         """
         variances = group[coordinates].var(ddof=0)
@@ -864,7 +875,7 @@ class ComputeClusterStats:
         Rg = np.sqrt(variances.sum())
         return Rg
 
-    def _eccentricity(self, group, coordinates):
+    def _eccentricity(self, group, coordinates, zCoordinate):
         """ Computes the eccentricity of a grouped cluster.
 
         Parameters
@@ -874,11 +885,19 @@ class ComputeClusterStats:
         coordinates : list of str
             The columns to use for performing the computation; typically these
             containg the localization coordinates.
+        zCoordinate : str
+            The column title of the axial coordinate.
 
         Returns
         -------
         ecc   : float
             The eccentricity of the group of localizations.
+
+        Notes
+        -----
+        This currently only uses the transverse coordinates and
+        ignores the z-coordinate.
+
         """
         try:
             # Compute the covariance matrix  and its eigevalues
@@ -894,7 +913,7 @@ class ComputeClusterStats:
             
         return ecc
 
-    def _convexHull(self, group, coordinates):
+    def _convexHull(self, group, coordinates, zCoordinate):
         """Computes the volume of the cluster's complex hull.
 
         Parameters
@@ -904,10 +923,17 @@ class ComputeClusterStats:
         coordinates : list of str
             The columns to use for performing the computation; typically these
             containg the localization coordinates.
+        zCoordinate : str
+            The column title of the axial coordinate.
 
         Returns
         -------
         volume : float or np.nan
+
+        Notes
+        -----
+        This currently only uses the transverse coordinates and
+        ignores the z-coordinate.
 
         """
         # Compute CHull only if pyhull is installed
