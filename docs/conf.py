@@ -65,9 +65,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'B-Store'
-copyright =
-'''2016-2018, The Laboratory of Experimental Biophysics
-EPFL, Switzerland'''
+copyright ='''2016-2018, The Laboratory of Experimental Biophysics
+Ecole Polytechnique Fédérale de Lausanne (EPFL), Switzerland'''
 author = 'Kyle M. Douglass'
 
 # The version info for the project you're documenting, acts as replacement for
