@@ -522,7 +522,7 @@ class OverlayClusters:
             self._fig.canvas.mpl_connect('close_event', onClose)
             plt.connect('key_press_event',
                         lambda event: keyMonitor(event, self))
-            self._fig.canvas.start_event_loop_default()
+            self._fig.canvas.start_event_loop()
 
         if centerNameTemp:
             # Reset the center names to the value that was overridden
