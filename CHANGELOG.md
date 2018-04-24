@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- The `ComputeClusterStats` class now accepts a keyword argument
+  called `zCoord`. This specifies the name of the column in a
+  DataFrame containing the axial localization coordinates.
+  
+### Changed
+- Functions that are passed to the `statsFunctions` argument of
+  `ComputeClusterStats` objects now take three arguments: group,
+  coordinate, and zCoordinate. They do not necessarily need to use the
+  arguments, but they must accept them.
+
 ## [v1.2.1]
 ### Fixed
 - Fixed a versioning problem related to missing files from the
