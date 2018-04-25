@@ -20,13 +20,13 @@ from unittest.mock import MagicMock
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
-            return Mock()
+        return MagicMock()
  
 MOCK_MODULES = [
     'numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot',
     'pandas', 'h5py', 'trackpy', 'sklearn.cluster', 'scipy.signal',
-    'scipy.ndimage', 'scipy.interpolate', 'matplotlib.widgets',
-    'tables', 'tifffile'
+    'scipy.ndimage', 'scipy.interpolate', 'scipy.optimize',
+    'matplotlib.widgets', 'tables', 'tifffile', 'filelock', 'setup'
 ]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
