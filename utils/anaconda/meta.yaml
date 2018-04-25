@@ -23,7 +23,7 @@ requirements:
     - scikit-learn
     - pytables
     - h5py
-    - pandas 0.19.2
+    - pandas
     - trackpy 0.3.2
     - tifffile 0.10.0
     - nb_conda
