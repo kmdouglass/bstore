@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
   window was closed. This was caused by a deprecation of the
   `start_event_loop_default()` method in matplotlib 2.1 and is now
   fixed by using the more recent `start_event_loop()` method.
+- Fixed a bug in conf.py related to module mocking which prevented
+  automated documentation builds.
 
 ## [v1.2.1]
 ### Fixed
