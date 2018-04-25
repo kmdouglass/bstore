@@ -1,4 +1,4 @@
-Copyright (c) 2016, ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+Copyright (c) 2016-2018, ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
 Switzerland, Laboratory of Experimental Biophysics
 
 Redistribution and use in source and binary forms, with or without

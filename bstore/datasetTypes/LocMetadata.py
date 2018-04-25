@@ -1,5 +1,5 @@
 # © All rights reserved. ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
-# Switzerland, Laboratory of Experimental Biophysics, 2016
+# Switzerland, Laboratory of Experimental Biophysics, 2016-2018
 # See the LICENSE.txt file for more details.
 
 import bstore.config as config
