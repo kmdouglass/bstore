@@ -24,7 +24,7 @@ All notable changes to this project will be documented in this file.
 - An error would occur with Pandas > 0.20 inside the
   `HDFDatastore._sortDatasets()` method when there were mixed types of
   acqID's. This is now fixed by implicitly converting acqID's to
-  strings before sorting them.
+  strings before sorting them. 
 
 ## [v1.2.1]
 ### Fixed
