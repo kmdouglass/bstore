@@ -861,7 +861,12 @@ class HDFDatastore(Datastore):
         if dsInfo:
             # Build the DataFrame with indexes prefix and acqID. These are
             # the primary identifiers for a dataset and are always required;
-            df = pd.DataFrame(dsInfo).set_index(['prefix', 'acqID'])
+            df = pd.DataFrame(dsInfo)
+
+            # Prevents an error comparing acqID's of different types.
+            df['acqID'] = df['acqID'].astype(str)
+
+            df.set_index(['prefix', 'acqID'])
             df.sort_index(inplace=True)
 
             return df

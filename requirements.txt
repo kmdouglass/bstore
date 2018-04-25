@@ -1,6 +1,6 @@
 nose
 scikit-learn
-pandas=0.19.2
+pandas
 trackpy
 numpy
 scipy
